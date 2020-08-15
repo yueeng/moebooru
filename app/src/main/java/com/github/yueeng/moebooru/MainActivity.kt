@@ -3,7 +3,10 @@ package com.github.yueeng.moebooru
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.Pager
@@ -12,30 +15,38 @@ import androidx.paging.PagingDataAdapter
 import androidx.paging.PagingSource
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.ActivityMainBinding
 import com.github.yueeng.moebooru.databinding.ImageItemBinding
 import kotlinx.coroutines.flow.collectLatest
-import retrofit2.await
 
 class ImageDataSource : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
         val key = params.key ?: 1
-        val posts = Service.instance.post(page = key, limit = params.loadSize).await()
+        val posts = Service.instance.post(page = key, limit = params.loadSize)
         LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
 }
 
-class ImageViewModel : ViewModel() {
+class ImageViewModel(handle: SavedStateHandle) : ViewModel() {
     private val source = ImageDataSource()
 
     val posts = Pager(PagingConfig(20)) { source }.flow
 }
 
+class ImageViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T {
+        @Suppress("UNCHECKED_CAST")
+        return ImageViewModel(handle) as T
+    }
+}
+
 class MainActivity : AppCompatActivity() {
     private val adapter by lazy { ImageAdapter() }
-    private val model = ImageViewModel()
+    private val model: ImageViewModel by viewModels { ImageViewModelFactory(this, null) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
