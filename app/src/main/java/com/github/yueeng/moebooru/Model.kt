@@ -1,8 +1,8 @@
 package com.github.yueeng.moebooru
 
 import android.os.Parcelable
-import androidx.lifecycle.LiveData
 import kotlinx.android.parcel.Parcelize
+import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -51,12 +51,11 @@ interface MoebooruService {
         @Query("page") page: Int = 1,
         @Query("tags") tags: String = "rating:safe",
         @Query("limit") limit: Int = 20
-    ): LiveData<ApiResponse<List<JImageItem>>>
+    ): Call<List<JImageItem>>
 }
 
 object Service {
     private val retrofit: Retrofit = Retrofit.Builder()
-        .addCallAdapterFactory(LiveDataCallAdapterFactory())
         .addConverterFactory(GsonConverterFactory.create())
         .client(okhttp)
         .baseUrl("https://konachan.com")
