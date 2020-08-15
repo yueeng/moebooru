@@ -54,6 +54,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.0-alpha06'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.paging:paging-runtime:3.0.0-alpha04'
+    implementation 'androidx.activity:activity-ktx:1.2.0-alpha07'
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"

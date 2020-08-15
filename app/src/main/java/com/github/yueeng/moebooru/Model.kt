@@ -2,7 +2,6 @@ package com.github.yueeng.moebooru
 
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
-import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -47,11 +46,11 @@ data class JImageItem(
 
 interface MoebooruService {
     @GET("post.json")
-    fun post(
+    suspend fun post(
         @Query("page") page: Int = 1,
         @Query("tags") tags: String = "rating:safe",
         @Query("limit") limit: Int = 20
-    ): Call<List<JImageItem>>
+    ): List<JImageItem>
 }
 
 object Service {
