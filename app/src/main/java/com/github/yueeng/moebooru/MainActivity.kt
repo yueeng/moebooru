@@ -5,20 +5,22 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingDataAdapter
-import androidx.paging.PagingSource
+import androidx.paging.*
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.ActivityMainBinding
 import com.github.yueeng.moebooru.databinding.ImageItemBinding
+import com.github.yueeng.moebooru.databinding.StateItemBinding
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filter
 
 class ImageDataSource : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
@@ -31,9 +33,7 @@ class ImageDataSource : PagingSource<Int, JImageItem>() {
 }
 
 class ImageViewModel(handle: SavedStateHandle) : ViewModel() {
-    private val source = ImageDataSource()
-
-    val posts = Pager(PagingConfig(20)) { source }.flow
+    val posts = Pager(PagingConfig(20)) { ImageDataSource() }.flow
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
@@ -52,7 +52,21 @@ class MainActivity : AppCompatActivity() {
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.lifecycleOwner = this
-        binding.recycler.adapter = adapter
+        binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
+        lifecycleScope.launchWhenCreated {
+            adapter.loadStateFlow.collectLatest {
+                binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+            }
+        }
+        lifecycleScope.launchWhenCreated {
+            adapter.loadStateFlow
+                // Only emit when REFRESH LoadState for RemoteMediator changes.
+                .distinctUntilChangedBy { it.refresh }
+                // Only react to cases where Remote REFRESH completes i.e., NotLoading.
+                .filter { it.refresh is LoadState.NotLoading }
+                .collect { binding.recycler.scrollToPosition(0) }
+        }
+        binding.swipe.setOnRefreshListener { adapter.refresh() }
         lifecycleScope.launchWhenCreated {
             model.posts.collectLatest { adapter.submitData(it) }
         }
@@ -73,6 +87,32 @@ class MainActivity : AppCompatActivity() {
                 override fun areItemsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem.id == newItem.id
                 override fun areContentsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem == newItem
             }
+        }
+    }
+
+    class HeaderHolder(parent: ViewGroup, private val retryCallback: () -> Unit) :
+        RecyclerView.ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.state_item, parent, false)) {
+
+        private val binding = StateItemBinding.bind(itemView)
+        private val progressBar = binding.progressBar
+        private val errorMsg = binding.errorMsg
+        private val retry = binding.retryButton.also { it.setOnClickListener { retryCallback() } }
+
+        fun bindTo(loadState: LoadState) {
+            progressBar.isVisible = loadState is LoadState.Loading
+            retry.isVisible = loadState is LoadState.Error
+            errorMsg.isVisible = !(loadState as? LoadState.Error)?.error?.message.isNullOrBlank()
+            errorMsg.text = (loadState as? LoadState.Error)?.error?.message
+        }
+    }
+
+    class HeaderAdapter(private val adapter: ImageAdapter) : LoadStateAdapter<HeaderHolder>() {
+        override fun onBindViewHolder(holder: HeaderHolder, loadState: LoadState) {
+            holder.bindTo(loadState)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder {
+            return HeaderHolder(parent) { adapter.retry() }
         }
     }
 }
