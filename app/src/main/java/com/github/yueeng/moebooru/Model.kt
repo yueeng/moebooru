@@ -2,6 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
+import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
