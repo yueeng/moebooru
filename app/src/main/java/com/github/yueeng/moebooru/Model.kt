@@ -409,13 +409,12 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
             return Regex(regex_string, RegexOption.IGNORE_CASE)
         }
 
+        val test = Regex("""(\d+)`([^`]*)`(([^ ]*)`)? ?""")
         fun suggest(word: String, top: Boolean = false): Sequence<Triple<Int, String, String>> = word.takeIf { it.isNotBlank() }?.let { _ ->
-            val test = Regex("""(\d+)`([^`]*)`(([^ ]*)`)? ?""")
             tag(word, true).findAll(summary)
-                .plus(if (top) emptySequence() else tag(word).findAll(summary))
+                .apply { if(!top) plus(tag(word).findAll(summary)) }
                 .distinctBy { m -> m.value }
-                .filter { m -> test.matches(m.value) }
-                .map { m -> test.find(m.value)?.groups!! }
+                .mapNotNull { m -> test.find(m.value)?.groups }
                 .map { Triple(it[1]!!.value.toInt(), it[2]!!.value, it[3]?.value ?: "") }
         } ?: emptySequence()
     }
