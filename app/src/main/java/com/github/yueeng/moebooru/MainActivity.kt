@@ -2,10 +2,12 @@ package com.github.yueeng.moebooru
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -14,7 +16,7 @@ import androidx.paging.*
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
-import com.github.yueeng.moebooru.databinding.ActivityMainBinding
+import com.github.yueeng.moebooru.databinding.FragmentMainBinding
 import com.github.yueeng.moebooru.databinding.ImageItemBinding
 import com.github.yueeng.moebooru.databinding.StateItemBinding
 import kotlinx.coroutines.flow.collect
@@ -42,32 +44,40 @@ class ImageViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?
 }
 
 class MainActivity : AppCompatActivity() {
-    private val adapter by lazy { ImageAdapter() }
-    private val model: ImageViewModel by viewModels { ImageViewModelFactory(this, null) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
-        lifecycleScope.launchWhenCreated {
-            adapter.loadStateFlow.collectLatest {
-                binding.swipe.isRefreshing = it.refresh is LoadState.Loading
-            }
-        }
-        lifecycleScope.launchWhenCreated {
-            adapter.loadStateFlow
-                // Only emit when REFRESH LoadState for RemoteMediator changes.
-                .distinctUntilChangedBy { it.refresh }
-                // Only react to cases where Remote REFRESH completes i.e., NotLoading.
-                .filter { it.refresh is LoadState.NotLoading }
-                .collect { binding.recycler.scrollToPosition(0) }
-        }
-        binding.swipe.setOnRefreshListener { adapter.refresh() }
-        lifecycleScope.launchWhenCreated {
-            model.posts.collectLatest { adapter.submitData(it) }
-        }
+        setContentView(R.layout.activity_main)
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
     }
+}
+
+class MainFragment : Fragment() {
+    private val adapter by lazy { ImageAdapter() }
+    private val model: ImageViewModel by viewModels { ImageViewModelFactory(this, null) }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+        FragmentMainBinding.inflate(inflater, container, false).also { binding ->
+            (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
+            lifecycleScope.launchWhenCreated {
+                adapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                adapter.loadStateFlow
+                    // Only emit when REFRESH LoadState for RemoteMediator changes.
+                    .distinctUntilChangedBy { it.refresh }
+                    // Only react to cases where Remote REFRESH completes i.e., NotLoading.
+                    .filter { it.refresh is LoadState.NotLoading }
+                    .collect { binding.recycler.scrollToPosition(0) }
+            }
+            binding.swipe.setOnRefreshListener { adapter.refresh() }
+            lifecycleScope.launchWhenCreated {
+                model.posts.collectLatest { adapter.submitData(it) }
+            }
+        }.root
 
     class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: JImageItem) {
