@@ -37,10 +37,8 @@ class ImageViewModel(handle: SavedStateHandle) : ViewModel() {
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T {
-        @Suppress("UNCHECKED_CAST")
-        return ImageViewModel(handle) as T
-    }
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle) as T
 }
 
 class MainActivity : AppCompatActivity() {
@@ -51,7 +49,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.lifecycleOwner = this
         binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
         lifecycleScope.launchWhenCreated {
             adapter.loadStateFlow.collectLatest {
@@ -72,11 +69,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root)
+    class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(item: JImageItem) {
+            bindImageRatio(binding.image1, item.sample_width, item.sample_height)
+            bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
+        }
+    }
 
     class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diff) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) {
-            holder.binding.image = getItem(position)
+            holder.bind(getItem(position)!!)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
