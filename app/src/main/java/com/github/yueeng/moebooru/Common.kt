@@ -29,16 +29,17 @@ import com.bumptech.glide.request.target.Target
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
-import okhttp3.Cache
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class MainApplication : Application() {
     companion object {
@@ -74,6 +75,21 @@ val okhttp: OkHttpClient = OkHttpClient.Builder()
     }
     .apply { debug { addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }) } }
     .build()
+
+suspend fun <T> Call.await(action: (Call, Response) -> T): T = suspendCancellableCoroutine { continuation ->
+    continuation.invokeOnCancellation {
+        cancel()
+    }
+    enqueue(object : Callback {
+        override fun onFailure(call: Call, e: IOException) {
+            if (!continuation.isCancelled) continuation.resumeWithException(e)
+        }
+
+        override fun onResponse(call: Call, response: Response) {
+            if (!continuation.isCancelled) continuation.resume(action(call, response))
+        }
+    })
+}
 
 interface ProgressListener {
     fun update(bytesRead: Long, contentLength: Long, done: Boolean)
@@ -230,7 +246,7 @@ fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBa
         .transition(DrawableTransitionOptions.withCrossFade())
         .apply { if (placeholder != null) placeholder(placeholder) }
         .apply { if (progressBar != null) progress(imageUrl, progressBar) }
-        .addListener(object: RequestListener<Drawable> {
+        .addListener(object : RequestListener<Drawable> {
             override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
                 return false
             }
@@ -248,4 +264,27 @@ fun bindImageRatio(view: ImageView, width: Int, height: Int) {
     val params: ConstraintLayout.LayoutParams = view.layoutParams as ConstraintLayout.LayoutParams
     params.dimensionRatio = "$width:$height"
     view.layoutParams = params
+}
+
+
+fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { c ->
+    c.firstDayOfWeek = firstOfWeek
+    c.time = this
+    c.set(Calendar.DAY_OF_WEEK, c.firstDayOfWeek + index - 1)
+    c.time
+}
+
+fun Date.lastDayOfWeek(): Date = firstDayOfWeek(7)
+
+fun Date.firstDayOfMonth(): Date = Calendar.getInstance().let { c ->
+    c.time = this
+    c.set(Calendar.DAY_OF_MONTH, 1)
+    c.time
+}
+
+fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { c ->
+    c.time = this
+    c.set(Calendar.DAY_OF_MONTH, 1)
+    c.roll(Calendar.DAY_OF_MONTH, -1)
+    c.time
 }
