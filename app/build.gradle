@@ -24,7 +24,6 @@ android {
         }
     }
     buildFeatures {
-        dataBinding = true
         viewBinding = true
     }
 
@@ -44,7 +43,7 @@ android {
 
 dependencies {
     def glide_version = '4.11.0'
-    def okhttp_version = '4.8.0'
+    def okhttp_version = '4.8.1'
     def retrofit_version = '2.9.0'
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
@@ -62,9 +61,7 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"
     implementation "com.github.bumptech.glide:glide:$glide_version"
-    implementation("com.github.bumptech.glide:okhttp3-integration:$glide_version") {
-        exclude group: 'glide-parent'
-    }
+    implementation("com.github.bumptech.glide:okhttp3-integration:$glide_version")
     kapt "com.github.bumptech.glide:compiler:$glide_version"
     implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
     testImplementation 'junit:junit:4.13'

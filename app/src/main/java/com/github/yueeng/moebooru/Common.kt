@@ -11,7 +11,6 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.databinding.BindingAdapter
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
@@ -223,18 +222,28 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
     })
 }
 
-@BindingAdapter(value = ["glideUrl", "glideProgress", "glidePlaceholder"], requireAll = false)
-fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: Int?, placeholder: Drawable?) {
+fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBar?, placeholder: Int?) {
     if (imageUrl.isNullOrEmpty()) return
-    GlideApp.with(view.context)
+    view.scaleType = ImageView.ScaleType.CENTER
+    GlideApp.with(view)
         .load(imageUrl)
-        .apply { if (placeholder != null) this.placeholder(placeholder) }
         .transition(DrawableTransitionOptions.withCrossFade())
-        .apply { if (progressBar != null && progressBar != 0) progress(imageUrl, view.rootView.findViewById(progressBar)) }
+        .apply { if (placeholder != null) placeholder(placeholder) }
+        .apply { if (progressBar != null) progress(imageUrl, progressBar) }
+        .addListener(object: RequestListener<Drawable> {
+            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
+                return false
+            }
+
+            override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+                view.setImageDrawable(null)
+                view.scaleType = ImageView.ScaleType.FIT_CENTER
+                return false
+            }
+        })
         .into(view)
 }
 
-@BindingAdapter(value = ["dimensionRatioWidth", "dimensionRatioHeight"])
 fun bindImageRatio(view: ImageView, width: Int, height: Int) {
     val params: ConstraintLayout.LayoutParams = view.layoutParams as ConstraintLayout.LayoutParams
     params.dimensionRatio = "$width:$height"
