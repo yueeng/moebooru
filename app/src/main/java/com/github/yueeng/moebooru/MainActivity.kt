@@ -65,6 +65,7 @@ class ListFragment : Fragment() {
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
+            adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow.collectLatest {
@@ -144,7 +145,6 @@ class ListFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: HeaderHolder, loadState: LoadState) = holder.bindTo(loadState)
-
         override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder = HeaderHolder(parent) { adapter.retry() }
     }
 }
@@ -180,7 +180,7 @@ class PreviewFragment : Fragment() {
             }
         }.root
 
-    class ImageHolder(val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: JImageItem) {
             bindImageRatio(binding.image1, item.sample_width, item.sample_height)
             bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
@@ -188,9 +188,7 @@ class PreviewFragment : Fragment() {
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(ImageItemDiffItemCallback()) {
-        override fun onBindViewHolder(holder: ImageHolder, position: Int) {
-            holder.bind(getItem(position)!!)
-        }
+        override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(PreviewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))

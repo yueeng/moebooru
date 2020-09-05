@@ -22,7 +22,8 @@ class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageIte
 }
 
 class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
-    val posts = Pager(PagingConfig(20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }.flow.cachedIn(viewModelScope)
+    val posts = Pager(PagingConfig(20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }
+        .flow.cachedIn(viewModelScope)
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
