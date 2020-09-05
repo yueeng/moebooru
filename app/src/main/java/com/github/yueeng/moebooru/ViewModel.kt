@@ -9,6 +9,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.cachedIn
+import androidx.recyclerview.widget.DiffUtil
 import androidx.savedstate.SavedStateRegistryOwner
 
 class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
@@ -29,4 +30,9 @@ class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
+}
+
+class ImageItemDiffItemCallback : DiffUtil.ItemCallback<JImageItem>() {
+    override fun areItemsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem == newItem
 }
