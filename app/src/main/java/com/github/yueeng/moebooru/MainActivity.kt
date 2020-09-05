@@ -1,12 +1,14 @@
 package com.github.yueeng.moebooru
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
+import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -16,6 +18,8 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.davemorrissey.labs.subscaleview.ImageSource
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collect
@@ -80,8 +84,8 @@ class ListFragment : Fragment() {
 
     class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: JImageItem) {
-            bindImageRatio(binding.image1, item.sample_width, item.sample_height)
-            bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
+            bindImageRatio(binding.image1, item.preview_width, item.preview_height)
+            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher)
         }
     }
 
@@ -171,8 +175,34 @@ class PreviewFragment : Fragment() {
         }.root
 
     class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.image1.setBitmapDecoderClass(GlideDecoder::class.java)
+            binding.image1.setRegionDecoderClass(GlideRegionDecoder::class.java)
+        }
+
         fun bind(item: JImageItem) {
-            bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
+            binding.progress.isVisible = true
+            DispatchingProgressBehavior.expect(item.sample_url, object : UIonProgressListener {
+                override val granualityPercentage: Float
+                    get() = 1F
+
+                override fun onProgress(bytesRead: Long, expectedLength: Long) {
+                    (100 * bytesRead / expectedLength).toInt().let {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            binding.progress.setProgress(it, true)
+                        } else {
+                            binding.progress.progress = it
+                        }
+                    }
+                }
+            })
+            binding.image1.setOnImageEventListener(object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
+                override fun onImageLoaded() {
+                    DispatchingProgressBehavior.forget(item.sample_url)
+                    binding.progress.isInvisible = true
+                }
+            })
+            binding.image1.setImage(ImageSource.uri(item.sample_url).dimensions(item.sample_width, item.sample_height), ImageSource.uri(item.preview_url))
         }
     }
 

@@ -3,7 +3,9 @@ package com.github.yueeng.moebooru
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.graphics.*
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -29,6 +31,8 @@ import com.bumptech.glide.module.AppGlideModule
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
+import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder
+import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
@@ -36,6 +40,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
+import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
@@ -162,22 +167,22 @@ interface UIonProgressListener {
 }
 
 object DispatchingProgressBehavior {
-    private val LISTENERS = mutableMapOf<String, UIonProgressListener>()
-    private val PROGRESSES = mutableMapOf<String, Long>()
+    private val listeners = mutableMapOf<String, UIonProgressListener>()
+    private val progresses = mutableMapOf<String, Long>()
     private val handler = Handler(Looper.getMainLooper())
 
     fun forget(url: String) {
-        LISTENERS.remove(url)
-        PROGRESSES.remove(url)
+        listeners.remove(url)
+        progresses.remove(url)
     }
 
     fun expect(url: String, listener: UIonProgressListener) {
-        LISTENERS[url] = listener
+        listeners[url] = listener
     }
 
     fun update(url: String, bytesRead: Long, contentLength: Long) {
         //System.out.printf("%s: %d/%d = %.2f%%%n", url, bytesRead, contentLength, (100f * bytesRead) / contentLength);
-        val listener = LISTENERS[url] ?: return
+        val listener = listeners[url] ?: return
         if (contentLength <= bytesRead) {
             forget(url)
         }
@@ -194,9 +199,9 @@ object DispatchingProgressBehavior {
         }
         val percent = 100F * current / total
         val currentProgress = (percent / granularity).toLong()
-        val lastProgress = PROGRESSES[key]
+        val lastProgress = progresses[key]
         return if (lastProgress == null || currentProgress != lastProgress) {
-            PROGRESSES[key] = currentProgress
+            progresses[key] = currentProgress
             true
         } else {
             false
@@ -228,7 +233,7 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
         override val granualityPercentage: Float
             get() = 1.0F
     })
-    return this.addListener(object : RequestListener<T> {
+    return addListener(object : RequestListener<T> {
         override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean {
             finish()
             return false
@@ -239,6 +244,37 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
             return false; }
 
     })
+}
+
+class GlideDecoder : ImageDecoder {
+    @Throws(Exception::class)
+    override fun decode(context: Context, uri: Uri): Bitmap {
+        val bytes = okhttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
+        val bitmap = GlideApp.with(context).asBitmap().load(bytes).submit().get()
+        return bitmap.copy(bitmap.config, bitmap.isMutable)
+    }
+}
+
+class GlideRegionDecoder : ImageRegionDecoder {
+    private var decoder: BitmapRegionDecoder? = null
+
+    @Throws(Exception::class)
+    override fun init(context: Context, uri: Uri): Point {
+        val bytes = okhttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
+        decoder = BitmapRegionDecoder.newInstance(ByteArrayInputStream(bytes), false)
+        return Point(decoder!!.width, decoder!!.height)
+    }
+
+    override fun decodeRegion(rect: Rect, sampleSize: Int): Bitmap = synchronized(this) {
+        val options = BitmapFactory.Options()
+        options.inSampleSize = sampleSize
+        options.inPreferredConfig = Bitmap.Config.RGB_565
+        val bitmap = decoder!!.decodeRegion(rect, options)
+        return bitmap ?: throw RuntimeException("Region decoder returned null bitmap - image format may not be supported")
+    }
+
+    override fun isReady(): Boolean = decoder != null && !decoder!!.isRecycled
+    override fun recycle() = decoder!!.recycle()
 }
 
 fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBar?, placeholder: Int?) {
