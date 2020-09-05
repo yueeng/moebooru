@@ -54,13 +54,13 @@ class MainFragment : Fragment() {
         override fun getItemCount(): Int = data.size
 
         override fun createFragment(position: Int): Fragment = ListFragment().apply {
-            arguments = bundleOf("query" to data[position].second.toString(), "name" to data[position].first)
+            arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
         }
     }
 }
 
 class ListFragment : Fragment() {
-    private val query by lazy { Q(arguments?.getString("query") ?: "") }
+    private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
@@ -102,7 +102,7 @@ class ListFragment : Fragment() {
                 binding.root.setOnClickListener {
                     startActivity(
                         Intent(context, PreviewActivity::class.java)
-                            .putExtra("query", query.toString())
+                            .putExtra("query", query)
                             .putExtra("index", bindingAdapterPosition)
                     )
                 }
@@ -160,7 +160,7 @@ class PreviewActivity : AppCompatActivity() {
 }
 
 class PreviewFragment : Fragment() {
-    private val query by lazy { Q(arguments?.getString("query") ?: "") }
+    private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val index by lazy { arguments?.getInt("index") ?: -1 }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
