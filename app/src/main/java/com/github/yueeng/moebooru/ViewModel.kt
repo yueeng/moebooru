@@ -4,9 +4,11 @@ import android.os.Bundle
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
+import androidx.paging.cachedIn
 import androidx.savedstate.SavedStateRegistryOwner
 
 class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
@@ -20,7 +22,7 @@ class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageIte
 }
 
 class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
-    val posts = Pager(PagingConfig(20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }.flow
+    val posts = Pager(PagingConfig(20)) { ImageDataSource(Q(defaultArgs?.getString("query") ?: "")) }.flow.cachedIn(viewModelScope)
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
