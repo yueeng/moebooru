@@ -2,9 +2,9 @@
 
 package com.github.yueeng.moebooru
 
+import android.os.Parcel
 import android.os.Parcelable
 import androidx.preference.PreferenceManager
-import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
 import kotlinx.coroutines.CoroutineScope
@@ -79,8 +79,8 @@ object Service {
     val instance: MoebooruService = retrofit.create(MoebooruService::class.java)
 }
 
-@Parcelize
-class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelable {
+//@Parcelize
+class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
     @Parcelize
     enum class Order(val value: String) : Parcelable {
         id("id"),
@@ -123,8 +123,7 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
 
         val v2string get() = (v2 as? Date)?.let { formatter.format(v2) } ?: v2?.let { "$v2" } ?: ""
 
-        override fun toString(): String = String.format(op.value, v1string, v2string) + (ex?.let { ":$ex" }
-            ?: "")
+        override fun toString(): String = String.format(op.value, v1string, v2string) + (ex?.let { ":$ex" } ?: "")
 
         constructor(op: Op, v: Pair<T, T?>, ex: String?) : this(op, v.first, v.second, ex)
 
@@ -149,49 +148,20 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
         }
     }
 
-    @IgnoredOnParcel
     val user: String? by map
-
-    @IgnoredOnParcel
     val vote: Value<Int>? by map
-
-    @IgnoredOnParcel
     val md5: String? by map
-
-    @IgnoredOnParcel
     val rating: Rating? by map
-
-    @IgnoredOnParcel
     val source: String? by map
-
-    @IgnoredOnParcel
     val id: Value<Int>? by map
-
-    @IgnoredOnParcel
     val width: Value<Int>? by map
-
-    @IgnoredOnParcel
     val height: Value<Int>? by map
-
-    @IgnoredOnParcel
     val score: Value<Int>? by map
-
-    @IgnoredOnParcel
     val mpixels: Value<Int>? by map
-
-    @IgnoredOnParcel
     val date: Value<Date>? by map
-
-    @IgnoredOnParcel
     val order: Order? by map
-
-    @IgnoredOnParcel
     val parent: String? by map
-
-    @IgnoredOnParcel
     val pool: String? by map
-
-    @IgnoredOnParcel
     val keyword: String? by map
 
     fun user(user: String) = apply { map["user"] = user }
@@ -252,12 +222,13 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
     override fun toString(): String = map.asSequence()
         .map { it.key to "${it.value}" }
         .filter { it.second.isNotEmpty() }
-        .sortedBy { it.first }.fold(listOf<String>()) { r, it ->
-            r + when (it.first) {
+        .sortedBy { it.first }
+        .joinToString(" ") {
+            when (it.first) {
                 "keyword" -> it.second
                 else -> "${it.first}:${it.second}"
             }
-        }.joinToString(" ")
+        }
 
     override fun equals(other: Any?): Boolean = when (other) {
         is Q -> this.toString() == other.toString()
@@ -265,6 +236,18 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
     }
 
     override fun hashCode(): Int = this.toString().hashCode()
+
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) = with(parcel) {
+        writeInt(map.size)
+        map.forEach {
+            writeString(it.key)
+            writeValue(it.value)
+        }
+    }
+
+    constructor(source: Parcel) : this((1..source.readInt()).map { source.readString()!! to source.readValue(Q::class.java.classLoader)!! }.toMap().toMutableMap())
 
     constructor(source: String) : this(source.split(' ')
         .map { it.split(':', limit = 2) }
@@ -298,6 +281,11 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
     fun set(source: String, reset: Boolean = false) = set(Q(source), reset)
 
     companion object {
+        @JvmField
+        val CREATOR: Parcelable.Creator<Q> = object : Parcelable.Creator<Q> {
+            override fun createFromParcel(source: Parcel): Q = Q(source)
+            override fun newArray(size: Int): Array<Q?> = arrayOfNulls(size)
+        }
         val formatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val cheats = linkedMapOf(
             ("keyword" to (R.string.query_keyword to R.string.query_keyword_desc)),
