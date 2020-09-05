@@ -9,14 +9,12 @@ import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
-import androidx.paging.*
+import androidx.paging.LoadState
+import androidx.paging.LoadStateAdapter
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import androidx.savedstate.SavedStateRegistryOwner
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.FragmentListBinding
 import com.github.yueeng.moebooru.databinding.FragmentMainBinding
@@ -28,25 +26,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 import java.util.*
-
-class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
-        val key = params.key ?: 1
-        val posts = Service.instance.post(page = key, query!!.rating(Q.Rating.safe), limit = params.loadSize)
-        LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
-    } catch (e: Exception) {
-        LoadResult.Error(e)
-    }
-}
-
-class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
-    val posts = Pager(PagingConfig(20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }.flow
-}
-
-class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
-}
 
 class MainActivity : AppCompatActivity() {
 
