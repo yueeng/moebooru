@@ -81,7 +81,8 @@ object Service {
 
 @Parcelize
 class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelable {
-    enum class Order(val value: String) {
+    @Parcelize
+    enum class Order(val value: String) : Parcelable {
         id("id"),
         id_desc("id_desc"),
         score("score"),
@@ -95,7 +96,8 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
         override fun toString(): String = value
     }
 
-    enum class Rating(val value: String) {
+    @Parcelize
+    enum class Rating(val value: String) : Parcelable {
         safe("safe"),
         questionable("questionable"),
         explicit("explicit"),
@@ -412,7 +414,7 @@ class Q(val map: @RawValue MutableMap<String, Any> = mutableMapOf()) : Parcelabl
         val test = Regex("""(\d+)`([^`]*)`(([^ ]*)`)? ?""")
         fun suggest(word: String, top: Boolean = false): Sequence<Triple<Int, String, String>> = word.takeIf { it.isNotBlank() }?.let { _ ->
             tag(word, true).findAll(summary)
-                .apply { if(!top) plus(tag(word).findAll(summary)) }
+                .apply { if (!top) plus(tag(word).findAll(summary)) }
                 .distinctBy { m -> m.value }
                 .mapNotNull { m -> test.find(m.value)?.groups }
                 .map { Triple(it[1]!!.value.toInt(), it[2]!!.value, it[3]?.value ?: "") }

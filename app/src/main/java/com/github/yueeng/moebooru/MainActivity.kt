@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.LoadStateAdapter
@@ -16,10 +16,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.github.yueeng.moebooru.databinding.FragmentListBinding
-import com.github.yueeng.moebooru.databinding.FragmentMainBinding
-import com.github.yueeng.moebooru.databinding.ImageItemBinding
-import com.github.yueeng.moebooru.databinding.StateItemBinding
+import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
@@ -57,14 +54,15 @@ class MainFragment : Fragment() {
         override fun getItemCount(): Int = data.size
 
         override fun createFragment(position: Int): Fragment = ListFragment().apply {
-            arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
+            arguments = bundleOf("query" to data[position].second.toString(), "name" to data[position].first)
         }
     }
 }
 
 class ListFragment : Fragment() {
+    private val query by lazy { Q(arguments?.getString("query") ?: "") }
     private val adapter by lazy { ImageAdapter() }
-    private val model: ImageViewModel by viewModels { ImageViewModelFactory(this, arguments) }
+    private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
@@ -87,27 +85,28 @@ class ListFragment : Fragment() {
             }
         }.root
 
-    class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: JImageItem) {
             bindImageRatio(binding.image1, item.sample_width, item.sample_height)
             bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
         }
     }
 
-    class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diff) {
+    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(ImageItemDiffItemCallback()) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) {
             holder.bind(getItem(position)!!)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
-            ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-
-        companion object {
-            val diff = object : DiffUtil.ItemCallback<JImageItem>() {
-                override fun areItemsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem.id == newItem.id
-                override fun areContentsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem == newItem
+            ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
+                binding.root.setOnClickListener {
+                    startActivity(
+                        Intent(context, PreviewActivity::class.java)
+                            .putExtra("query", query.toString())
+                            .putExtra("index", bindingAdapterPosition)
+                    )
+                }
             }
-        }
     }
 
     class HeaderHolder(parent: ViewGroup, private val retryCallback: () -> Unit) :
@@ -148,4 +147,57 @@ class ListFragment : Fragment() {
 
         override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder = HeaderHolder(parent) { adapter.retry() }
     }
+}
+
+class PreviewActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment
+            ?: PreviewFragment().also { it.arguments = intent.extras }
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+    }
+}
+
+class PreviewFragment : Fragment() {
+    private val query by lazy { Q(arguments?.getString("query") ?: "") }
+    private val index by lazy { arguments?.getInt("index") ?: -1 }
+    private val adapter by lazy { ImageAdapter() }
+    private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+        FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
+            binding.pager.adapter = adapter
+            lifecycleScope.launchWhenCreated {
+                adapter.loadStateFlow
+                    // Only emit when REFRESH LoadState for RemoteMediator changes.
+                    .distinctUntilChangedBy { it.refresh }
+                    // Only react to cases where Remote REFRESH completes i.e., NotLoading.
+                    .filter { it.refresh is LoadState.NotLoading }
+                    .collect { binding.pager.post { binding.pager.setCurrentItem(index, false) } }
+            }
+            lifecycleScope.launchWhenCreated {
+                model.posts.collectLatest { adapter.submitData(it) }
+            }
+        }.root
+
+    class ImageHolder(val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(item: JImageItem) {
+            bindImageRatio(binding.image1, item.sample_width, item.sample_height)
+            bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
+        }
+    }
+
+    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(ImageItemDiffItemCallback()) {
+        override fun onBindViewHolder(holder: ImageHolder, position: Int) {
+            holder.bind(getItem(position)!!)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
+            ImageHolder(PreviewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+    }
+}
+
+class ImageItemDiffItemCallback : DiffUtil.ItemCallback<JImageItem>() {
+    override fun areItemsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem == newItem
 }

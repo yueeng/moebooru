@@ -11,6 +11,9 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.createViewModelLazy
+import androidx.lifecycle.*
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
@@ -287,4 +290,40 @@ fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { c ->
     c.set(Calendar.DAY_OF_MONTH, 1)
     c.roll(Calendar.DAY_OF_MONTH, -1)
     c.time
+}
+
+inline fun <reified VM : ViewModel> Fragment.sharedViewModels(
+    noinline key: () -> String,
+    noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
+) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), this).viewModelStore }, factoryProducer)
+
+class SharedViewModelStoreOwner(private val key: String, life: LifecycleOwner) : ViewModelStoreOwner, LifecycleEventObserver {
+    companion object {
+        private data class CounterViewModelStore(var count: Int = 0, val store: Lazy<ViewModelStore> = lazy { ViewModelStore() })
+
+        private val map = mutableMapOf<String, CounterViewModelStore>()
+        private fun add(key: String): Unit = synchronized(map) {
+            map.getOrPut(key) { CounterViewModelStore() }.count++
+        }
+
+        private fun remove(key: String): Unit = synchronized(map) {
+            val store = map[key] ?: return
+            if (--store.count > 0) return
+            map.remove(key)
+        }
+    }
+
+    init {
+        life.lifecycle.addObserver(this)
+    }
+
+    override fun getViewModelStore(): ViewModelStore = map[key]?.store?.value ?: throw IllegalArgumentException("ViewModelStore lazy error.")
+
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        if (event == Lifecycle.Event.ON_CREATE) add(key)
+        else if (event == Lifecycle.Event.ON_DESTROY) {
+            remove(key)
+            source.lifecycle.removeObserver(this)
+        }
+    }
 }
