@@ -14,9 +14,7 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?android:actionBarSize"
-            app:layout_collapseMode="pin"
-            app:layout_scrollFlags="scroll|enterAlways|enterAlwaysCollapsed" />
+            android:layout_height="?android:actionBarSize" />
 
     </com.google.android.material.appbar.AppBarLayout>
 

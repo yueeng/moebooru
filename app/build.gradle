@@ -66,7 +66,7 @@ dependencies {
     implementation("com.github.bumptech.glide:okhttp3-integration:$glide_version")
     kapt "com.github.bumptech.glide:compiler:$glide_version"
     implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
-    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
