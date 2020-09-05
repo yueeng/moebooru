@@ -72,14 +72,6 @@ class ListFragment : Fragment() {
                     binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
-            lifecycleScope.launchWhenCreated {
-                adapter.loadStateFlow
-                    // Only emit when REFRESH LoadState for RemoteMediator changes.
-                    .distinctUntilChangedBy { it.refresh }
-                    // Only react to cases where Remote REFRESH completes i.e., NotLoading.
-                    .filter { it.refresh is LoadState.NotLoading }
-                    .collect { binding.recycler.scrollToPosition(0) }
-            }
             binding.swipe.setOnRefreshListener { adapter.refresh() }
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
@@ -169,9 +161,7 @@ class PreviewFragment : Fragment() {
             binding.pager.adapter = adapter
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow
-                    // Only emit when REFRESH LoadState for RemoteMediator changes.
                     .distinctUntilChangedBy { it.refresh }
-                    // Only react to cases where Remote REFRESH completes i.e., NotLoading.
                     .filter { it.refresh is LoadState.NotLoading }
                     .collect { binding.pager.post { binding.pager.setCurrentItem(index, false) } }
             }
@@ -182,7 +172,6 @@ class PreviewFragment : Fragment() {
 
     class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: JImageItem) {
-            bindImageRatio(binding.image1, item.sample_width, item.sample_height)
             bindImageFromUrl(binding.image1, item.sample_url, binding.progress, R.mipmap.ic_launcher)
         }
     }
