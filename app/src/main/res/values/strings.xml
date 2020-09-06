@@ -1,7 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
+    <string name="app_cancel">Cancel</string>
     <string name="app_name">Moebooru</string>
-    <string name="retry">retry</string>
-    <string name="search">Search</string>
+    <string name="app_ok">OK</string>
+    <string name="app_retry">retry</string>
+    <string name="app_search">Search</string>
+
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>
     <string name="query_empty">"Invalid input "</string>
@@ -59,5 +63,4 @@
     <string name="query_vote_user">User</string>
     <string name="query_width">Width</string>
     <string name="query_width_desc">Query posts with a width of ….</string>
-
 </resources>

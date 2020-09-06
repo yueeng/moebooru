@@ -16,7 +16,7 @@
         <item name="appBarLayoutStyle">@style/AppThemeOverlayAppbarLayoutStyle</item>
         <item name="actionOverflowMenuStyle">@style/Widget.AppCompat.PopupMenu.Overflow</item>
         <!--        <item name="tabStyle">@style/Widget.MaterialComponents.TabLayout.PrimarySurface</item>-->
-        <!--        <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>-->
+        <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
     </style>
 
     <style name="AppThemeOverlayAppbarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Primary">
