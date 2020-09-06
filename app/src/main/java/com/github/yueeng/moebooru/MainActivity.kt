@@ -2,9 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
@@ -23,11 +21,10 @@ import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
     }
@@ -56,24 +53,43 @@ class MainFragment : Fragment() {
             arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
         }
     }
+
 }
 
 class ListFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.main, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.search -> true.also {
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
             lifecycleScope.launchWhenCreated {
-                adapter.loadStateFlow.collectLatest {
-                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
-                }
+                model.posts.collectLatest { adapter.submitData(it) }
             }
             binding.swipe.setOnRefreshListener { adapter.refresh() }
             lifecycleScope.launchWhenCreated {
-                model.posts.collectLatest { adapter.submitData(it) }
+                adapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                }
             }
         }.root
 

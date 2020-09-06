@@ -333,6 +333,11 @@ inline fun <reified VM : ViewModel> Fragment.sharedViewModels(
     noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
 ) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), this).viewModelStore }, factoryProducer)
 
+inline fun <reified VM : ViewModel> Fragment.sharedActivityViewModels(
+    noinline key: () -> String,
+    noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
+) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), requireActivity()).viewModelStore }, factoryProducer)
+
 class SharedViewModelStoreOwner(private val key: String, life: LifecycleOwner) : ViewModelStoreOwner, LifecycleEventObserver {
     companion object {
         private data class CounterViewModelStore(var count: Int = 0, val store: Lazy<ViewModelStore> = lazy { ViewModelStore() })
