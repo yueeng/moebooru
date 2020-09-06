@@ -23,10 +23,9 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 
 
-class PreviewActivity : AppCompatActivity() {
+class PreviewActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment
             ?: PreviewFragment().also { it.arguments = intent.extras }
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()

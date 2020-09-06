@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Moebooru</string>
     <string name="retry">retry</string>
-
+    <string name="search">Search</string>
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>
     <string name="query_empty">"Invalid input "</string>
