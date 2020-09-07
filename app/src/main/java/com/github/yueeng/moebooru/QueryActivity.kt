@@ -1,8 +1,10 @@
 package com.github.yueeng.moebooru
 
 import android.content.DialogInterface
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -48,6 +50,14 @@ class QueryFragment : Fragment() {
     private val adapter by lazy { QueryAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
+            binding.bottomAppBar.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.search -> true.also {
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", viewModel.query.value))
+                    }
+                    else -> super.onOptionsItemSelected(item)
+                }
+            }
             binding.recycler.adapter = adapter
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
                 override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false

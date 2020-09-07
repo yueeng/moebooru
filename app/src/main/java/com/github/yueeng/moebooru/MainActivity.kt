@@ -13,10 +13,7 @@ import androidx.paging.LoadStateAdapter
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.github.yueeng.moebooru.databinding.FragmentListBinding
-import com.github.yueeng.moebooru.databinding.FragmentMainBinding
-import com.github.yueeng.moebooru.databinding.ImageItemBinding
-import com.github.yueeng.moebooru.databinding.StateItemBinding
+import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
@@ -49,14 +46,32 @@ class MainFragment : Fragment() {
 
         override fun getItemCount(): Int = data.size
 
-        override fun createFragment(position: Int): Fragment = ListFragment().apply {
+        override fun createFragment(position: Int): Fragment = ImageFragment().apply {
             arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
         }
     }
 
 }
 
+class ListActivity : AppCompatActivity(R.layout.activity_main) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? ListFragment
+            ?: ListFragment().apply { arguments = intent.extras }
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+    }
+}
+
 class ListFragment : Fragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+        FragmentListBinding.inflate(inflater, container, false).also {
+            val fragment = childFragmentManager.findFragmentById(R.id.container) as? ImageFragment
+                ?: ImageFragment().also { it.arguments = arguments }
+            childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+        }.root
+}
+
+class ImageFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
@@ -79,7 +94,7 @@ class ListFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-        FragmentListBinding.inflate(inflater, container, false).also { binding ->
+        FragmentImageBinding.inflate(inflater, container, false).also { binding ->
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
             lifecycleScope.launchWhenCreated {

@@ -28,6 +28,16 @@
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
         tools:listitem="@layout/query_item" />
 
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottomAppBar"
+        style="@style/Widget.MaterialComponents.BottomAppBar.Colored"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:fabAlignmentMode="center"
+        app:fabAnimationMode="scale"
+        app:menu="@menu/query" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/button1"
         style="@style/Widget.MaterialComponents.FloatingActionButton"
@@ -37,8 +47,8 @@
         android:layout_marginBottom="16dp"
         android:backgroundTint="@color/colorAccent"
         app:fabSize="normal"
-        app:layout_anchor="@+id/recycler"
-        app:layout_anchorGravity="right|bottom"
+        app:layout_anchor="@+id/bottomAppBar"
+        app:layout_anchorGravity="center_horizontal"
         app:srcCompat="@drawable/ic_add"
         app:tint="@android:color/white" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
