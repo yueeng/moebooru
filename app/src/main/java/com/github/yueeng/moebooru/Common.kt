@@ -10,9 +10,11 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
@@ -36,6 +38,8 @@ import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
@@ -44,6 +48,7 @@ import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
+import java.text.DateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -305,6 +310,7 @@ fun bindImageRatio(view: ImageView, width: Int, height: Int) {
     view.layoutParams = params
 }
 
+val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
 
 fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { c ->
     c.firstDayOfWeek = firstOfWeek
@@ -327,6 +333,75 @@ fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { c ->
     c.roll(Calendar.DAY_OF_MONTH, -1)
     c.time
 }
+
+class TimeSpan(val end: Calendar, val begin: Calendar) {
+    val milliseconds get() = end.timeInMillis - begin.timeInMillis
+    val seconds get() = milliseconds / 1000
+    val minutes get() = seconds / 60
+    val hours get() = minutes / 60
+    val days: Int get() = (hours / 24).toInt()
+    val weeks: Int get() = days / 7
+    val months: Int get() = (end.year - begin.year) * 12 + (end.month - begin.month) + 1
+    val days2: Int
+        get() = days + when {
+            end.timeInMillis < begin.timeInMillis -> when {
+                end.millisecondOfDay > begin.millisecondOfDay -> -2
+                else -> -1
+            }
+            end.millisecondOfDay < begin.millisecondOfDay -> 2
+            else -> 1
+        }
+    val weeks2: Int
+        get() = weeks + when {
+            end.timeInMillis < begin.timeInMillis -> when {
+                end.dayOfWeek > begin.dayOfWeek -> -2
+                else -> -1
+            }
+            end.dayOfWeek < begin.dayOfWeek -> 2
+            else -> 1
+        }
+}
+
+operator fun Calendar.minus(other: Calendar): TimeSpan = TimeSpan(this, other)
+
+fun Calendar.year(year: Int, add: Boolean = false) = apply { if (add) add(Calendar.YEAR, year) else set(Calendar.YEAR, year) }
+fun Calendar.month(month: Int, add: Boolean = false) = apply { if (add) add(Calendar.MONTH, month) else set(Calendar.MONTH, month) }
+fun Calendar.day(day: Int, add: Boolean = false) = apply { if (add) add(Calendar.DAY_OF_MONTH, day) else set(Calendar.DAY_OF_MONTH, day) }
+fun Calendar.hour(hour: Int, add: Boolean = false) = apply { if (add) add(Calendar.HOUR_OF_DAY, hour) else set(Calendar.HOUR_OF_DAY, hour) }
+fun Calendar.minute(minute: Int, add: Boolean = false) = apply { if (add) add(Calendar.MINUTE, minute) else set(Calendar.MINUTE, minute) }
+fun Calendar.second(second: Int, add: Boolean = false) = apply { if (add) add(Calendar.SECOND, second) else set(Calendar.SECOND, second) }
+fun Calendar.millisecond(millisecond: Int, add: Boolean = false) = apply { if (add) add(Calendar.MILLISECOND, millisecond) else set(Calendar.MILLISECOND, millisecond) }
+fun Calendar.dayOfWeek(day: Int, add: Boolean = false) = apply { if (add) add(Calendar.DAY_OF_WEEK, day) else set(Calendar.DAY_OF_WEEK, day) }
+fun Calendar.dayOfWeek2(day: Int, add: Boolean = false) = dayOfWeek((firstDayOfWeek + day - 1) % 7, add)
+fun Calendar.weekOfYear(week: Int, add: Boolean = false) = apply { if (add) add(Calendar.WEEK_OF_YEAR, week) else set(Calendar.WEEK_OF_YEAR, week) }
+val Calendar.firstDayOfWeek2 get() = cp().dayOfWeek2(1)
+val Calendar.lastDayOfWeek2 get() = cp().dayOfWeek2(7)
+val Calendar.firstDayOfMonth get() = cp().day(1)
+val Calendar.lastDayOfMonth get() = cp().month(1, true).day(-1)
+val Calendar.year get() = get(Calendar.YEAR)
+val Calendar.month get() = get(Calendar.MONTH)
+val Calendar.day get() = get(Calendar.DAY_OF_MONTH)
+val Calendar.dayOfWeek get() = get(Calendar.DAY_OF_WEEK)
+val Calendar.dayOfWeek2 get() = (dayOfWeek - firstDayOfWeek + 7) % 7 + 1
+val Calendar.hour get() = get(Calendar.HOUR_OF_DAY)
+val Calendar.minute get() = get(Calendar.MINUTE)
+val Calendar.minuteOfDay get() = hour * 60 + minute
+val Calendar.second get() = get(Calendar.SECOND)
+val Calendar.secondOfDay get() = minuteOfDay * 60 + second
+val Calendar.millisecond get() = get(Calendar.MILLISECOND)
+val Calendar.millisecondOfDay get() = secondOfDay * 1000 + millisecond
+val Calendar.milliseconds get() = timeInMillis
+fun Calendar.format(df: DateFormat): String = df.format(time)
+fun Calendar.cp(): Calendar = clone() as Calendar
+fun DateFormat.tryParse(string: CharSequence): Date? = try {
+    parse(string.toString())
+} catch (e: Exception) {
+    null
+}
+
+var DatePicker.date
+    get() = Calendar.getInstance().year(year).month(month).day(dayOfMonth)
+    set(value) = updateDate(value.year, value.month, value.day)
 
 inline fun <reified VM : ViewModel> Fragment.sharedViewModels(
     noinline key: () -> String,
