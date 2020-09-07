@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2011 The Android Open Source Project
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright (C) 2011 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,50 +13,51 @@
      limitations under the License.
 -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:background="@android:color/transparent"
     android:gravity="center_vertical"
-    android:paddingStart="?attr/listPreferredItemPaddingStart"
-    android:paddingEnd="12dip"
     android:minHeight="?attr/listPreferredItemHeightSmall"
-    android:background="@android:color/transparent">
+    android:orientation="horizontal">
 
-    <LinearLayout
+    <TextView
+        android:id="@android:id/text1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="?attr/dialogPreferredPadding"
+        android:layout_marginEnd="?attr/dialogPreferredPadding"
+        android:ellipsize="marquee"
+        android:gravity="center_vertical|start"
+        android:singleLine="true"
+        android:textAppearance="?attr/textAppearanceListItem"
+        app:layout_constraintBottom_toTopOf="@android:id/text2"
+        app:layout_constraintEnd_toStartOf="@id/radio"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@android:id/text2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="marquee"
+        android:gravity="center_vertical|start"
+        android:singleLine="true"
+        android:textAppearance="?attr/textAppearanceListItemSecondary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@android:id/text1"
+        app:layout_constraintStart_toStartOf="@android:id/text1"
+        app:layout_constraintTop_toBottomOf="@android:id/text1" />
+
+    <com.google.android.material.radiobutton.MaterialRadioButton
+        android:id="@+id/radio"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center_vertical">
-
-        <TextView android:id="@android:id/text1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceListItem"
-            android:textColor="?attr/textColorAlertDialogListItem"
-            android:gravity="center_vertical|start"
-            android:singleLine="true"
-            android:ellipsize="marquee" />
-        
-        <TextView android:id="@android:id/text2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceListItemSecondary"
-            android:textColor="?attr/textColorAlertDialogListItem"
-            android:gravity="center_vertical|start"
-            android:singleLine="true"
-            android:ellipsize="marquee" />
-        
-    </LinearLayout>
-
-    <RadioButton
-        android:id="@+id/radio"
-        android:layout_width="35dip"
-        android:layout_height="wrap_content"
-        android:paddingEnd="12dip"
-        android:gravity="center_vertical"
+        android:clickable="false"
         android:focusable="false"
-        android:clickable="false" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
