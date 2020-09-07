@@ -49,6 +49,12 @@ class QueryFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
             binding.recycler.adapter = adapter
+            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    adapter.remove(adapter.data.toList()[viewHolder.bindingAdapterPosition].first)
+                }
+            }).attachToRecyclerView(binding.recycler)
             binding.button1.setOnClickListener {
                 val data = Q.cheats.map { i -> mapOf("k" to i.key, "n" to getString(i.value.first), "d" to getString(i.value.second)) }
                 val adapter = SimpleAdapter(
@@ -385,6 +391,11 @@ class QueryFragment : Fragment() {
         val data get() = viewModel.query.value!!.map
         fun add(k: String, v: Any) {
             viewModel.query.value!!.map[k] = v
+            diff.submitList(viewModel.query.value!!.map.toList())
+        }
+
+        fun remove(k: String) {
+            viewModel.query.value!!.map.remove(k)
             diff.submitList(viewModel.query.value!!.map.toList())
         }
 
