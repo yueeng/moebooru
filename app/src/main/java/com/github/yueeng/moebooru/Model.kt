@@ -22,7 +22,7 @@ import java.util.*
 val moe_create_time: Calendar = Calendar.getInstance().apply { set(2008, 1 - 1, 13) }
 const val moe_url = "https://konachan.com"
 const val moe_summary_url = "$moe_url/tag/summary.json"
-const val moe_summary_etag = """"26cb52dec8d43fe2d8b4a7b5b3ce4b7b""""
+const val moe_summary_etag = """"3b9f73b790f60a77b7724f4e646857e7""""
 
 @Parcelize
 data class JImageItem(
@@ -332,22 +332,23 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
                     file.writeText(summary)
                 }
             }
-            val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
-            val etag = preferences.getString("summary-etag", moe_summary_etag)
-            CoroutineScope(Dispatchers.IO).launch {
-                val request = Request.Builder().url(moe_summary_url).build()
-                val (online, data) = okhttp.newCall(request).await { _, response ->
-                    val online = response.header("ETag")
-                    if (online == etag) return@await null to null
-                    val data = response.body?.string()
-                    if (data.isNullOrBlank()) return@await null to null
-                    online to summary
-                }
-                if (online != null && data != null) {
-                    file.writeText(summary)
-                    preferences.edit().putString("summary-etag", online).apply()
-                }
-            }
+            // TODO update summary
+//            val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
+//            val etag = preferences.getString("summary-etag", moe_summary_etag)
+//            CoroutineScope(Dispatchers.IO).launch {
+//                val request = Request.Builder().url(moe_summary_url).build()
+//                val (online, data) = okhttp.newCall(request).await { _, response ->
+//                    val online = response.header("ETag")
+//                    if (online == etag) return@await null to null
+//                    val data = response.body?.string()
+//                    if (data.isNullOrBlank()) return@await null to null
+//                    online to summary
+//                }
+//                if (online != null && data != null) {
+//                    file.writeText(summary)
+//                    preferences.edit().putString("summary-etag", online).apply()
+//                }
+//            }
             summary
         }
 
