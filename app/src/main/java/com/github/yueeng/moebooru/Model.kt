@@ -2,14 +2,16 @@
 
 package com.github.yueeng.moebooru
 
+import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
 import androidx.preference.PreferenceManager
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -22,7 +24,7 @@ import java.util.*
 val moe_create_time: Calendar = Calendar.getInstance().apply { set(2008, 1 - 1, 13) }
 const val moe_url = "https://konachan.com"
 const val moe_summary_url = "$moe_url/tag/summary.json"
-const val moe_summary_etag = """"3b9f73b790f60a77b7724f4e646857e7""""
+const val moe_summary_etag = """W/"3b9f73b790f60a77b7724f4e646857e7""""
 
 @Parcelize
 data class JImageItem(
@@ -325,6 +327,28 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
             (Rating._questionable to R.string.query_rating__questionable),
             (Rating._explicit to R.string.query_rating__explicit)
         )
+
+        class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+            override fun doWork(): Result = try {
+                val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
+                val etag = preferences.getString("summary-etag", moe_summary_etag)
+                val request = Request.Builder().url(moe_summary_url).build()
+                val response = okhttp.newCall(request).execute()
+                val online = response.header("ETag")
+                if (online != null && online != etag) {
+                    response.body?.byteStream()?.use { input ->
+                        File(MainApplication.instance().filesDir, "summary.json").outputStream().use {
+                            input.copyTo(it)
+                        }
+                        preferences.edit().putString("summary-etag", online).apply()
+                    }
+                }
+                Result.success()
+            } catch (e: Exception) {
+                Result.failure()
+            }
+        }
+
         val summary: String by lazy {
             val file = File(MainApplication.instance().filesDir, "summary.json")
             val summary = if (file.exists()) file.readText() else {
@@ -332,23 +356,7 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
                     file.writeText(summary)
                 }
             }
-            // TODO update summary
-//            val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
-//            val etag = preferences.getString("summary-etag", moe_summary_etag)
-//            CoroutineScope(Dispatchers.IO).launch {
-//                val request = Request.Builder().url(moe_summary_url).build()
-//                val (online, data) = okhttp.newCall(request).await { _, response ->
-//                    val online = response.header("ETag")
-//                    if (online == etag) return@await null to null
-//                    val data = response.body?.string()
-//                    if (data.isNullOrBlank()) return@await null to null
-//                    online to summary
-//                }
-//                if (online != null && data != null) {
-//                    file.writeText(summary)
-//                    preferences.edit().putString("summary-etag", online).apply()
-//                }
-//            }
+            WorkManager.getInstance(MainApplication.instance()).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())
             summary
         }
 
