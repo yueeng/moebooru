@@ -118,6 +118,7 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -161,6 +162,7 @@ class QueryFragment : Fragment() {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -170,8 +172,8 @@ class QueryFragment : Fragment() {
                         val chip = view.chipGroup.checkedChip
                         val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
                         if (op == null) {
-                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
-                                .setAction(R.string.app_ok, null)
+                            Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok) {}
                                 .show()
                             return@setOnClickListener
                         }
@@ -236,6 +238,7 @@ class QueryFragment : Fragment() {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -245,8 +248,8 @@ class QueryFragment : Fragment() {
                         val chip = view.chipGroup.checkedChip
                         val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
                         if (op == null) {
-                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
-                                .setAction(R.string.app_ok, null)
+                            Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok) {}
                                 .show()
                             return@setOnClickListener
                         }
@@ -292,6 +295,7 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -301,8 +305,8 @@ class QueryFragment : Fragment() {
                         val chip = view.chipGroup.checkedChip
                         val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
                         if (op == null) {
-                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
-                                .setAction(R.string.app_ok, null)
+                            Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok) {}
                                 .show()
                             return@setOnClickListener
                         }
@@ -314,15 +318,15 @@ class QueryFragment : Fragment() {
                         }
                         val v1 = view.chip1.checkedChip?.tag?.toString()?.toIntOrNull()
                         if (v1 == null) {
-                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
-                                .setAction(R.string.app_ok, null)
+                            Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok) {}
                                 .show()
                             return@setOnClickListener
                         }
                         val v2 = view.chip2.checkedChip?.tag?.toString()?.toIntOrNull()
                         if (op == Q.Value.Op.bt && v2 == null) {
-                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
-                                .setAction(R.string.app_ok, null)
+                            Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok) {}
                                 .show()
                             return@setOnClickListener
                         }
@@ -363,22 +367,33 @@ class QueryFragment : Fragment() {
         }
         adapter.checked = data.indexOfFirst { it["n"] == value }
         MaterialAlertDialogBuilder(requireActivity())
+            .setCancelable(false)
             .setTitle(Q.cheats[key]!!.first)
-            .setSingleChoiceItems(adapter, 0) { _, w ->
-                adapter.checked = w
-            }
-            .setPositiveButton(R.string.app_ok) { _, _ ->
-                if (adapter.checked > -1) {
-                    val selected = data[adapter.checked]["n"]
-                    val choice = when (key) {
-                        "order" -> Q.Order.values().first { it.value == selected }
-                        "rating" -> Q.Rating.values().first { it.value == selected }
-                        else -> null
+            .setSingleChoiceItems(adapter, 0) { _, w -> adapter.checked = w }
+            .setPositiveButton(R.string.app_ok, null)
+            .setNegativeButton(R.string.app_cancel, null)
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                        if (adapter.checked == -1) {
+                            Snackbar.make(listView, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok) {}
+                                .show()
+                            return@setOnClickListener
+                        }
+                        val selected = data[adapter.checked]["n"]
+                        val choice = when (key) {
+                            "order" -> Q.Order.values().first { it.value == selected }
+                            "rating" -> Q.Rating.values().first { it.value == selected }
+                            else -> null
+                        }
+                        this@QueryFragment.adapter.add(key, choice!!)
+                        dismiss()
                     }
-                    this@QueryFragment.adapter.add(key, choice!!)
                 }
             }
-            .create().show()
+            .show()
     }
 
     class QueryHolder(val binding: QueryItemBinding) : RecyclerView.ViewHolder(binding.root)
