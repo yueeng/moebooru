@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +9,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import androidx.core.view.isVisible
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
@@ -19,6 +21,7 @@ import androidx.transition.TransitionManager
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import java.util.*
 
 class QueryActivity : AppCompatActivity(R.layout.activity_main) {
@@ -105,12 +108,28 @@ class QueryFragment : Fragment() {
             view.text1.threshold = 1
             view.text1.setTokenizer(SymbolsTokenizer(setOf(' ')))
         }
+        view.text1.addTextChangedListener {
+            view.input1.isErrorEnabled = it.isNullOrEmpty()
+        }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setPositiveButton(R.string.app_ok) { _, _ ->
-                adapter.add(key, view.text1.text.toString().trim())
-            }
+            .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
-            .create().show()
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                        val txt = view.text1.text.toString().trim()
+                        if (txt.isEmpty()) {
+                            view.input1.isErrorEnabled = true
+                            view.input1.error = getString(R.string.query_empty)
+                            return@setOnClickListener
+                        }
+                        adapter.add(key, txt)
+                        dismiss()
+                    }
+                }
+            }
+            .show()
     }
 
     private fun int(key: String) {
@@ -119,6 +138,12 @@ class QueryFragment : Fragment() {
         view.chipGroup.setOnCheckedChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
+        }
+        view.edit1.addTextChangedListener {
+            view.input1.isErrorEnabled = it.isNullOrEmpty()
+        }
+        view.edit2.addTextChangedListener {
+            view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         @Suppress("UNCHECKED_CAST")
         val default = adapter.data[key] as? Q.Value<Int>
@@ -130,17 +155,39 @@ class QueryFragment : Fragment() {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setPositiveButton(R.string.app_ok) { _, _ ->
-                val chip = view.chipGroup.checkedChip
-                val value = Q.Value(
-                    Q.Value.Op.values().first { it.value == chip?.tag },
-                    view.edit1.text.toString().toInt(),
-                    view.edit2.text.toString().toIntOrNull()
-                )
-                adapter.add(key, value)
-            }
+            .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
-            .create().show()
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                        val chip = view.chipGroup.checkedChip
+                        val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
+                        if (op == null) {
+                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok, null)
+                                .show()
+                            return@setOnClickListener
+                        }
+                        val v1 = view.edit1.text?.toString()?.toIntOrNull()
+                        if (v1 == null) {
+                            view.input1.isErrorEnabled = true
+                            view.input1.error = getString(R.string.query_empty)
+                            return@setOnClickListener
+                        }
+                        val v2 = view.edit1.text?.toString()?.toIntOrNull()
+                        if (op == Q.Value.Op.bt && v2 == null) {
+                            view.input2.isErrorEnabled = true
+                            view.input2.error = getString(R.string.query_empty)
+                            return@setOnClickListener
+                        }
+                        val value = Q.Value(op, v1, v2)
+                        adapter.add(key, value)
+                        dismiss()
+                    }
+                }
+            }
+            .show()
     }
 
     private fun date(key: String) {
@@ -167,6 +214,12 @@ class QueryFragment : Fragment() {
                     .create().show()
             }
         }
+        view.edit1.addTextChangedListener {
+            view.input1.isErrorEnabled = Q.formatter.tryParse(it.toString()) == null
+        }
+        view.edit2.addTextChangedListener {
+            view.input1.isErrorEnabled = Q.formatter.tryParse(it.toString()) == null
+        }
         @Suppress("UNCHECKED_CAST")
         val default = adapter.data[key] as? Q.Value<Date>
         if (default != null) {
@@ -177,17 +230,39 @@ class QueryFragment : Fragment() {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setPositiveButton(R.string.app_ok) { _, _ ->
-                val chip = view.chipGroup.checkedChip
-                val value = Q.Value(
-                    Q.Value.Op.values().first { it.value == chip?.tag },
-                    Q.formatter.tryParse(view.edit1.text.toString()) ?: Date(),
-                    Q.formatter.tryParse(view.edit2.text.toString()) ?: Date()
-                )
-                adapter.add(key, value)
-            }
+            .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
-            .create().show()
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                        val chip = view.chipGroup.checkedChip
+                        val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
+                        if (op == null) {
+                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok, null)
+                                .show()
+                            return@setOnClickListener
+                        }
+                        val v1 = Q.formatter.tryParse(view.edit1.text.toString())
+                        if (v1 == null) {
+                            view.input1.isErrorEnabled = true
+                            view.input1.error = getString(R.string.query_empty)
+                            return@setOnClickListener
+                        }
+                        val v2 = Q.formatter.tryParse(view.edit2.text.toString())
+                        if (op == Q.Value.Op.bt && v2 == null) {
+                            view.input2.isErrorEnabled = true
+                            view.input2.error = getString(R.string.query_empty)
+                            return@setOnClickListener
+                        }
+                        val value = Q.Value(op, v1, v2)
+                        adapter.add(key, value)
+                        dismiss()
+                    }
+                }
+            }
+            .show()
     }
 
     private fun vote(key: String) {
@@ -207,21 +282,50 @@ class QueryFragment : Fragment() {
         } else {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
+        view.edit1.addTextChangedListener {
+            view.input1.isErrorEnabled = it.isNullOrEmpty()
+        }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setPositiveButton(R.string.app_ok) { _, _ ->
-                val chip = view.chipGroup.checkedChip
-                val chip1 = view.chip1.checkedChip
-                val chip2 = view.chip2.checkedChip
-                val value = Q.Value(
-                    Q.Value.Op.values().first { it.value == chip?.tag },
-                    chip1?.tag.toString().toInt(),
-                    chip2?.tag.toString().toIntOrNull(),
-                    view.edit1.text.toString().takeIf { it.isNotEmpty() }
-                )
-                adapter.add(key, value)
-            }
+            .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
-            .create().show()
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                        val chip = view.chipGroup.checkedChip
+                        val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
+                        if (op == null) {
+                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok, null)
+                                .show()
+                            return@setOnClickListener
+                        }
+                        val ex = view.edit1.text?.toString()?.takeIf { it.isNotBlank() }
+                        if (ex == null) {
+                            view.input1.isErrorEnabled = true
+                            view.input1.error = getString(R.string.query_empty)
+                            return@setOnClickListener
+                        }
+                        val v1 = view.chip1.checkedChip?.tag?.toString()?.toIntOrNull()
+                        if (v1 == null) {
+                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok, null)
+                                .show()
+                            return@setOnClickListener
+                        }
+                        val v2 = view.chip2.checkedChip?.tag?.toString()?.toIntOrNull()
+                        if (op == Q.Value.Op.bt && v2 == null) {
+                            Snackbar.make(view.chipGroup, R.string.query_empty, Snackbar.LENGTH_SHORT)
+                                .setAction(R.string.app_ok, null)
+                                .show()
+                            return@setOnClickListener
+                        }
+                        val value = Q.Value(op, v1, v2, ex)
+                        adapter.add(key, value)
+                        dismiss()
+                    }
+                }
+            }.show()
 
     }
 
@@ -241,11 +345,10 @@ class QueryFragment : Fragment() {
                     notifyDataSetChanged()
                 }
 
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-                val view = super.getView(position, convertView, parent)
-                view.findViewById<RadioButton>(R.id.radio).isChecked = position == checked
-                return view
-            }
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View =
+                super.getView(position, convertView, parent).apply {
+                    findViewById<RadioButton>(R.id.radio).isChecked = position == checked
+                }
         }
         val value = when (val v = this@QueryFragment.adapter.data[key]) {
             is Q.Order -> v.value
