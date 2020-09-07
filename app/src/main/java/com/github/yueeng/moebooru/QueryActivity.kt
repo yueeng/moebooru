@@ -4,19 +4,19 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.DatePicker
 import android.widget.RadioButton
 import android.widget.SimpleAdapter
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.*
 import androidx.transition.TransitionManager
-import com.github.yueeng.moebooru.databinding.FragmentQueryBinding
-import com.github.yueeng.moebooru.databinding.QueryItemBinding
-import com.github.yueeng.moebooru.databinding.QuerySheetIntBinding
-import com.github.yueeng.moebooru.databinding.QuerySheetStringBinding
+import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.util.*
 
 class QueryActivity : AppCompatActivity(R.layout.activity_main) {
 
@@ -60,8 +60,14 @@ class QueryFragment : Fragment() {
 
     private fun string(key: String) {
         val view = QuerySheetStringBinding.inflate(layoutInflater)
+        val default = adapter.data[key] as? String
+        if (default != null) {
+            view.text1.setText(default)
+        }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setPositiveButton(R.string.app_ok) { _, _ -> }
+            .setPositiveButton(R.string.app_ok) { _, _ ->
+                adapter.add(key, view.text1.text.toString())
+            }
             .setNegativeButton(R.string.app_cancel, null)
             .create().show()
     }
@@ -69,24 +75,24 @@ class QueryFragment : Fragment() {
     private fun int(key: String) {
         val view = QuerySheetIntBinding.inflate(layoutInflater)
         view.chipGroup.isSingleSelection = true
-        view.chipGroup.setOnCheckedChangeListener { _, id ->
+        view.chipGroup.setOnCheckedChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
-            view.input2.isVisible = id == R.id.chip_bt
+            view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
         }
         @Suppress("UNCHECKED_CAST")
         val default = adapter.data[key] as? Q.Value<Int>
         if (default != null) {
-            view.edit1.setText("${default.v1}")
-            view.edit2.setText("${default.v2 ?: ""}")
+            view.edit1.setText(default.v1string)
+            view.edit2.setText(default.v2string)
             view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
         } else {
-            view.chipEq.isChecked = true
+            view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
             .setPositiveButton(R.string.app_ok) { _, _ ->
-                val chip = view.chipGroup.findViewById<Chip>(view.chipGroup.checkedChipId)
+                val chip = view.chipGroup.checkedChip
                 val value = Q.Value(
-                    Q.Value.Op.values().first { it.value == chip.tag },
+                    Q.Value.Op.values().first { it.value == chip?.tag },
                     view.edit1.text.toString().toInt(),
                     view.edit2.text.toString().toIntOrNull()
                 )
@@ -97,10 +103,84 @@ class QueryFragment : Fragment() {
     }
 
     private fun date(key: String) {
-
+        val view = QuerySheetDateBinding.inflate(layoutInflater)
+        view.chipGroup.isSingleSelection = true
+        view.chipGroup.setOnCheckedChangeListener { _, _ ->
+            TransitionManager.beginDelayedTransition(view.root)
+            view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
+            view.pick2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
+        }
+        listOf(view.pick1 to view.edit1, view.pick2 to view.edit2).forEach { pe ->
+            pe.first.setOnClickListener {
+                val current = Q.formatter.tryParse(pe.second.text.toString()) ?: Date()
+                val pick = DatePicker(requireContext()).apply {
+                    minDate = moe_create_time.milliseconds
+                    maxDate = Calendar.getInstance().milliseconds
+                    date = Calendar.getInstance().apply { time = current }
+                }
+                MaterialAlertDialogBuilder(requireContext()).setView(pick)
+                    .setPositiveButton(R.string.app_ok) { _, _ ->
+                        pe.second.setText(pick.date.format(Q.formatter))
+                    }
+                    .setNegativeButton(R.string.app_cancel, null)
+                    .create().show()
+            }
+        }
+        @Suppress("UNCHECKED_CAST")
+        val default = adapter.data[key] as? Q.Value<Date>
+        if (default != null) {
+            view.edit1.setText(default.v1string)
+            view.edit2.setText(default.v2string)
+            view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
+        } else {
+            view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
+        }
+        MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+            .setPositiveButton(R.string.app_ok) { _, _ ->
+                val chip = view.chipGroup.checkedChip
+                val value = Q.Value(
+                    Q.Value.Op.values().first { it.value == chip?.tag },
+                    Q.formatter.tryParse(view.edit1.text.toString()) ?: Date(),
+                    Q.formatter.tryParse(view.edit2.text.toString()) ?: Date()
+                )
+                adapter.add(key, value)
+            }
+            .setNegativeButton(R.string.app_cancel, null)
+            .create().show()
     }
 
     private fun vote(key: String) {
+        val view = QuerySheetVoteBinding.inflate(layoutInflater)
+        view.chipGroup.isSingleSelection = true
+        view.chipGroup.setOnCheckedChangeListener { _, _ ->
+            TransitionManager.beginDelayedTransition(view.root)
+            view.chip2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
+        }
+        @Suppress("UNCHECKED_CAST")
+        val default = adapter.data[key] as? Q.Value<Int>
+        if (default != null) {
+            view.edit1.setText(default.ex)
+            view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
+            view.chip1.findViewWithTag<Chip>(default.v1string)?.isChecked = true
+            view.chip2.findViewWithTag<Chip>(default.v2string)?.isChecked = true
+        } else {
+            view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
+        }
+        MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+            .setPositiveButton(R.string.app_ok) { _, _ ->
+                val chip = view.chipGroup.checkedChip
+                val chip1 = view.chip1.checkedChip
+                val chip2 = view.chip2.checkedChip
+                val value = Q.Value(
+                    Q.Value.Op.values().first { it.value == chip?.tag },
+                    chip1?.tag.toString().toInt(),
+                    chip2?.tag.toString().toIntOrNull(),
+                    view.edit1.text.toString().takeIf { it.isNotEmpty() }
+                )
+                adapter.add(key, value)
+            }
+            .setNegativeButton(R.string.app_cancel, null)
+            .create().show()
 
     }
 
