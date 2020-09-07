@@ -4,14 +4,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.DatePicker
-import android.widget.RadioButton
-import android.widget.SimpleAdapter
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.*
+import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.TransitionManager
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.chip.Chip
@@ -28,9 +31,18 @@ class QueryActivity : AppCompatActivity(R.layout.activity_main) {
     }
 }
 
+class QueryViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
+    val query = handle.getLiveData("query", args?.getParcelable("query") ?: Q())
+}
+
+class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = QueryViewModel(handle, args) as T
+}
+
 class QueryFragment : Fragment() {
-    val query by lazy { arguments?.getParcelable("query") ?: Q() }
-    val adapter by lazy { QueryAdapter() }
+    val viewModel: QueryViewModel by viewModels { QueryViewModelFactory(this, arguments) }
+    private val adapter by lazy { QueryAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
             binding.recycler.adapter = adapter
@@ -64,9 +76,38 @@ class QueryFragment : Fragment() {
         if (default != null) {
             view.text1.setText(default)
         }
+        if (key == "keyword") {
+            val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1) {
+                override fun getFilter(): Filter = filter
+                val filter = object : Filter() {
+                    override fun performFiltering(constraint: CharSequence?): FilterResults = FilterResults().also { results ->
+                        if (constraint?.isNotBlank() == true) {
+                            val data = Q.suggest(constraint.toString().trim()).take(10).toList()
+                            results.values = data
+                            results.count = data.size
+                        }
+                    }
+
+                    override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                        @Suppress("UNCHECKED_CAST")
+                        val data = results?.values as? List<Triple<Int, String, String>>
+                        clear()
+                        if (data?.isNotEmpty() == true) {
+                            addAll(data.map { it.second })
+                            notifyDataSetChanged()
+                        } else {
+                            notifyDataSetInvalidated()
+                        }
+                    }
+                }
+            }
+            view.text1.setAdapter(adapter)
+            view.text1.threshold = 1
+            view.text1.setTokenizer(SymbolsTokenizer(setOf(' ')))
+        }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
             .setPositiveButton(R.string.app_ok) { _, _ ->
-                adapter.add(key, view.text1.text.toString())
+                adapter.add(key, view.text1.text.toString().trim())
             }
             .setNegativeButton(R.string.app_cancel, null)
             .create().show()
@@ -238,10 +279,10 @@ class QueryFragment : Fragment() {
             override fun areContentsTheSame(oldItem: Pair<String, Any>, newItem: Pair<String, Any>): Boolean = oldItem == newItem
         }
         private val diff = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(differ).build())
-        val data = query.map.toMutableMap()
+        val data get() = viewModel.query.value!!.map
         fun add(k: String, v: Any) {
-            data[k] = v
-            diff.submitList(data.toList())
+            viewModel.query.value!!.map[k] = v
+            diff.submitList(viewModel.query.value!!.map.toList())
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): QueryHolder = QueryHolder(QueryItemBinding.inflate(layoutInflater, parent, false)).apply {

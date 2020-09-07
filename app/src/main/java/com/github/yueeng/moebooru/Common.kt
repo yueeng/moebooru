@@ -9,9 +9,13 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.TextUtils.copySpansFrom
 import android.view.View
 import android.widget.DatePicker
 import android.widget.ImageView
+import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
@@ -311,6 +315,36 @@ fun bindImageRatio(view: ImageView, width: Int, height: Int) {
 }
 
 val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
+
+class SymbolsTokenizer(private val symbols: Set<Char>) : MultiAutoCompleteTextView.Tokenizer {
+    override fun findTokenStart(text: CharSequence, cursor: Int): Int {
+        var i = cursor
+        while (i > 0 && !symbols.contains(text[i - 1])) i--
+        while (i < cursor && text[i] == ' ') i++
+        return i
+    }
+
+    override fun findTokenEnd(text: CharSequence, cursor: Int): Int {
+        var i = cursor
+        val len = text.length
+        while (i < len) if (symbols.contains(text[i])) return i else i++
+        return len
+    }
+
+    override fun terminateToken(text: CharSequence): CharSequence {
+        var i = text.length
+        while (i > 0 && text[i - 1] == ' ') i--
+        return when {
+            i > 0 && symbols.contains(text[i - 1]) -> text
+            text is Spanned -> {
+                val sp = SpannableString("$text ")
+                copySpansFrom(text, 0, text.length, Any::class.java, sp, 0)
+                sp
+            }
+            else -> "$text "
+        }
+    }
+}
 
 fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { c ->
     c.firstDayOfWeek = firstOfWeek
