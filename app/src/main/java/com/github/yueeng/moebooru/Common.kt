@@ -12,6 +12,7 @@ import android.os.Looper
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
+import android.util.TypedValue
 import android.view.View
 import android.widget.DatePicker
 import android.widget.ImageView
@@ -22,6 +23,7 @@ import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
@@ -286,6 +288,11 @@ class GlideRegionDecoder : ImageRegionDecoder {
     override fun recycle() = decoder!!.recycle()
 }
 
+val random = Random(System.currentTimeMillis())
+
+fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
+    Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
+
 fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBar?, placeholder: Int?) {
     if (imageUrl.isNullOrEmpty()) return
     view.scaleType = ImageView.ScaleType.CENTER
@@ -475,5 +482,16 @@ class SharedViewModelStoreOwner(private val key: String, life: LifecycleOwner) :
             remove(key)
             source.lifecycle.removeObserver(this)
         }
+    }
+}
+
+class MarginItemDecoration(private val spaceHeight: Int) : RecyclerView.ItemDecoration() {
+    constructor(unit: Int, spaceHeight: Float) : this(TypedValue.applyDimension(unit, spaceHeight, MainApplication.instance().resources.displayMetrics).toInt())
+
+    override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) = with(outRect) {
+        top = spaceHeight
+        left = spaceHeight
+        right = spaceHeight
+        bottom = spaceHeight
     }
 }
