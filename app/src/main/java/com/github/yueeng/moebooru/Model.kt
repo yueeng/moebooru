@@ -2,6 +2,7 @@
 
 package com.github.yueeng.moebooru
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
@@ -22,10 +23,13 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-val moe_create_time: Calendar = Calendar.getInstance().apply { set(2008, 1 - 1, 13) }
-const val moe_url = "https://konachan.com"
-const val moe_summary_url = "$moe_url/tag/summary.json"
-const val moe_summary_etag = """W/"3b9f73b790f60a77b7724f4e646857e7""""
+@SuppressLint("SimpleDateFormat")
+val moe_create_time: Calendar = Calendar.getInstance().apply {
+    time = SimpleDateFormat("yyyy-MM-dd").parse(MainApplication.instance().getString(R.string.app_create_time))!!
+}
+val moe_url = "https://${MainApplication.instance().getString(R.string.app_host)}"
+val moe_summary_url = "$moe_url/tag/summary.json"
+val moe_summary_etag = MainApplication.instance().getString(R.string.app_summary_etag)
 
 @Parcelize
 data class JImageItem(

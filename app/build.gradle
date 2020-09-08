@@ -23,6 +23,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    flavorDimensions 'moe'
+    productFlavors {
+        yande {
+            dimension 'moe'
+            applicationIdSuffix '.yande'
+            resValue 'string', 'app_name', 'Yande'
+            resValue 'string', 'app_host', 'yande.re'
+            resValue 'string', 'app_create_time', '2006-8-13'
+            resValue 'string', 'app_summary_etag', 'W/"12bb6366962a4b27920eb23874891ef9"'
+        }
+        konachan {
+            dimension 'moe'
+            applicationIdSuffix '.konachan'
+            resValue "string", "app_name", "Konachan"
+            resValue 'string', 'app_host', 'konachan.com'
+            resValue 'string', 'app_create_time', '2008-1-13'
+            resValue 'string', 'app_summary_etag', 'W/"3b9f73b790f60a77b7724f4e646857e7"'
+        }
+    }
     buildFeatures {
         viewBinding = true
     }
