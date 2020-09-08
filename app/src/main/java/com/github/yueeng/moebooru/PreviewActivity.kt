@@ -85,6 +85,19 @@ class PreviewFragment : Fragment() {
                     }
                 }
             })
+            val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
+            binding.button3.setOnClickListener {
+                val open = bottomSheetBehavior.isOpen
+                if (open) bottomSheetBehavior.close() else bottomSheetBehavior.open()
+            }
+            bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                    binding.button3.setImageResource(if (newState == BottomSheetBehavior.STATE_EXPANDED) R.drawable.ic_expand_more else R.drawable.ic_expand_less)
+                }
+
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                }
+            })
         }.root
 
     class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {

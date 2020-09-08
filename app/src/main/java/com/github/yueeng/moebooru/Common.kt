@@ -44,6 +44,7 @@ import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -322,6 +323,19 @@ fun bindImageRatio(view: ImageView, width: Int, height: Int) {
 }
 
 val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
+var <V : View>BottomSheetBehavior<V>.isOpen: Boolean
+    get() = state == BottomSheetBehavior.STATE_EXPANDED
+    set(value) {
+        state = if (value) BottomSheetBehavior.STATE_EXPANDED else BottomSheetBehavior.STATE_COLLAPSED
+    }
+
+fun <V : View> BottomSheetBehavior<V>.open() {
+    isOpen = true
+}
+
+fun <V : View> BottomSheetBehavior<V>.close() {
+    isOpen = false
+}
 
 class SymbolsTokenizer(private val symbols: Set<Char>) : MultiAutoCompleteTextView.Tokenizer {
     override fun findTokenStart(text: CharSequence, cursor: Int): Int {
