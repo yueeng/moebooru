@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
     <string name="app_cancel">Cancel</string>
-    <string name="app_name">Moebooru</string>
     <string name="app_ok">OK</string>
     <string name="app_retry">retry</string>
     <string name="app_search">Search</string>
