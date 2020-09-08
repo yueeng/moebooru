@@ -128,7 +128,7 @@ class PreviewFragment : Fragment() {
 
     class TagHolder(private val binding: PreviewTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
-            (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.let { it.flexGrow = 1.0f }
+            (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
         }
 
         fun bind(value: Tag) {
@@ -136,6 +136,7 @@ class PreviewFragment : Fragment() {
             binding.text2.text = value.string
             binding.text2.visibility = if (binding.text2.text.isNullOrEmpty()) View.GONE else View.VISIBLE
             binding.category.setBackgroundColor(value.color)
+            binding.root.setCardBackgroundColor(randomColor())
         }
     }
 
