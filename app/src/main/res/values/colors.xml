@@ -1,6 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
+    <color name="colorAccent">#03DAC5</color>
     <color name="colorPrimary">#6200EE</color>
     <color name="colorPrimaryDark">#3700B3</color>
-    <color name="colorAccent">#03DAC5</color>
+
+    <color name="tag_type_artist">#CCCC00</color>
+    <color name="tag_type_character">#0A0</color>
+    <color name="tag_type_circle">#0BB</color>
+    <color name="tag_type_copyright">#D0D</color>
+    <color name="tag_type_default">#7F7F7F</color>
+    <color name="tag_type_faults">#FF2020</color>
+    <color name="tag_type_general">#FFAAAE</color>
 </resources>
