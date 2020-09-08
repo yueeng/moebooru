@@ -15,7 +15,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
         val key = params.key ?: 1
-        val posts = Service.instance.post(page = key, query!!.rating(Q.Rating.safe), limit = params.loadSize)
+        val posts = Service.instance.post(page = key, (query ?: Q()).rating(Q.Rating.safe), limit = params.loadSize)
         LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
     } catch (e: Exception) {
         LoadResult.Error(e)
@@ -23,7 +23,7 @@ class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageIte
 }
 
 class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
-    val posts = Pager(PagingConfig(20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }
+    val posts = Pager(PagingConfig(20, initialLoadSize = 20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }
         .flow.cachedIn(viewModelScope)
 }
 

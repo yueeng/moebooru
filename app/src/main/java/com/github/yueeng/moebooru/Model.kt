@@ -5,6 +5,7 @@ package com.github.yueeng.moebooru
 import android.content.Context
 import android.os.Parcel
 import android.os.Parcelable
+import androidx.core.app.ActivityCompat
 import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -62,6 +63,55 @@ data class JImageItem(
     val tags: String,
     val width: Int
 ) : Parcelable
+
+@Parcelize
+data class Tag(var type: Int, val tag: String) : Parcelable {
+    companion object {
+        const val TYPE_UNKNOWN = -1
+        const val TYPE_GENERAL = 0x00
+        const val TYPE_ARTIST = 0x01
+        const val TYPE_COPYRIGHT = 0x03
+        const val TYPE_CHARACTER = 0x04
+        const val TYPE_CIRCLE = 0x05
+        const val TYPE_FAULTS = 0x06
+        const val TYPE_USER = 0x11
+        const val TYPE_SIZE = 0x12
+        const val TYPE_CHILDREN = 0x13
+        const val TYPE_PARENT = 0x14
+        const val TYPE_URL = 0x15
+        const val TYPE_CLIPBOARD = 0x16
+
+        fun string(type: Int) = when (type) {
+            TYPE_GENERAL -> "GENERAL"
+            TYPE_ARTIST -> "ARTIST"
+            TYPE_COPYRIGHT -> "COPYRIGHT"
+            TYPE_CHARACTER -> "CHARACTER"
+            TYPE_CIRCLE -> "CIRCLE"
+            TYPE_FAULTS -> "FAULTS"
+            TYPE_USER -> "USER"
+            TYPE_SIZE -> "SIZE"
+            TYPE_CHILDREN -> "CHILDREN"
+            TYPE_PARENT -> "PARENT"
+            TYPE_URL -> "WEBSITE"
+            TYPE_CLIPBOARD -> "COPY"
+            else -> ""
+        }
+
+        fun color(type: Int, context: Context = MainApplication.instance()) = when (type) {
+            0x00 -> ActivityCompat.getColor(context, R.color.tag_type_general)
+            0x01 -> ActivityCompat.getColor(context, R.color.tag_type_artist)
+            0x03 -> ActivityCompat.getColor(context, R.color.tag_type_copyright)
+            0x04 -> ActivityCompat.getColor(context, R.color.tag_type_character)
+            0x05 -> ActivityCompat.getColor(context, R.color.tag_type_circle)
+            0x06 -> ActivityCompat.getColor(context, R.color.tag_type_faults)
+            else -> ActivityCompat.getColor(context, R.color.tag_type_default)
+        }
+    }
+
+    val name get() = tag.capitalize(Locale.getDefault())
+    val string: String get() = string(type)
+    val color: Int get() = color(type)
+}
 
 interface MoebooruService {
     @GET("post.json")
