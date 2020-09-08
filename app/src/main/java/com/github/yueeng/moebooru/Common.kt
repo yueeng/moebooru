@@ -353,6 +353,13 @@ class SymbolsTokenizer(private val symbols: Set<Char>) : MultiAutoCompleteTextVi
     }
 }
 
+val regexTitleCase = """\b[a-z]""".toRegex()
+fun String.toTitleCase(vararg delimiters: String = arrayOf("_")) = delimiters.fold(this) { r, s -> r.replace(s, " ", true) }.let {
+    regexTitleCase.findAll(it).fold(it) { r, i ->
+        r.replaceRange(i.range, i.value.capitalize(Locale.getDefault()))
+    }
+}
+
 fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { c ->
     c.firstDayOfWeek = firstOfWeek
     c.time = this
