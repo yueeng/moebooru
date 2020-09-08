@@ -69,7 +69,7 @@ data class JImageItem(
 ) : Parcelable
 
 @Parcelize
-data class Tag(var type: Int, val tag: String) : Parcelable {
+data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
     companion object {
         const val TYPE_UNKNOWN = -1
         const val TYPE_GENERAL = 0x00
@@ -112,7 +112,6 @@ data class Tag(var type: Int, val tag: String) : Parcelable {
         }
     }
 
-    val name get() = tag.capitalize(Locale.getDefault())
     val string: String get() = string(type)
     val color: Int get() = color(type)
 }

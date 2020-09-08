@@ -75,11 +75,11 @@ class PreviewFragment : Fragment() {
                 override fun onPageSelected(position: Int) {
                     val item = adapter.snapshot()[position] ?: return
                     lifecycleScope.launchWhenCreated {
-                        val tags = item.tags.split(' ').map {
-                            withContext(Dispatchers.IO) {
-                                async { Q.suggest(it, true).firstOrNull { i -> i.second == it } }
-                            }
-                        }.mapNotNull { it.await() }.map { Tag(it.first, it.second) }
+                        val tags = withContext(Dispatchers.IO) {
+                            item.tags.split(' ').map { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
+                        }.mapNotNull { it.await() }
+                            .map { Tag(it.first, it.second.toTitleCase(), it.second) }
+                            .sortedWith(compareBy(Tag::type, Tag::name, Tag::tag))
                         TransitionManager.beginDelayedTransition(binding.sliding)
                         tagAdapter.submitList(tags)
                     }
