@@ -65,7 +65,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom|center_horizontal"
                     android:layout_margin="5dp"
-                    android:src="@drawable/ic_expand_more"
+                    android:src="@drawable/ic_expand_less"
                     app:fabSize="mini" />
             </LinearLayout>
 
