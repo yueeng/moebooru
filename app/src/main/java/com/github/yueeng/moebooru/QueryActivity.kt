@@ -4,7 +4,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -58,7 +57,7 @@ class QueryFragment : Fragment() {
                     else -> super.onOptionsItemSelected(item)
                 }
             }
-            binding.recycler.adapter = adapter
+            binding.recycler.adapter = adapter.apply { submitList() }
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
                 override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
@@ -414,6 +413,11 @@ class QueryFragment : Fragment() {
         }
         private val diff = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(differ).build())
         val data get() = viewModel.query.value!!.map
+
+        fun submitList() {
+            diff.submitList(viewModel.query.value!!.map.toList())
+        }
+
         fun add(k: String, v: Any) {
             viewModel.query.value!!.map[k] = v
             diff.submitList(viewModel.query.value!!.map.toList())
