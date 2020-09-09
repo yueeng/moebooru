@@ -92,10 +92,10 @@ class PreviewFragment : Fragment() {
             }
             bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
                 override fun onStateChanged(bottomSheet: View, newState: Int) {
-                    binding.button3.setImageResource(if (newState == BottomSheetBehavior.STATE_EXPANDED) R.drawable.ic_expand_more else R.drawable.ic_expand_less)
                 }
 
                 override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                    binding.button3.rotation = slideOffset * 180F
                 }
             })
         }.root
