@@ -68,9 +68,10 @@ class PreviewFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow.collectLatest {
-                    binding.busy.isVisible = it.refresh is LoadState.Loading
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
+            binding.swipe.setOnRefreshListener { adapter.refresh() }
             BottomSheetBehavior.from(binding.sliding)
             binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
