@@ -473,3 +473,8 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
 
     fun clone(): Q = Q(map.toMutableMap())
 }
+
+object OAuth {
+    private var avatarTimestamp = Calendar.getInstance().time.time / 1000
+    fun face(id: Int) = if (id > 0) "$moe_url/data/avatars/$id.jpg?$avatarTimestamp" else null
+}
