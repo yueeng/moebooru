@@ -2,6 +2,7 @@
   <dictionary name="yue12">
     <words>
       <w>etag</w>
+      <w>filepaths</w>
       <w>moebooru</w>
       <w>mpixels</w>
       <w>okhttp</w>
