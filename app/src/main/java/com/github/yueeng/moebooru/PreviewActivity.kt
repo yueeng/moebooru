@@ -1,7 +1,11 @@
 package com.github.yueeng.moebooru
 
+import android.Manifest
+import android.app.WallpaperManager
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,12 +13,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.*
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
+import androidx.work.*
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
@@ -23,6 +29,7 @@ import com.github.yueeng.moebooru.databinding.PreviewItemBinding
 import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
 import com.google.android.flexbox.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.gun0912.tedpermission.TedPermission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collect
@@ -30,6 +37,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Request
+import java.io.File
+import java.util.*
 
 
 class PreviewActivity : AppCompatActivity(R.layout.activity_main) {
@@ -105,7 +116,57 @@ class PreviewFragment : Fragment() {
                     binding.button3.rotation = slideOffset * 180F
                 }
             })
+            binding.button1.setOnClickListener {
+                TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted {
+                    val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), moe_host)
+                    folder.mkdirs()
+                    save(binding.pager.currentItem, folder.path)
+                }.check()
+            }
+            binding.button5.setOnClickListener {
+                TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted {
+                    save(binding.pager.currentItem, requireContext().cacheDir.path) {
+                        it?.let { File(it) }?.inputStream()?.use { stream ->
+                            WallpaperManager.getInstance(requireContext()).setStream(stream)
+                        }
+                    }
+                }.check()
+            }
         }.root
+
+    class SaveWorker(context: Context, private val params: WorkerParameters) : Worker(context, params) {
+        override fun doWork(): Result = try {
+            val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
+            val folder = params.inputData.getString("folder") ?: throw IllegalArgumentException()
+            val target = File(folder, url.pathSegments.last().toLowerCase(Locale.ROOT))
+            val response = okhttp.newCall(Request.Builder().url(url).build()).execute()
+            response.body?.byteStream()?.use { input ->
+                target.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            Result.success(Data.Builder().putString("file", target.path).build())
+        } catch (e: Exception) {
+            Result.failure()
+        }
+    }
+
+    private fun save(position: Int, folder: String, call: ((String?) -> Unit)? = null) {
+        val item = adapter.snapshot()[position] ?: return
+        val params = Data.Builder().putString("url", item.jpeg_url).putString("folder", folder).build()
+        val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
+        val manager = WorkManager.getInstance(requireContext()).apply { enqueue(request) }
+        val info = manager.getWorkInfoByIdLiveData(request.id)
+        info.observe(ProcessLifecycleOwner.get(), {
+            when (it.state) {
+                WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> Unit
+                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED, WorkInfo.State.SUCCEEDED -> {
+                    info.removeObservers(ProcessLifecycleOwner.get())
+                    call?.invoke(it.outputData.getString("file"))
+                }
+            }
+        })
+    }
 
     class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {

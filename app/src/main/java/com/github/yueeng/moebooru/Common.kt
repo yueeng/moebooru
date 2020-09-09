@@ -47,6 +47,8 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.gun0912.tedpermission.PermissionListener
+import com.gun0912.tedpermission.TedPermission
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
@@ -515,4 +517,16 @@ class MarginItemDecoration(private val spaceHeight: Int) : RecyclerView.ItemDeco
         right = spaceHeight
         bottom = spaceHeight
     }
+}
+
+fun TedPermission.Builder.onGranted(function: () -> Unit): TedPermission.Builder {
+    setPermissionListener(object : PermissionListener {
+        override fun onPermissionGranted() {
+            function()
+        }
+
+        override fun onPermissionDenied(deniedPermissions: MutableList<String>?) {
+        }
+    })
+    return this
 }
