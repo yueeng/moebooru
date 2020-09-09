@@ -118,19 +118,16 @@
                 android:src="@drawable/ic_crop_rotate"
                 app:fabSize="mini" />
 
-            <androidx.cardview.widget.CardView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_margin="6dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="6dp">
-
-                <ImageView
-                    android:id="@+id/button7"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/app_name" />
-            </androidx.cardview.widget.CardView>
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/button7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:scaleType="fitXY"
+                app:fabSize="mini"
+                app:maxImageSize="40dp"
+                app:tint="@null"
+                tools:src="@mipmap/ic_launcher" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView

@@ -15,6 +15,7 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.*
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
@@ -83,6 +84,11 @@ class PreviewFragment : Fragment() {
                         TransitionManager.beginDelayedTransition(binding.sliding)
                         tagAdapter.submitList(tags)
                     }
+                    GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
+                        .placeholder(R.mipmap.ic_launcher)
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .circleCrop()
+                        .into(binding.button7)
                 }
             })
             val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
