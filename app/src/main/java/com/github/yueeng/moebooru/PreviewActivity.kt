@@ -1,8 +1,11 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
+import android.app.Activity
 import android.app.WallpaperManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -10,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -30,6 +34,7 @@ import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
 import com.google.android.flexbox.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.gun0912.tedpermission.TedPermission
+import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collect
@@ -132,7 +137,36 @@ class PreviewFragment : Fragment() {
                     }
                 }.check()
             }
+            binding.button6.setOnClickListener {
+                save(binding.pager.currentItem, requireContext().cacheDir.path) {
+                    it?.let { File(it) }?.let { source ->
+                        lifecycleScope.launchWhenCreated {
+                            val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, source.name)
+                            UCrop.of(Uri.fromFile(source), Uri.fromFile(dest)).start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP)
+                        }
+                    }
+                }
+            }
         }.root
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (resultCode) {
+            Activity.RESULT_OK -> {
+                when (requestCode) {
+                    UCrop.REQUEST_CROP -> {
+                        val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", File(UCrop.getOutput(data!!)!!.path!!))
+                        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                            type = "image/jpeg"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }, getString(R.string.app_share)))
+                    }
+                }
+            }
+            else -> super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
 
     class SaveWorker(context: Context, private val params: WorkerParameters) : Worker(context, params) {
         override fun doWork(): Result = try {
@@ -145,6 +179,7 @@ class PreviewFragment : Fragment() {
                     input.copyTo(output)
                 }
             }
+            Thread.sleep(3000)
             Result.success(Data.Builder().putString("file", target.path).build())
         } catch (e: Exception) {
             Result.failure()
