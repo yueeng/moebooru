@@ -1,4 +1,4 @@
-@file:Suppress("EnumEntryName", "MemberVisibilityCanBePrivate", "unused", "FunctionName", "ObjectPropertyName", "LocalVariableName")
+@file:Suppress("EnumEntryName", "MemberVisibilityCanBePrivate", "unused", "FunctionName", "ObjectPropertyName", "LocalVariableName", "PropertyName")
 
 package com.github.yueeng.moebooru
 
@@ -27,7 +27,8 @@ import java.util.*
 val moe_create_time: Calendar = Calendar.getInstance().apply {
     time = SimpleDateFormat("yyyy-MM-dd").parse(MainApplication.instance().getString(R.string.app_create_time))!!
 }
-val moe_url = "https://${MainApplication.instance().getString(R.string.app_host)}"
+val moe_host = MainApplication.instance().getString(R.string.app_host)
+val moe_url = "https://$moe_host"
 val moe_summary_url = "$moe_url/tag/summary.json"
 val moe_summary_etag = MainApplication.instance().getString(R.string.app_summary_etag)
 
