@@ -1,3 +1,5 @@
+@file:Suppress("unused", "MemberVisibilityCanBePrivate")
+
 package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
@@ -36,7 +38,9 @@ import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.module.AppGlideModule
 import com.bumptech.glide.request.RequestListener
@@ -63,6 +67,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
+import java.security.MessageDigest
 import java.text.DateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -85,12 +90,13 @@ fun debug(call: () -> Unit) {
     if (BuildConfig.DEBUG) call()
 }
 
+val okcook = PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(MainApplication.instance()))
 val okhttp: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(5, TimeUnit.SECONDS)
     .writeTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
     .cache(Cache(MainApplication.instance().cacheDir, 1024 * 1024 * 256))
-    .cookieJar(PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(MainApplication.instance())))
+    .cookieJar(okcook)
     .addNetworkInterceptor { chain ->
         val request = chain.request()
         val url = request.url.toString()
@@ -123,7 +129,7 @@ interface ProgressListener {
     fun update(bytesRead: Long, contentLength: Long, done: Boolean)
 }
 
-private class ProgressResponseBody internal constructor(
+private class ProgressResponseBody(
     private val responseBody: ResponseBody,
     private val progressListener: ProgressListener
 ) : ResponseBody() {
@@ -578,5 +584,30 @@ object Save {
                 }
             }
         })
+    }
+}
+
+class AlphaBlackBitmapTransformation : BitmapTransformation() {
+    companion object {
+        private const val VERSION = 1
+        private const val ID = "com.bumptech.glide.load.resource.bitmap.AlphaBlack.$VERSION"
+        private val ID_BYTES = ID.toByteArray(CHARSET)
+    }
+
+    override fun equals(other: Any?): Boolean = other is AlphaBlackBitmapTransformation
+
+    override fun hashCode(): Int = ID.hashCode()
+
+    override fun updateDiskCacheKey(messageDigest: MessageDigest) = messageDigest.update(ID_BYTES)
+
+    override fun transform(pool: BitmapPool, src: Bitmap, outWidth: Int, outHeight: Int): Bitmap {
+        val rect = Rect(0, 0, src.width, src.height)
+        val dest = Bitmap.createBitmap(rect.width(), rect.height(), src.config)
+        val canvas = Canvas(dest)
+        canvas.save()
+        canvas.drawColor(Color.BLACK)
+        canvas.drawBitmap(src, rect, rect, Paint().apply { alpha = 0x50 })
+        canvas.restore()
+        return dest
     }
 }

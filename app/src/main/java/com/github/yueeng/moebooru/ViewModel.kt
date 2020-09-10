@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.SavedStateHandle
@@ -15,7 +16,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
         val key = params.key ?: 1
-        val posts = Service.instance.post(page = key, (query ?: Q()).clone().rating(Q.Rating.safe), limit = params.loadSize)
+        val posts = Service.instance.post(page = key, Q(query).rating(Q.Rating.safe), limit = params.loadSize)
         LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
     } catch (e: Exception) {
         LoadResult.Error(e)
@@ -32,7 +33,9 @@ class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultA
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
 }
 
-class ImageItemDiffItemCallback : DiffUtil.ItemCallback<JImageItem>() {
-    override fun areItemsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem.id == newItem.id
-    override fun areContentsTheSame(oldItem: JImageItem, newItem: JImageItem): Boolean = oldItem == newItem
+fun <T : Any> diffCallback(call: (old: T, new: T) -> Boolean) = object : DiffUtil.ItemCallback<T>() {
+    override fun areItemsTheSame(old: T, new: T): Boolean = call(old, new)
+
+    @SuppressLint("DiffUtilEquals")
+    override fun areContentsTheSame(old: T, new: T): Boolean = old == new
 }

@@ -17,13 +17,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
+import androidx.core.os.bundleOf
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
-import androidx.recyclerview.widget.*
+import androidx.recyclerview.widget.AdapterListUpdateCallback
+import androidx.recyclerview.widget.AsyncDifferConfig
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
@@ -189,6 +193,14 @@ class PreviewFragment : Fragment() {
                     }
                 }
             }
+            binding.button7.setOnClickListener {
+                OAuth.login(this@PreviewFragment) {
+                    if (it) {
+                        val model = adapter.peek(binding.pager.currentItem)!!
+                        startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)))
+                    }
+                }
+            }
         }.root
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -248,7 +260,7 @@ class PreviewFragment : Fragment() {
         }
     }
 
-    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(ImageItemDiffItemCallback()) {
+    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
@@ -271,10 +283,7 @@ class PreviewFragment : Fragment() {
     }
 
     inner class TagAdapter : RecyclerView.Adapter<TagHolder>() {
-        private val differ = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(object : DiffUtil.ItemCallback<Tag>() {
-            override fun areItemsTheSame(oldItem: Tag, newItem: Tag): Boolean = oldItem.tag == newItem.tag
-            override fun areContentsTheSame(oldItem: Tag, newItem: Tag): Boolean = oldItem == newItem
-        }).build())
+        private val differ = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(diffCallback<Tag> { o, n -> o.tag == n.tag }).build())
         private val data get() = differ.currentList
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)) {
             startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(data[it].tag)))
