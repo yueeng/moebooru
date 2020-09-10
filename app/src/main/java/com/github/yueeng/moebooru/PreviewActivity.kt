@@ -1,10 +1,10 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
-import android.app.Activity
-import android.app.WallpaperManager
-import android.content.Context
+import android.app.*
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -12,20 +12,23 @@ import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.MimeTypeMap
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.*
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
-import androidx.work.*
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
@@ -42,10 +45,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.Request
 import java.io.File
-import java.util.*
 
 
 class PreviewActivity : AppCompatActivity(R.layout.activity_main) {
@@ -122,15 +122,58 @@ class PreviewFragment : Fragment() {
                 }
             })
             binding.button1.setOnClickListener {
-                TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted {
-                    val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), moe_host)
-                    folder.mkdirs()
-                    save(binding.pager.currentItem, folder.path)
+                TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
+                    val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), moe_host).apply { mkdirs() }
+                    val item = adapter.peek(binding.pager.currentItem)!!
+                    Save.save(item, folder.path) {
+                        it?.let { File(it) }?.let { file ->
+                            val extension = MimeTypeMap.getFileExtensionFromUrl(Uri.fromFile(file).toString())
+                            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                            val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+                            MainApplication.instance().apply {
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    type = mime ?: "image/*"
+                                    data = uri
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    NotificationManagerCompat.from(this@apply).let { manager ->
+                                        val channel = NotificationChannel(moe_host, moe_host, NotificationManager.IMPORTANCE_DEFAULT)
+                                        manager.createNotificationChannel(channel)
+                                    }
+                                }
+                                val builder = NotificationCompat.Builder(MainApplication.instance(), moe_host)
+                                    .setContentTitle(getString(R.string.app_download, getString(R.string.app_name)))
+                                    .setContentText(file.name)
+                                    .setAutoCancel(true)
+                                    .setSmallIcon(R.drawable.ic_stat_name)
+                                    .setContentIntent(PendingIntent.getActivity(this@apply, item.id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
+                                GlideApp.with(this).asBitmap().load(file).override(500, 500)
+                                    .into(object : CustomTarget<Bitmap>() {
+                                        override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                                            val bigPictureStyle = NotificationCompat.BigPictureStyle()
+                                                .bigPicture(resource)
+                                            val notification = builder
+                                                .setStyle(bigPictureStyle)
+                                                .setLargeIcon(resource)
+                                                .build()
+                                            NotificationManagerCompat.from(this@apply).notify(item.id, notification)
+                                        }
+
+                                        override fun onLoadCleared(placeholder: Drawable?) {
+                                            NotificationManagerCompat.from(this@apply).notify(item.id, builder.build())
+                                        }
+                                    })
+                            }
+                        }
+                    }
                 }.check()
             }
             binding.button5.setOnClickListener {
-                TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted {
-                    save(binding.pager.currentItem, requireContext().cacheDir.path) {
+                TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
+                    Save.save(adapter.peek(binding.pager.currentItem)!!, requireContext().cacheDir.path) {
                         it?.let { File(it) }?.inputStream()?.use { stream ->
                             WallpaperManager.getInstance(requireContext()).setStream(stream)
                         }
@@ -138,7 +181,7 @@ class PreviewFragment : Fragment() {
                 }.check()
             }
             binding.button6.setOnClickListener {
-                save(binding.pager.currentItem, requireContext().cacheDir.path) {
+                Save.save(adapter.peek(binding.pager.currentItem)!!, requireContext().cacheDir.path) {
                     it?.let { File(it) }?.let { source ->
                         lifecycleScope.launchWhenCreated {
                             val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, source.name)
@@ -166,41 +209,6 @@ class PreviewFragment : Fragment() {
             }
             else -> super.onActivityResult(requestCode, resultCode, data)
         }
-    }
-
-    class SaveWorker(context: Context, private val params: WorkerParameters) : Worker(context, params) {
-        override fun doWork(): Result = try {
-            val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
-            val folder = params.inputData.getString("folder") ?: throw IllegalArgumentException()
-            val target = File(folder, url.pathSegments.last().toLowerCase(Locale.ROOT))
-            val response = okhttp.newCall(Request.Builder().url(url).build()).execute()
-            response.body?.byteStream()?.use { input ->
-                target.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            Thread.sleep(3000)
-            Result.success(Data.Builder().putString("file", target.path).build())
-        } catch (e: Exception) {
-            Result.failure()
-        }
-    }
-
-    private fun save(position: Int, folder: String, call: ((String?) -> Unit)? = null) {
-        val item = adapter.snapshot()[position] ?: return
-        val params = Data.Builder().putString("url", item.jpeg_url).putString("folder", folder).build()
-        val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
-        val manager = WorkManager.getInstance(requireContext()).apply { enqueue(request) }
-        val info = manager.getWorkInfoByIdLiveData(request.id)
-        info.observe(ProcessLifecycleOwner.get(), {
-            when (it.state) {
-                WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> Unit
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED, WorkInfo.State.SUCCEEDED -> {
-                    info.removeObservers(ProcessLifecycleOwner.get())
-                    call?.invoke(it.outputData.getString("file"))
-                }
-            }
-        })
     }
 
     class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
