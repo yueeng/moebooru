@@ -88,7 +88,6 @@ class PreviewFragment : Fragment() {
                 }
             }
             binding.swipe.setOnRefreshListener { adapter.refresh() }
-            BottomSheetBehavior.from(binding.sliding)
             binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     val item = adapter.snapshot()[position] ?: return
@@ -211,10 +210,16 @@ class PreviewFragment : Fragment() {
         }
     }
 
-    class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.image1.setBitmapDecoderClass(GlideDecoder::class.java)
             binding.image1.setRegionDecoderClass(GlideRegionDecoder::class.java)
+            binding.image1.setOnClickListener {
+                val pager = FragmentPreviewBinding.bind(requireView())
+                val behavior = BottomSheetBehavior.from(pager.sliding)
+                if (behavior.isOpen) behavior.close()
+                else if (pager.pager.currentItem + 1 < adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
+            }
         }
 
         fun bind(item: JImageItem) {
@@ -250,9 +255,10 @@ class PreviewFragment : Fragment() {
             ImageHolder(PreviewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
 
-    class TagHolder(private val binding: PreviewTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class TagHolder(private val binding: PreviewTagItemBinding, click: (Int) -> Unit) : RecyclerView.ViewHolder(binding.root) {
         init {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
+            binding.root.setOnClickListener { click(bindingAdapterPosition) }
         }
 
         fun bind(value: Tag) {
@@ -270,7 +276,10 @@ class PreviewFragment : Fragment() {
             override fun areContentsTheSame(oldItem: Tag, newItem: Tag): Boolean = oldItem == newItem
         }).build())
         private val data get() = differ.currentList
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)) {
+            startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(data[it].tag)))
+        }
+
         override fun onBindViewHolder(holder: TagHolder, position: Int) = holder.bind(data[position])
         override fun getItemCount(): Int = data.size
         fun submitList(tags: List<Tag>?) = differ.submitList(tags)

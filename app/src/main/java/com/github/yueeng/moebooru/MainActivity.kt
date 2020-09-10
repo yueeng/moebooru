@@ -64,7 +64,9 @@ class ListActivity : AppCompatActivity(R.layout.activity_main) {
 
 class ListFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-        FragmentListBinding.inflate(inflater, container, false).also {
+        FragmentListBinding.inflate(inflater, container, false).also { binding ->
+            (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            arguments?.getParcelable<Q>("query")?.toString()?.let { requireActivity().title = it.toTitleCase() }
             val fragment = childFragmentManager.findFragmentById(R.id.container) as? ImageFragment
                 ?: ImageFragment().also { it.arguments = arguments }
             childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
