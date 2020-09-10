@@ -5,6 +5,8 @@
     <string name="app_retry">retry</string>
     <string name="app_search">Search</string>
     <string name="app_share">Share</string>
+    <string name="app_go">GO</string>
+    <string name="app_download">%1$s download</string>
 
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>

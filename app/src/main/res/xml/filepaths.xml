@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-
     <cache-path
         name="shared"
         path="shared" />
+    <external-path
+        name="external"
+        path="Pictures" />
 </paths>

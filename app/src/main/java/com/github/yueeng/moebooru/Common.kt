@@ -3,6 +3,7 @@ package com.github.yueeng.moebooru
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -23,7 +24,9 @@ import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.*
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
@@ -47,13 +50,16 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
@@ -519,14 +525,58 @@ class MarginItemDecoration(private val spaceHeight: Int) : RecyclerView.ItemDeco
     }
 }
 
-fun TedPermission.Builder.onGranted(function: () -> Unit): TedPermission.Builder {
+fun TedPermission.Builder.onGranted(view: View, function: () -> Unit): TedPermission.Builder {
     setPermissionListener(object : PermissionListener {
         override fun onPermissionGranted() {
             function()
         }
 
         override fun onPermissionDenied(deniedPermissions: MutableList<String>?) {
+            Snackbar.make(view, R.string.tedpermission_setting, Snackbar.LENGTH_SHORT)
+                .setAction(R.string.app_go) {
+                    view.context.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + view.context.packageName)))
+                }
+                .show()
         }
     })
     return this
+}
+
+object Save {
+    private fun encode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
+        r.replace(i, ' ')
+    }
+
+    class SaveWorker(context: Context, private val params: WorkerParameters) : Worker(context, params) {
+        override fun doWork(): Result = try {
+            val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
+            val folder = params.inputData.getString("folder") ?: throw IllegalArgumentException()
+            val target = File(folder, encode(url.pathSegments.last().toLowerCase(Locale.ROOT)))
+            val response = okhttp.newCall(Request.Builder().url(url).build()).execute()
+            response.body?.byteStream()?.use { input ->
+                target.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            Result.success(Data.Builder().putString("file", target.path).build())
+        } catch (e: Exception) {
+            Result.failure(Data.Builder().putString("error", e.message).build())
+        }
+    }
+
+    fun save(item: JImageItem, folder: String, call: ((String?) -> Unit)? = null) {
+        val params = Data.Builder().putString("url", item.jpeg_url).putString("folder", folder).build()
+        val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
+        val manager = WorkManager.getInstance(MainApplication.instance()).apply { enqueue(request) }
+        val info = manager.getWorkInfoByIdLiveData(request.id)
+        info.observe(ProcessLifecycleOwner.get(), Observer {
+            when (it.state) {
+                WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> Unit
+                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED, WorkInfo.State.SUCCEEDED -> {
+                    info.removeObservers(ProcessLifecycleOwner.get())
+                    call?.invoke(it.outputData.getString("file"))
+                }
+            }
+        })
+    }
 }
