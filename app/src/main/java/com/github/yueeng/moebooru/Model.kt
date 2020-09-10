@@ -4,21 +4,32 @@ package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.os.Parcel
 import android.os.Parcelable
+import android.view.LayoutInflater
 import androidx.core.app.ActivityCompat
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.github.yueeng.moebooru.databinding.UserLoginBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
+import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
+import org.jsoup.Jsoup
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Query
+import retrofit2.http.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -68,6 +79,71 @@ data class JImageItem(
     val tags: String,
     val width: Int
 ) : Parcelable
+
+open class JResult(
+    val success: Boolean? = null,
+    val reason: String? = null
+)
+
+open class JRegResult(
+    val response: String? = null,
+    val exists: Boolean? = null,
+    val name: String? = null,
+    val id: Int? = null,
+    val pass_hash: String? = null,
+    val user_info: String? = null,
+    val errors: List<String>? = null
+) : JResult()
+
+class ItemUser(
+    var name: String? = null,
+    var id: Int? = null
+) {
+    val face: String get() = "$moe_url/data/avatars/$id.jpg"
+}
+
+class ItemPool(
+    var id: Int? = null,
+    var name: String? = null,
+    var created_at: String? = null,
+    var updated_at: String? = null,
+    var user_id: Int? = null,
+    var is_public: Boolean? = null,
+    var post_count: Int? = null,
+    var description: String? = null
+)
+
+class ItemPoolPost(
+    var id: Int? = null,
+    var pool_id: Int? = null,
+    var post_id: Int? = null,
+    var active: Boolean? = null,
+    var sequence: String? = null,
+    var next_post_id: Int? = null,
+    var prev_post_id: Int? = null
+)
+
+class ItemVoteBy(
+    @SerializedName("1") var v1: List<ItemUser>? = null,
+    @SerializedName("2") var v2: List<ItemUser>? = null,
+    @SerializedName("3") var v3: List<ItemUser>? = null
+) {
+    val v
+        get() = listOf(3 to v3, 2 to v2, 1 to v1)
+            .filter { it.second?.isNotEmpty() == true }
+            .map { it.first to it.second!! }
+            .toMap()
+}
+
+class ItemScore(
+    var posts: List<JImageItem>? = null,
+    var pools: List<ItemPool>? = null,
+    var pool_posts: List<ItemPoolPost>? = null,
+    var tags: Map<String, String>? = null,
+    var votes: Map<String, Int>? = null,
+    var voted_by: ItemVoteBy? = null,
+    var vote: Int? = null
+) : JResult()
 
 @Parcelize
 data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
@@ -124,6 +200,91 @@ interface MoebooruService {
         @Query("tags") tags: Q = Q(),
         @Query("limit") limit: Int = 20
     ): List<JImageItem>
+
+
+    @GET("user/logout.json")
+    suspend fun logout(): JResult?
+
+    @FormUrlEncoded
+    @POST("user/authenticate.json")
+    suspend fun login(
+        @Field("user[name]") name: String,
+        @Field("user[password]") pwd: String,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
+        @Field("url") url: String = "",
+        @Field("commit") commit: String = "Login"
+    ): JResult?
+
+    @FormUrlEncoded
+    @POST("user/create.json")
+    suspend fun register(
+        @Field("user[name]") name: String,
+        @Field("user[email]") pwd: String,
+        @Field("user[password]") email: String,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
+        @Field("user[password_confirmation]") email2: String = email
+    ): JRegResult?
+
+    @FormUrlEncoded
+    @POST("user/reset_password.json")
+    suspend fun reset(
+        @Field("user[name]") name: String,
+        @Field("user[email]") email: String,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
+        @Field("commit") commit: String = "Submit"
+    ): JResult?
+
+    @FormUrlEncoded
+    @POST("user/update.json")
+    suspend fun change_email(
+        @Field("user[current_password]") pwd: String,
+        @Field("user[email]") email: String,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
+        @Field("user[current_email]") email2: String = email,
+        @Field("render[view]") render: String = "change_email",
+        @Field("_method") method: String = "patch",
+        @Field("commit") commit: String = "Save"
+    ): JResult?
+
+    @FormUrlEncoded
+    @POST("user/update.json")
+    suspend fun change_pwd(
+        @Field("user[current_password]") pwd_current: String,
+        @Field("user[password]") pwd: String,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
+        @Field("user[password_confirmation]") pwd2: String = pwd,
+        @Field("render[view]") render: String = "change_password",
+        @Field("_method") method: String = "patch",
+        @Field("commit") commit: String = "Save"
+    ): JResult?
+
+    @FormUrlEncoded
+    @POST("post/vote.json")
+    suspend fun vote(
+        @Field("id") id: Int,
+        @Field("score") score: Int? = null,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token
+    ): ItemScore?
+
+    @FormUrlEncoded
+    @POST("user/set_avatar/{id}")
+    suspend fun avatar(
+        @Path("id") id: Int,
+        @Field("post_id") post_id: Int,
+        @Field("left") left: Float,
+        @Field("right") right: Float,
+        @Field("top") top: Float,
+        @Field("bottom") bottom: Float,
+        @Field("authenticity_token") authenticity_token: String,
+        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
+        @Field("commit") commit: String = "Set avatar"
+    ): String?
 }
 
 object Service {
@@ -133,10 +294,18 @@ object Service {
         .baseUrl(moe_url)
         .build()
     val instance: MoebooruService = retrofit.create(MoebooruService::class.java)
+    suspend fun csrf(): String? = try {
+        val home = okhttp.newCall(Request.Builder().url("$moe_url/user/home").build()).await { _, response -> response.body?.string() }
+        Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
+    } catch (e: Exception) {
+        null
+    }
 }
 
 //@Parcelize
-class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
+class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
+    val map: MutableMap<String, Any> = (m ?: emptyMap()).toMutableMap()
+
     @Parcelize
     enum class Order(val value: String) : Parcelable {
         id("id"),
@@ -305,9 +474,10 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
 
     constructor(source: Parcel) : this((1..source.readInt()).map { source.readString()!! to source.readValue(Q::class.java.classLoader)!! }.toMap().toMutableMap())
 
-    constructor(source: String) : this(source.split(' ')
-        .map { it.split(':', limit = 2) }
-        .map { list ->
+    constructor(source: Q?) : this(source?.map)
+    constructor(source: String?) : this(source?.split(' ')
+        ?.map { it.split(':', limit = 2) }
+        ?.map { list ->
             when (list.size) {
                 1 -> "keyword" to list.first()
                 2 -> when (list.first()) {
@@ -326,7 +496,8 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
                 }
                 else -> throw  IllegalArgumentException()
             }
-        }.toMap<String, Any>().toMutableMap()
+        }
+        ?.toMap<String, Any>()
     )
 
     fun set(source: Q, reset: Boolean = false) = apply {
@@ -472,10 +643,51 @@ class Q(val map: MutableMap<String, Any> = mutableMapOf()) : Parcelable {
         } ?: emptySequence()
     }
 
-    fun clone(): Q = Q(map.toMutableMap())
+    fun clone(): Q = Q(this)
 }
 
 object OAuth {
-    private var avatarTimestamp = Calendar.getInstance().time.time / 1000
-    fun face(id: Int) = if (id > 0) "$moe_url/data/avatars/$id.jpg?$avatarTimestamp" else null
+    private val uri = moe_url.toHttpUrl()
+    private val cookies get() = okcook.loadForRequest(uri).map { it.name to it.value }.toMap()
+    val name: String? get() = cookies["login"]
+    val user: Int? get() = name?.takeIf { it.isNotEmpty() }?.let { cookies["user_id"]?.toIntOrNull() }
+    val available: Boolean get() = !name.isNullOrEmpty()
+    private var timestamp = Calendar.getInstance().time.time / 1000
+    fun face(id: Int) = if (id > 0) "$moe_url/data/avatars/$id.jpg?$timestamp" else null
+
+    fun login(fragment: Fragment, always: Boolean = false, call: ((Boolean) -> Unit)? = null) {
+        if (available && !always) {
+            call?.invoke(available)
+            return
+        }
+        val context = fragment.requireContext()
+        val view = UserLoginBinding.inflate(LayoutInflater.from(context))
+        MaterialAlertDialogBuilder(context)
+            .setView(view.root)
+            .setTitle(R.string.user_login)
+            .setPositiveButton(R.string.user_login, null)
+            .setOnDismissListener { call?.invoke(available) }
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                        val name = view.edit1.text.toString()
+                        val pass = view.edit2.text.toString()
+                        fragment.lifecycleScope.launchWhenCreated {
+                            val result = withContext(Dispatchers.IO) {
+                                Service.instance.login(name, pass, Service.csrf()!!)
+                            }
+                            if (result?.success == true) {
+                                dismiss()
+                            } else {
+                                val msg = result?.reason ?: context.getString(R.string.app_failed)
+                                Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                                    .setAction(R.string.app_ok) {}.show()
+                            }
+                        }
+                    }
+                }
+            }
+            .show()
+    }
 }

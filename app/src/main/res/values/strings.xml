@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
     <string name="app_cancel">Cancel</string>
+    <string name="app_download">%1$s download</string>
+    <string name="app_failed">Failed</string>
+    <string name="app_go">GO</string>
     <string name="app_ok">OK</string>
     <string name="app_retry">retry</string>
     <string name="app_search">Search</string>
     <string name="app_share">Share</string>
-    <string name="app_go">GO</string>
-    <string name="app_download">%1$s download</string>
 
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>
@@ -65,4 +66,18 @@
     <string name="query_vote_user">User</string>
     <string name="query_width">Width</string>
     <string name="query_width_desc">Query posts with a width of ….</string>
+
+    <string name="user_change_email">Change Email</string>
+    <string name="user_change_pwd">Change Password</string>
+    <string name="user_email">Email</string>
+    <string name="user_email_current">Current Email</string>
+    <string name="user_login">Login</string>
+    <string name="user_logout">Logout</string>
+    <string name="user_name">Name</string>
+    <string name="user_pwd">Password</string>
+    <string name="user_pwd_confirm">Confirm Password</string>
+    <string name="user_pwd_current">Current Password</string>
+    <string name="user_register">Register</string>
+    <string name="user_reset">Reset Password</string>
+    <string name="user_tip_pwd_diff">Two passwords are different.</string>
 </resources>

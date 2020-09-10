@@ -49,6 +49,8 @@ class QueryFragment : Fragment() {
     private val adapter by lazy { QueryAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
+            (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            requireActivity().title = getString(R.string.app_name)
             binding.bottomAppBar.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.search -> true.also {
@@ -407,39 +409,38 @@ class QueryFragment : Fragment() {
 
     class QueryHolder(val binding: QueryItemBinding) : RecyclerView.ViewHolder(binding.root)
     inner class QueryAdapter : RecyclerView.Adapter<QueryHolder>() {
-        private val differ = object : DiffUtil.ItemCallback<Pair<String, Any>>() {
-            override fun areItemsTheSame(oldItem: Pair<String, Any>, newItem: Pair<String, Any>): Boolean = oldItem.first == newItem.first
-            override fun areContentsTheSame(oldItem: Pair<String, Any>, newItem: Pair<String, Any>): Boolean = oldItem == newItem
-        }
-        private val diff = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(differ).build())
+        private val differ = AsyncListDiffer(
+            AdapterListUpdateCallback(this),
+            AsyncDifferConfig.Builder(diffCallback<Pair<String, Any>> { old, new -> old.first == new.first }).build()
+        )
         val data get() = viewModel.query.value!!.map
 
         fun submitList() {
-            diff.submitList(viewModel.query.value!!.map.toList())
+            differ.submitList(viewModel.query.value!!.map.toList())
         }
 
         fun add(k: String, v: Any) {
             viewModel.query.value!!.map[k] = v
-            diff.submitList(viewModel.query.value!!.map.toList())
+            differ.submitList(viewModel.query.value!!.map.toList())
         }
 
         fun remove(k: String) {
             viewModel.query.value!!.map.remove(k)
-            diff.submitList(viewModel.query.value!!.map.toList())
+            differ.submitList(viewModel.query.value!!.map.toList())
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): QueryHolder = QueryHolder(QueryItemBinding.inflate(layoutInflater, parent, false)).apply {
             binding.root.setOnClickListener {
-                edit(diff.currentList[bindingAdapterPosition].first)
+                edit(differ.currentList[bindingAdapterPosition].first)
             }
         }
 
         override fun onBindViewHolder(holder: QueryHolder, position: Int) {
-            val item = diff.currentList[position]
+            val item = differ.currentList[position]
             holder.binding.text1.text = item.first
             holder.binding.text2.text = "${item.second}"
         }
 
-        override fun getItemCount(): Int = diff.currentList.size
+        override fun getItemCount(): Int = differ.currentList.size
     }
 }

@@ -18,12 +18,18 @@
         <!--        <item name="tabStyle">@style/Widget.MaterialComponents.TabLayout.PrimarySurface</item>-->
         <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
         <item name="android:textViewStyle">@style/RobotoTextViewStyle</item>
+        <item name="floatingActionButtonStyle">@style/AppThemeFloatingActionButtonStyle</item>
     </style>
 
     <style name="AppThemeOverlayAppbarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Primary">
         <item name="materialThemeOverlay">@style/ThemeOverlay.MaterialComponents.Dark.ActionBar</item>
     </style>
+
     <style name="RobotoTextViewStyle" parent="android:Widget.TextView">
         <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="AppThemeFloatingActionButtonStyle" parent="Widget.MaterialComponents.FloatingActionButton">
+        <item name="tint">@android:color/white</item>
     </style>
 </resources>

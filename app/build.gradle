@@ -61,6 +61,7 @@ android {
 }
 
 dependencies {
+    implementation 'org.jsoup:jsoup:1.13.1'
     def glide_version = '4.11.0'
     def okhttp_version = '4.8.1'
     def retrofit_version = '2.9.0'
