@@ -27,6 +27,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.work.*
 import com.bumptech.glide.Glide
@@ -610,4 +611,11 @@ class AlphaBlackBitmapTransformation : BitmapTransformation() {
         canvas.restore()
         return dest
     }
+}
+
+fun <T : Any> diffCallback(call: (old: T, new: T) -> Boolean) = object : DiffUtil.ItemCallback<T>() {
+    override fun areItemsTheSame(old: T, new: T): Boolean = call(old, new)
+
+    @SuppressLint("DiffUtilEquals")
+    override fun areContentsTheSame(old: T, new: T): Boolean = old == new
 }
