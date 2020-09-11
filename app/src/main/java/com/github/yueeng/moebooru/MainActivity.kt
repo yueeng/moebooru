@@ -65,7 +65,7 @@ class SavedFragment : Fragment() {
         var tag: DbTag? = null
         fun bind(tag: DbTag) {
             this.tag = tag
-            binding.text1.text = tag.tag
+            binding.text1.text = tag.name
         }
     }
 
