@@ -83,7 +83,11 @@ class SavedFragment : Fragment() {
                 }
                 binding.button1.setOnClickListener {
                     val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                    startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", Q(item.tag)))
+                    startActivity(
+                        Intent(requireContext(), QueryActivity::class.java)
+                            .putExtra("query", Q(item.tag))
+                            .putExtra("id", item.id)
+                    )
                 }
                 binding.swipe.setOnCheckedChangeListener { _, checked ->
                     val item = getItem(bindingAdapterPosition) ?: return@setOnCheckedChangeListener

@@ -15,7 +15,14 @@ data class DbTag(
     @ColumnInfo(name = "name") var name: String,
     @ColumnInfo(name = "pin") var pin: Boolean = false,
     @ColumnInfo(name = "create") var create: Date = Date()
-)
+) {
+    fun update(tag: String, name: String, pin: Boolean) = apply {
+        this.tag = tag
+        this.name = name
+        this.pin = pin
+        this.create = Date()
+    }
+}
 
 @Dao
 interface DbDao {

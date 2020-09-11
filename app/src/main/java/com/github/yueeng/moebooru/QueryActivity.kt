@@ -40,6 +40,7 @@ class QueryActivity : AppCompatActivity(R.layout.activity_main) {
 
 class QueryViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val query = handle.getLiveData("query", args?.getParcelable("query") ?: Q())
+    val id = handle.getLiveData("id", args?.getLong("id"))
 }
 
 class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
@@ -85,10 +86,13 @@ class QueryFragment : Fragment() {
             }
         }.root
 
-    private fun save() {
+    private fun save() = lifecycleScope.launchWhenCreated {
         viewModel.query.value?.toString()?.takeIf { it.isNotBlank() }?.let { tag ->
             val view = QuerySavedBinding.inflate(layoutInflater)
+            val saved = viewModel.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
             view.input1.hint = tag
+            view.edit1.setText(saved?.name)
+            view.switch1.isChecked = saved?.pin ?: false
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.query_saved_title)
                 .setView(view.root)
@@ -97,8 +101,11 @@ class QueryFragment : Fragment() {
                         Db.db.withTransaction {
                             val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() } ?: tag
                             val pin = view.switch1.isChecked
-                            Db.tags.tag(tag)?.let { t -> Db.tags.updateTag(DbTag(t.id, tag, name, pin)) }
-                                ?: Db.tags.insertTag(DbTag(0, tag, name, pin))
+                            if (saved != null) {
+                                Db.tags.updateTag(saved.update(tag, name, pin))
+                            } else {
+                                viewModel.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
+                            }
                         }
                     }
                 }
