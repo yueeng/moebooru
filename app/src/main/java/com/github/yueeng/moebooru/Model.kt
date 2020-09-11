@@ -12,6 +12,7 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
+import androidx.room.Entity
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -149,18 +150,18 @@ class ItemScore(
 data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
     companion object {
         const val TYPE_UNKNOWN = -1
-        const val TYPE_GENERAL = 0x00
-        const val TYPE_ARTIST = 0x01
-        const val TYPE_COPYRIGHT = 0x03
-        const val TYPE_CHARACTER = 0x04
-        const val TYPE_CIRCLE = 0x05
-        const val TYPE_FAULTS = 0x06
-        const val TYPE_USER = 0x11
-        const val TYPE_SIZE = 0x12
-        const val TYPE_CHILDREN = 0x13
-        const val TYPE_PARENT = 0x14
-        const val TYPE_URL = 0x15
-        const val TYPE_CLIPBOARD = 0x16
+        const val TYPE_GENERAL = 0
+        const val TYPE_ARTIST = 1
+        const val TYPE_COPYRIGHT = 3
+        const val TYPE_CHARACTER = 4
+        const val TYPE_CIRCLE = 5
+        const val TYPE_FAULTS = 6
+        const val TYPE_USER = -2
+        const val TYPE_SIZE = -3
+        const val TYPE_CHILDREN = -4
+        const val TYPE_PARENT = -5
+        const val TYPE_URL = -6
+        const val TYPE_CLIPBOARD = -7
 
         fun string(type: Int) = when (type) {
             TYPE_GENERAL -> "GENERAL"
@@ -179,12 +180,12 @@ data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
         }
 
         fun color(type: Int, context: Context = MainApplication.instance()) = when (type) {
-            0x00 -> ActivityCompat.getColor(context, R.color.tag_type_general)
-            0x01 -> ActivityCompat.getColor(context, R.color.tag_type_artist)
-            0x03 -> ActivityCompat.getColor(context, R.color.tag_type_copyright)
-            0x04 -> ActivityCompat.getColor(context, R.color.tag_type_character)
-            0x05 -> ActivityCompat.getColor(context, R.color.tag_type_circle)
-            0x06 -> ActivityCompat.getColor(context, R.color.tag_type_faults)
+            0 -> ActivityCompat.getColor(context, R.color.tag_type_general)
+            1 -> ActivityCompat.getColor(context, R.color.tag_type_artist)
+            3 -> ActivityCompat.getColor(context, R.color.tag_type_copyright)
+            4 -> ActivityCompat.getColor(context, R.color.tag_type_character)
+            5 -> ActivityCompat.getColor(context, R.color.tag_type_circle)
+            6 -> ActivityCompat.getColor(context, R.color.tag_type_faults)
             else -> ActivityCompat.getColor(context, R.color.tag_type_default)
         }
     }
