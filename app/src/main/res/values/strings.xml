@@ -45,6 +45,9 @@
     <string name="query_rating_explicit">Query posts that are rated explicit.</string>
     <string name="query_rating_questionable">Query posts that are rated questionable.</string>
     <string name="query_rating_safe">Query posts that are rated safe.</string>
+    <string name="query_saved_empty">Can\'t save empty tag</string>
+    <string name="query_saved_pin">Pin to main page</string>
+    <string name="query_saved_title">Save tag</string>
     <string name="query_score">Score</string>
     <string name="query_score_desc">Query posts with a score of ….</string>
     <string name="query_source">Source</string>

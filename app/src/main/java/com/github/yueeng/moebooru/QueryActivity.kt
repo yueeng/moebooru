@@ -61,20 +61,7 @@ class QueryFragment : Fragment() {
                     R.id.search -> true.also {
                         startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", viewModel.query.value))
                     }
-                    R.id.save -> true.also {
-                        viewModel.query.value?.toString()?.let { tag ->
-                            ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-                                Db.db.withTransaction {
-                                    val t = Db.tags.tag(tag)
-                                    if (t != null) {
-                                        Db.tags.updateTag(DbTag(t.id, tag, tag, t.pin))
-                                    } else {
-                                        Db.tags.insertTag(DbTag(0, tag, tag))
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    R.id.save -> true.also { save() }
                     else -> super.onOptionsItemSelected(item)
                 }
             }
@@ -97,6 +84,29 @@ class QueryFragment : Fragment() {
                     .create().show()
             }
         }.root
+
+    private fun save() {
+        viewModel.query.value?.toString()?.takeIf { it.isNotBlank() }?.let { tag ->
+            val view = QuerySavedBinding.inflate(layoutInflater)
+            view.input1.hint = tag
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.query_saved_title)
+                .setView(view.root)
+                .setPositiveButton(R.string.app_ok) { _, _ ->
+                    ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
+                        Db.db.withTransaction {
+                            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() } ?: tag
+                            Db.tags.tag(tag)?.let { t -> Db.tags.updateTag(DbTag(t.id, tag, name, t.pin)) }
+                                ?: Db.tags.insertTag(DbTag(0, tag, name))
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.app_cancel, null)
+                .create().show()
+        } ?: Snackbar.make(requireView(), R.string.query_saved_empty, Snackbar.LENGTH_SHORT)
+            .setAction(R.string.app_ok) {}
+            .show()
+    }
 
     fun edit(key: String?) {
         when (key) {
