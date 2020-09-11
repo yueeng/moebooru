@@ -1,7 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.fragment.app.FragmentContainerView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/container"
+    android:id="@+id/drawer"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity" />
+    android:layout_height="match_parent">
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity" />
+
+    <com.google.android.material.navigation.NavigationView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="start" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="?android:attr/colorBackground"
+        app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager"
+        tools:listitem="@layout/query_tag_item" />
+</androidx.drawerlayout.widget.DrawerLayout>
