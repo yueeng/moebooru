@@ -30,7 +30,10 @@ class UserActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserFragment
             ?: UserFragment().apply { arguments = intent.extras }
-        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+        val saved = supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment ?: SavedFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.container, fragment)
+            .replace(R.id.saved, saved).commit()
     }
 }
 

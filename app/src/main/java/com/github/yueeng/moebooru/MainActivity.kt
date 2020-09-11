@@ -4,11 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.*
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.*
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -20,45 +20,42 @@ import com.google.android.flexbox.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
 
-class MainViewModel(handle: SavedStateHandle) : ViewModel() {
+class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
     val saved = Pager(PagingConfig(20)) { Db.tags.pagingTags() }.flow
 }
 
-class MainViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+class SavedViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = MainViewModel(handle) as T
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = SavedViewModel(handle) as T
 }
 
-class MainActivity : AppCompatActivity(R.layout.activity_main) {
-    private val viewModel: MainViewModel by viewModels { MainViewModelFactory(this, null) }
+class SavedFragment : Fragment() {
+    private val viewModel: SavedViewModel by viewModels { SavedViewModelFactory(this, null) }
     private val savedAdapter by lazy { SavedAdapter() }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
-        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
-        val binding = ActivityMainBinding.bind(findViewById(R.id.drawer))
-        (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
-            flexWrap = FlexWrap.WRAP
-            flexDirection = FlexDirection.ROW
-            alignItems = AlignItems.STRETCH
-            justifyContent = JustifyContent.FLEX_START
-        }
-        binding.recycler.adapter = savedAdapter
-        lifecycleScope.launchWhenCreated {
-            viewModel.saved.collectLatest { savedAdapter.submitData(it) }
-        }
-        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                lifecycleScope.launchWhenCreated {
-                    (viewHolder as? SavedHolder)?.tag?.let {
-                        Db.db.tags().deleteTag(it)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
+            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
+                flexWrap = FlexWrap.WRAP
+                flexDirection = FlexDirection.ROW
+                alignItems = AlignItems.STRETCH
+                justifyContent = JustifyContent.FLEX_START
+            }
+            binding.recycler.adapter = savedAdapter
+            lifecycleScope.launchWhenCreated {
+                viewModel.saved.collectLatest { savedAdapter.submitData(it) }
+            }
+            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    lifecycleScope.launchWhenCreated {
+                        (viewHolder as? SavedHolder)?.tag?.let {
+                            Db.db.tags().deleteTag(it)
+                        }
                     }
                 }
-            }
-        }).attachToRecyclerView(binding.recycler)
+            }).attachToRecyclerView(binding.recycler)
+        }.root
     }
-
 
     class SavedHolder(val binding: QueryTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
@@ -81,9 +78,20 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             SavedHolder(QueryTagItemBinding.inflate(layoutInflater, parent, false)).apply {
                 binding.root.setOnClickListener {
                     val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                    startActivity(Intent(this@MainActivity, ListActivity::class.java).putExtra("query", Q(item.tag)))
+                    startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)))
                 }
             }
+    }
+}
+
+class MainActivity : AppCompatActivity(R.layout.activity_main) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
+        val saved = supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment ?: SavedFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.container, fragment)
+            .replace(R.id.saved, saved).commit()
     }
 }
 
@@ -123,7 +131,10 @@ class ListActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? ListFragment
             ?: ListFragment().apply { arguments = intent.extras }
-        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+        val saved = supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment ?: SavedFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.container, fragment)
+            .replace(R.id.saved, saved).commit()
     }
 }
 
