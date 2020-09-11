@@ -7,11 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import androidx.paging.LoadState
-import androidx.paging.LoadStateAdapter
-import androidx.paging.PagingDataAdapter
+import androidx.lifecycle.*
+import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
+import androidx.savedstate.SavedStateRegistryOwner
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
@@ -71,6 +70,26 @@ class ListFragment : Fragment() {
                 ?: ImageFragment().also { it.arguments = arguments }
             childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }.root
+}
+
+class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
+        val key = params.key ?: 1
+        val posts = Service.instance.post(page = key, Q(query).rating(Q.Rating.safe), limit = params.loadSize)
+        LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
+    } catch (e: Exception) {
+        LoadResult.Error(e)
+    }
+}
+
+class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
+    val posts = Pager(PagingConfig(20, initialLoadSize = 20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }
+        .flow.cachedIn(viewModelScope)
+}
+
+class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
 }
 
 class ImageFragment : Fragment() {
