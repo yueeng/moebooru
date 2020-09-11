@@ -96,14 +96,16 @@ class QueryFragment : Fragment() {
                     ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
                         Db.db.withTransaction {
                             val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() } ?: tag
-                            Db.tags.tag(tag)?.let { t -> Db.tags.updateTag(DbTag(t.id, tag, name, t.pin)) }
-                                ?: Db.tags.insertTag(DbTag(0, tag, name))
+                            val pin = view.switch1.isChecked
+                            Db.tags.tag(tag)?.let { t -> Db.tags.updateTag(DbTag(t.id, tag, name, pin)) }
+                                ?: Db.tags.insertTag(DbTag(0, tag, name, pin))
                         }
                     }
                 }
                 .setNegativeButton(R.string.app_cancel, null)
                 .create().show()
         } ?: Snackbar.make(requireView(), R.string.query_saved_empty, Snackbar.LENGTH_SHORT)
+            .setAnchorView(R.id.button1)
             .setAction(R.string.app_ok) {}
             .show()
     }

@@ -30,6 +30,7 @@
 
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/bottomAppBar"
+        app:layout_behavior="com.google.android.material.bottomappbar.BottomAppBar$Behavior"
         style="@style/Widget.MaterialComponents.BottomAppBar.Colored"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -24,10 +24,10 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchMaterial"
+            android:id="@+id/switch1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/query_saved_pin"
+            android:text="@string/query_saved_pin_desc"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/input1" />

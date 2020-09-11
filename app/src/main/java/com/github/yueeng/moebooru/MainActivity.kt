@@ -66,6 +66,7 @@ class SavedFragment : Fragment() {
         fun bind(tag: DbTag) {
             this.tag = tag
             binding.text1.text = tag.name
+            binding.text2.text = tag.tag
         }
     }
 
@@ -79,6 +80,17 @@ class SavedFragment : Fragment() {
                 binding.root.setOnClickListener {
                     val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
                     startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)))
+                }
+                binding.button1.setOnClickListener {
+                    val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                    startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", Q(item.tag)))
+                }
+                binding.swipe.setOnCheckedChangeListener { _, checked ->
+                    val item = getItem(bindingAdapterPosition) ?: return@setOnCheckedChangeListener
+                    lifecycleScope.launchWhenCreated {
+                        item.pin = checked
+                        Db.tags.updateTag(item)
+                    }
                 }
             }
     }
@@ -107,7 +119,7 @@ class MainFragment : Fragment() {
 
             lifecycleScope.launchWhenCreated {
                 Db.db.invalidationTracker.createLiveData(arrayOf("tags"), true) { }.asFlow().collectLatest {
-                    val tags = Db.tags.tags()
+                    val tags = Db.tags.tags(true)
                     adapter.data.removeAll(adapter.data.drop(1))
                     adapter.data.addAll(tags.map { it.name to Q(it.tag) })
                     adapter.notifyDataSetChanged()

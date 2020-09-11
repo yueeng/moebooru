@@ -11,10 +11,10 @@ import java.util.*
 )
 data class DbTag(
     @PrimaryKey(autoGenerate = true) val id: Long,
-    @ColumnInfo(name = "tag") val tag: String,
-    @ColumnInfo(name = "name") val name: String,
-    @ColumnInfo(name = "pin") val pin: Boolean = false,
-    @ColumnInfo(name = "create") val create: Date = Date()
+    @ColumnInfo(name = "tag") var tag: String,
+    @ColumnInfo(name = "name") var name: String,
+    @ColumnInfo(name = "pin") var pin: Boolean = false,
+    @ColumnInfo(name = "create") var create: Date = Date()
 )
 
 @Dao
@@ -24,6 +24,9 @@ interface DbDao {
 
     @Query("SELECT * FROM tags ORDER BY `create` DESC")
     suspend fun tags(): List<DbTag>
+
+    @Query("SELECT * FROM tags WHERE pin = :pin ORDER BY `create` DESC")
+    fun pagingTags(pin: Boolean): PagingSource<Int, DbTag>
 
     @Query("SELECT * FROM tags ORDER BY `create` DESC")
     fun pagingTags(): PagingSource<Int, DbTag>
