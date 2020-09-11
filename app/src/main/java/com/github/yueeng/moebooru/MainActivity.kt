@@ -4,25 +4,86 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.*
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.paging.*
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
+import com.google.android.flexbox.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
 
-class MainActivity : AppCompatActivity(R.layout.activity_main) {
+class MainViewModel(handle: SavedStateHandle) : ViewModel() {
+    val saved = Pager(PagingConfig(20)) { Db.tags.pagingTags() }.flow
+}
 
+class MainViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = MainViewModel(handle) as T
+}
+
+class MainActivity : AppCompatActivity(R.layout.activity_main) {
+    private val viewModel: MainViewModel by viewModels { MainViewModelFactory(this, null) }
+    private val savedAdapter by lazy { SavedAdapter() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+        val binding = ActivityMainBinding.bind(findViewById(R.id.drawer))
+        (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
+            flexWrap = FlexWrap.WRAP
+            flexDirection = FlexDirection.ROW
+            alignItems = AlignItems.STRETCH
+            justifyContent = JustifyContent.FLEX_START
+        }
+        binding.recycler.adapter = savedAdapter
+        lifecycleScope.launchWhenCreated {
+            viewModel.saved.collectLatest { savedAdapter.submitData(it) }
+        }
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                lifecycleScope.launchWhenCreated {
+                    (viewHolder as? SavedHolder)?.tag?.let {
+                        Db.db.tags().deleteTag(it)
+                    }
+                }
+            }
+        }).attachToRecyclerView(binding.recycler)
+    }
+
+
+    class SavedHolder(val binding: QueryTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.root.setCardBackgroundColor(randomColor())
+        }
+
+        var tag: DbTag? = null
+        fun bind(tag: DbTag) {
+            this.tag = tag
+            binding.text1.text = tag.tag
+        }
+    }
+
+    inner class SavedAdapter : PagingDataAdapter<DbTag, SavedHolder>(diffCallback { old, new -> old.id == new.id }) {
+        override fun onBindViewHolder(holder: SavedHolder, position: Int) {
+            holder.bind(getItem(position)!!)
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SavedHolder =
+            SavedHolder(QueryTagItemBinding.inflate(layoutInflater, parent, false)).apply {
+                binding.root.setOnClickListener {
+                    val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                    startActivity(Intent(this@MainActivity, ListActivity::class.java).putExtra("query", Q(item.tag)))
+                }
+            }
     }
 }
 
@@ -48,9 +109,8 @@ class MainFragment : Fragment() {
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         val data = mutableListOf("Newest" to Q())
-
+        override fun getItemId(position: Int): Long = data[position].hashCode().toLong()
         override fun getItemCount(): Int = data.size
-
         override fun createFragment(position: Int): Fragment = ImageFragment().apply {
             arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
         }

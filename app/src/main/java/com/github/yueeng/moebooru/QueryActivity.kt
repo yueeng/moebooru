@@ -15,19 +15,14 @@ import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.*
 import androidx.room.withTransaction
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.TransitionManager
 import com.github.yueeng.moebooru.databinding.*
-import com.google.android.flexbox.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
 class QueryActivity : AppCompatActivity(R.layout.activity_main) {
@@ -42,7 +37,6 @@ class QueryActivity : AppCompatActivity(R.layout.activity_main) {
 
 class QueryViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val query = handle.getLiveData("query", args?.getParcelable("query") ?: Q())
-    val saved = Pager(PagingConfig(20)) { Db.tags.pagingTags() }.flow
 }
 
 class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
@@ -53,7 +47,6 @@ class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bu
 class QueryFragment : Fragment() {
     val viewModel: QueryViewModel by viewModels { QueryViewModelFactory(this, arguments) }
     private val adapter by lazy { QueryAdapter() }
-    private val savedAdapter by lazy { SavedAdapter() }
 
     @SuppressLint("RestrictedApi")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
@@ -89,26 +82,6 @@ class QueryFragment : Fragment() {
                     adapter.remove(adapter.data.toList()[viewHolder.bindingAdapterPosition].first)
                 }
             }).attachToRecyclerView(binding.recycler)
-            (binding.recycler2.layoutManager as? FlexboxLayoutManager)?.apply {
-                flexWrap = FlexWrap.WRAP
-                flexDirection = FlexDirection.ROW
-                alignItems = AlignItems.STRETCH
-                justifyContent = JustifyContent.FLEX_START
-            }
-            binding.recycler2.adapter = savedAdapter
-            lifecycleScope.launchWhenCreated {
-                viewModel.saved.collectLatest { savedAdapter.submitData(it) }
-            }
-            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-                override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
-                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                    lifecycleScope.launchWhenCreated {
-                        (viewHolder as? SavedHolder)?.tag?.let {
-                            Db.db.tags().deleteTag(it)
-                        }
-                    }
-                }
-            }).attachToRecyclerView(binding.recycler2)
             binding.button1.setOnClickListener {
                 val data = Q.cheats.map { i -> mapOf("k" to i.key, "n" to getString(i.value.first), "d" to getString(i.value.second)) }
                 val adapter = SimpleAdapter(
@@ -485,31 +458,5 @@ class QueryFragment : Fragment() {
         }
 
         override fun getItemCount(): Int = differ.currentList.size
-    }
-
-    class SavedHolder(val binding: QueryTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        init {
-            binding.root.setCardBackgroundColor(randomColor())
-        }
-
-        var tag: DbTag? = null
-        fun bind(tag: DbTag) {
-            this.tag = tag
-            binding.text1.text = tag.tag
-        }
-    }
-
-    inner class SavedAdapter : PagingDataAdapter<DbTag, SavedHolder>(diffCallback { old, new -> old.id == new.id }) {
-        override fun onBindViewHolder(holder: SavedHolder, position: Int) {
-            holder.bind(getItem(position)!!)
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SavedHolder =
-            SavedHolder(QueryTagItemBinding.inflate(layoutInflater, parent, false)).apply {
-                binding.root.setOnClickListener {
-                    val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                    startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)))
-                }
-            }
     }
 }
