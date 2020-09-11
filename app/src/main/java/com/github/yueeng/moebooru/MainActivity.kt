@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.*
@@ -15,7 +16,6 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
-import java.util.*
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
@@ -28,20 +28,26 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
 class MainFragment : Fragment() {
     private val adapter by lazy { PagerAdapter(this) }
+
+    @SuppressLint("RestrictedApi")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentMainBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.pager.adapter = adapter
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
+
+            lifecycleScope.launchWhenCreated {
+                Db.db.invalidationTracker.createLiveData(arrayOf("tags"), true) { }.asFlow().collectLatest {
+                    val tags = Db.tags.tags()
+                    adapter.data.removeAll(adapter.data.drop(1))
+                    adapter.data.addAll(tags.map { it.name to Q(it.tag) })
+                    adapter.notifyDataSetChanged()
+                }
+            }
         }.root
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
-        val data = listOf(
-            "Newest" to Q(),
-            "Day" to Q().popular_by_day(Date()),
-            "Week" to Q().popular_by_week(Date()),
-            "Month" to Q().popular_by_month(Date())
-        )
+        val data = mutableListOf("Newest" to Q())
 
         override fun getItemCount(): Int = data.size
 

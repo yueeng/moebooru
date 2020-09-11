@@ -100,7 +100,7 @@ class PreviewFragment : Fragment() {
                             item.tags.split(' ').map { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
                         }.mapNotNull { it.await() }
                             .map { Tag(it.first, it.second.toTitleCase(), it.second) }
-                            .sortedWith(compareBy(Tag::type, Tag::name, Tag::tag))
+                            .sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
                         TransitionManager.beginDelayedTransition(binding.sliding)
                         tagAdapter.submitList(tags)
                     }
