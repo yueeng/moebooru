@@ -80,6 +80,7 @@ class PreviewFragment : Fragment() {
                 alignItems = AlignItems.STRETCH
                 justifyContent = JustifyContent.FLEX_START
             }
+            binding.recycler.itemAnimator = null
             binding.recycler.adapter = tagAdapter
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow
@@ -111,7 +112,6 @@ class PreviewFragment : Fragment() {
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher)
                         .transition(DrawableTransitionOptions.withCrossFade())
-                        .circleCrop()
                         .into(binding.button7)
                 }
             })
