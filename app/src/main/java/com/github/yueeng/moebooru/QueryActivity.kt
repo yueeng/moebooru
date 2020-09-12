@@ -203,7 +203,6 @@ class QueryFragment : Fragment() {
 
     private fun int(key: String) {
         val view = QuerySheetIntBinding.inflate(layoutInflater)
-        view.chipGroup.isSingleSelection = true
         view.chipGroup.setOnCheckedChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
@@ -262,7 +261,6 @@ class QueryFragment : Fragment() {
 
     private fun date(key: String) {
         val view = QuerySheetDateBinding.inflate(layoutInflater)
-        view.chipGroup.isSingleSelection = true
         view.chipGroup.setOnCheckedChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
@@ -338,7 +336,6 @@ class QueryFragment : Fragment() {
 
     private fun vote(key: String) {
         val view = QuerySheetVoteBinding.inflate(layoutInflater)
-        view.chipGroup.isSingleSelection = true
         view.chipGroup.setOnCheckedChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.chip2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value

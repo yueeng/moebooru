@@ -15,7 +15,8 @@
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:singleSelection="true">
 
             <com.google.android.material.chip.Chip
                 android:layout_width="wrap_content"
@@ -64,7 +65,7 @@
             android:id="@+id/input1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/app_name"
+            android:hint="@string/query_vote_user"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/chipGroup">
@@ -82,7 +83,8 @@
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/input1">
+            app:layout_constraintTop_toBottomOf="@+id/input1"
+            app:singleSelection="true">
 
             <com.google.android.material.chip.Chip
                 android:layout_width="wrap_content"
@@ -112,7 +114,8 @@
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/chip1">
+            app:layout_constraintTop_toBottomOf="@+id/chip1"
+            app:singleSelection="true">
 
             <com.google.android.material.chip.Chip
                 android:layout_width="wrap_content"
