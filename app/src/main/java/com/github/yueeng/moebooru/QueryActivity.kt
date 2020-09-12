@@ -88,7 +88,7 @@ class QueryFragment : Fragment() {
             binding.button1.setOnClickListener {
                 val data = Q.cheats.map { i -> mapOf("k" to i.key, "n" to getString(i.value.first), "d" to getString(i.value.second)) }
                 val adapter = SimpleAdapter(
-                    requireActivity(), data, android.R.layout.simple_list_item_2, arrayOf("n", "d"), intArrayOf(android.R.id.text1, android.R.id.text2)
+                    requireActivity(), data, R.layout.simple_list_item_2, arrayOf("n", "d"), intArrayOf(R.id.text1, R.id.text2)
                 )
                 MaterialAlertDialogBuilder(requireContext())
                     .setAdapter(adapter) { _, w ->
