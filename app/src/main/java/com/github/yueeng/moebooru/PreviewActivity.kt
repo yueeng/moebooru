@@ -18,6 +18,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
+import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -279,7 +280,7 @@ class PreviewFragment : Fragment() {
         fun bind(value: Tag) {
             binding.text1.text = value.name
             binding.text2.text = value.string
-            binding.text2.visibility = if (binding.text2.text.isNullOrEmpty()) View.GONE else View.VISIBLE
+            binding.text2.isGone = binding.text2.text.isNullOrEmpty()
             binding.category.setBackgroundColor(value.color)
             binding.root.setCardBackgroundColor(randomColor())
         }

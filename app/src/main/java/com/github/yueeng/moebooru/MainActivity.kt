@@ -48,6 +48,9 @@ class SavedFragment : Fragment() {
                     }
                 }
             }).attachToRecyclerView(binding.recycler)
+            binding.button1.setOnClickListener {
+                startActivity(Intent(requireContext(), QueryActivity::class.java))
+            }
         }.root
     }
 
