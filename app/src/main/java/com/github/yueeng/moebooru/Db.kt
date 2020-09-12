@@ -29,13 +29,13 @@ interface DbDao {
     @Query("SELECT * FROM tags WHERE pin = :pin ORDER BY `create` DESC")
     suspend fun tags(pin: Boolean): List<DbTag>
 
-    @Query("SELECT * FROM tags ORDER BY `create` DESC")
+    @Query("SELECT * FROM tags ORDER BY `pin` DESC, `create` DESC")
     suspend fun tags(): List<DbTag>
 
     @Query("SELECT * FROM tags WHERE pin = :pin ORDER BY `create` DESC")
     fun pagingTags(pin: Boolean): PagingSource<Int, DbTag>
 
-    @Query("SELECT * FROM tags ORDER BY `create` DESC")
+    @Query("SELECT * FROM tags ORDER BY `pin` DESC, `create` DESC")
     fun pagingTags(): PagingSource<Int, DbTag>
 
     @Query("SELECT * FROM tags WHERE tag = :tag LIMIT 1")
