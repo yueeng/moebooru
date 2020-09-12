@@ -23,6 +23,9 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.mapNotNull
 import java.util.*
 
 class QueryActivity : AppCompatActivity(R.layout.activity_main) {
@@ -41,6 +44,7 @@ class QueryActivity : AppCompatActivity(R.layout.activity_main) {
 class QueryViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val query = handle.getLiveData("query", args?.getParcelable("query") ?: Q())
     val id = handle.getLiveData("id", args?.getLong("id"))
+    val name = handle.getLiveData<String>("name")
 }
 
 class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
@@ -57,6 +61,14 @@ class QueryFragment : Fragment() {
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             requireActivity().title = getString(R.string.app_name)
+            lifecycleScope.launchWhenCreated {
+                viewModel.name.asFlow().mapNotNull { it }.collectLatest { requireActivity().title = it }
+            }
+            lifecycleScope.launchWhenCreated {
+                viewModel.id.asFlow().mapNotNull { it }.filter { it != 0L }.collectLatest { id ->
+                    Db.tags.tag(id)?.let { viewModel.name.postValue(it.name) }
+                }
+            }
             binding.bottomAppBar.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.search -> true.also {
@@ -99,13 +111,14 @@ class QueryFragment : Fragment() {
                 .setPositiveButton(R.string.app_ok) { _, _ ->
                     ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
                         Db.db.withTransaction {
-                            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() } ?: tag
+                            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() } ?: tag.toTitleCase()
                             val pin = view.switch1.isChecked
                             if (saved != null) {
                                 Db.tags.updateTag(saved.update(tag, name, pin))
                             } else {
                                 viewModel.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
                             }
+                            viewModel.name.postValue(name)
                         }
                     }
                 }

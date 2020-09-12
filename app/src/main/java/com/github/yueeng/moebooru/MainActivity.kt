@@ -16,9 +16,9 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
-import com.google.android.flexbox.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
+import java.util.*
 
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
     val saved = Pager(PagingConfig(20)) { Db.tags.pagingTags() }.flow
@@ -34,12 +34,6 @@ class SavedFragment : Fragment() {
     private val savedAdapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
-            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
-                flexWrap = FlexWrap.WRAP
-                flexDirection = FlexDirection.ROW
-                alignItems = AlignItems.STRETCH
-                justifyContent = JustifyContent.FLEX_START
-            }
             binding.recycler.adapter = savedAdapter
             lifecycleScope.launchWhenCreated {
                 viewModel.saved.collectLatest { savedAdapter.submitData(it) }
@@ -67,6 +61,7 @@ class SavedFragment : Fragment() {
             this.tag = tag
             binding.text1.text = tag.name
             binding.text2.text = tag.tag
+            binding.swipe.isChecked = tag.pin
         }
     }
 
@@ -91,8 +86,10 @@ class SavedFragment : Fragment() {
                 }
                 binding.swipe.setOnCheckedChangeListener { _, checked ->
                     val item = getItem(bindingAdapterPosition) ?: return@setOnCheckedChangeListener
+                    if (item.pin == checked) return@setOnCheckedChangeListener
                     lifecycleScope.launchWhenCreated {
                         item.pin = checked
+                        item.create = Date()
                         Db.tags.updateTag(item)
                     }
                 }
