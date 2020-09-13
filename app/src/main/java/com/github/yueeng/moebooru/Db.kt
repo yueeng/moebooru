@@ -44,7 +44,7 @@ interface DbDao {
     @Query("SELECT * FROM tags WHERE id = :id LIMIT 1")
     suspend fun tag(id: Long): DbTag?
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTag(tag: DbTag): Long
 
     @Update
@@ -72,6 +72,7 @@ class DaoConverter {
 abstract class Db : RoomDatabase() {
     companion object {
         private fun create(context: Context): Db = Room.databaseBuilder(context, Db::class.java, "database.db")
+            .createFromAsset("database.db")
             .fallbackToDestructiveMigration()
             .build()
 
