@@ -132,7 +132,7 @@ class MainFragment : Fragment() {
         }.root
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
-        val data = mutableListOf("Newest" to Q())
+        val data = mutableListOf("Popular" to Q())
         override fun getItemId(position: Int): Long = data[position].hashCode().toLong()
         override fun getItemCount(): Int = data.size
         override fun createFragment(position: Int): Fragment = ImageFragment().apply {
