@@ -8,6 +8,8 @@ import android.content.DialogInterface
 import android.os.Parcel
 import android.os.Parcelable
 import android.view.LayoutInflater
+import android.view.View
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -16,7 +18,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.github.yueeng.moebooru.databinding.UserLoginBinding
+import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.annotations.SerializedName
@@ -203,6 +205,28 @@ interface MoebooruService {
         @Query("limit") limit: Int = 20
     ): List<JImageItem>
 
+    @GET("post/popular_by_day.json")
+    suspend fun popular_by_day(
+        @Query("day") day: Int,
+        @Query("month") month: Int,
+        @Query("year") year: Int
+    ): List<JImageItem>
+
+    @GET("post/popular_by_week.json")
+    suspend fun popular_by_week(
+        @Query("day") day: Int,
+        @Query("month") month: Int,
+        @Query("year") year: Int
+    ): List<JImageItem>
+
+    @GET("post/popular_by_month.json")
+    suspend fun popular_by_month(
+        @Query("month") month: Int,
+        @Query("year") year: Int
+    ): List<JImageItem>
+
+    @GET("post/popular_recent.json")
+    suspend fun popular_recent(): List<JImageItem>
 
     @GET("user/logout.json")
     suspend fun logout(): JResult?
@@ -657,39 +681,146 @@ object OAuth {
     private var timestamp = Calendar.getInstance().time.time / 1000
     fun face(id: Int) = if (id > 0) "$moe_url/data/avatars/$id.jpg?$timestamp" else null
 
-    fun login(fragment: Fragment, always: Boolean = false, call: ((Boolean) -> Unit)? = null) {
-        if (available && !always) {
-            call?.invoke(available)
-            return
-        }
-        val context = fragment.requireContext()
-        val view = UserLoginBinding.inflate(LayoutInflater.from(context))
+    private fun alert(fragment: Fragment, layout: Int, title: Int, subTitle: Int = 0, subCall: (() -> Unit)? = null, call: (AlertDialog, View) -> Unit) = fragment.requireContext().let { context ->
+        val view = LayoutInflater.from(context).inflate(layout, null)
         MaterialAlertDialogBuilder(context)
-            .setView(view.root)
-            .setTitle(R.string.user_login)
-            .setPositiveButton(R.string.user_login, null)
-            .setOnDismissListener { call?.invoke(available) }
+            .setTitle(title)
+            .setView(view)
+            .setPositiveButton(title, null)
+            .setNegativeButton(R.string.app_cancel, null)
+            .apply { if (subTitle != 0) setNeutralButton(subTitle) { _, _ -> subCall?.invoke() } }
             .create()
             .apply {
                 setOnShowListener {
                     getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                        val name = view.edit1.text.toString()
-                        val pass = view.edit2.text.toString()
-                        fragment.lifecycleScope.launchWhenCreated {
-                            val result = withContext(Dispatchers.IO) {
-                                Service.instance.login(name, pass, Service.csrf()!!)
-                            }
-                            if (result?.success == true) {
-                                dismiss()
-                            } else {
-                                val msg = result?.reason ?: context.getString(R.string.app_failed)
-                                Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
-                                    .setAction(R.string.app_ok) {}.show()
-                            }
-                        }
+                        call.invoke(this, view)
                     }
                 }
             }
             .show()
     }
+
+    fun login(fragment: Fragment, call: (() -> Unit)? = null): Unit =
+        alert(fragment, R.layout.user_login, R.string.user_login, R.string.user_register, { register(fragment) { login(fragment, call) } }) { alert, root ->
+            val view = UserLoginBinding.bind(root)
+            val name = view.edit1.text.toString()
+            val pass = view.edit2.text.toString()
+            view.root.isEnabled = false
+            fragment.lifecycleScope.launchWhenCreated {
+                val result = withContext(Dispatchers.IO) {
+                    Service.instance.login(name, pass, Service.csrf()!!)
+                }
+                view.root.isEnabled = true
+                if (result?.success == true) {
+                    alert.dismiss()
+                    call?.invoke()
+                } else {
+                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.app_ok) {}.show()
+                }
+            }
+        }
+
+    fun register(fragment: Fragment, call: (() -> Unit)? = null): Unit =
+        alert(fragment, R.layout.user_register, R.string.user_register, R.string.user_login, { login(fragment, call) }) { alert, root ->
+            val view = UserRegisterBinding.bind(root)
+            val name = view.editName.text.toString()
+            val email = view.editEmail.text.toString()
+            val pwd = view.editPwd.text.toString()
+            val pwd_confirm = view.editPwdConfirm.text.toString()
+            if (pwd != pwd_confirm) {
+                Snackbar.make(view.root, R.string.user_pwd_diff, Snackbar.LENGTH_SHORT)
+                    .setAction(R.string.app_ok) {}.show()
+                return@alert
+            }
+            view.root.isEnabled = false
+            fragment.lifecycleScope.launchWhenCreated {
+                val result = withContext(Dispatchers.IO) {
+                    Service.instance.register(name, pwd, email, Service.csrf()!!)
+                }
+                view.root.isEnabled = true
+                if (result?.success == true) {
+                    alert.dismiss()
+                    call?.invoke()
+                } else {
+                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.app_ok) {}.show()
+                }
+            }
+        }
+
+    fun reset(fragment: Fragment, call: (() -> Unit)? = null): Unit =
+        alert(fragment, R.layout.user_reset, R.string.user_reset, R.string.user_login, { login(fragment, call) }) { alert, root ->
+            val view = UserResetBinding.bind(root)
+            val name = view.editName.text.toString()
+            val email = view.editEmail.text.toString()
+            view.root.isEnabled = false
+            fragment.lifecycleScope.launchWhenCreated {
+                val result = withContext(Dispatchers.IO) {
+                    Service.instance.reset(name, email, Service.csrf()!!)
+                }
+                view.root.isEnabled = true
+                if (result?.success == true) {
+                    alert.dismiss()
+                    call?.invoke()
+                } else {
+                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.app_ok) {}.show()
+                }
+            }
+        }
+
+    fun changeEmail(fragment: Fragment, call: (() -> Unit)? = null): Unit =
+        alert(fragment, R.layout.user_change_email, R.string.user_change_email, R.string.user_change_pwd, { changePwd(fragment, call) }) { alert, root ->
+            val view = UserChangeEmailBinding.bind(root)
+            val email = view.editEmail.text.toString()
+            val pwd = view.editPwd.text.toString()
+            view.root.isEnabled = false
+            fragment.lifecycleScope.launchWhenCreated {
+                val result = withContext(Dispatchers.IO) {
+                    Service.instance.change_email(pwd, email, Service.csrf()!!)
+                }
+                view.root.isEnabled = true
+                if (result?.success == true) {
+                    alert.dismiss()
+                    call?.invoke()
+                } else {
+                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.app_ok) {}.show()
+                }
+            }
+        }
+
+    fun changePwd(fragment: Fragment, call: (() -> Unit)? = null): Unit =
+        alert(fragment, R.layout.user_change_pwd, R.string.user_change_pwd, R.string.user_change_email, { changeEmail(fragment, call) }) { alert, root ->
+            val view = UserChangePwdBinding.bind(root)
+            val old = view.editPwdCurrent.text.toString()
+            val pwd = view.editPwd.text.toString()
+            val pwd_confirm = view.editPwdConfirm.text.toString()
+            if (pwd != pwd_confirm) {
+                Snackbar.make(view.root, R.string.user_pwd_diff, Snackbar.LENGTH_SHORT)
+                    .setAction(R.string.app_ok) {}.show()
+                return@alert
+            }
+            view.root.isEnabled = false
+            fragment.lifecycleScope.launchWhenCreated {
+                val result = withContext(Dispatchers.IO) {
+                    Service.instance.change_pwd(old, pwd, Service.csrf()!!)
+                }
+                view.root.isEnabled = true
+                if (result?.success == true) {
+                    alert.dismiss()
+                    call?.invoke()
+                } else {
+                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                        .setAction(R.string.app_ok) {}.show()
+                }
+            }
+        }
+
 }
