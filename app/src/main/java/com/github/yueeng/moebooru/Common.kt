@@ -4,6 +4,9 @@ package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.*
@@ -17,11 +20,14 @@ import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
 import android.util.TypedValue
 import android.view.View
+import android.webkit.MimeTypeMap
 import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
@@ -47,7 +53,9 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.module.AppGlideModule
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.target.Target
+import com.bumptech.glide.request.transition.Transition
 import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder
 import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
@@ -59,6 +67,7 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -67,6 +76,7 @@ import okio.*
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.lang.ref.WeakReference
 import java.security.MessageDigest
 import java.text.DateFormat
@@ -74,6 +84,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.time.ExperimentalTime
 
 class MainApplication : Application() {
     companion object {
@@ -554,15 +565,26 @@ object Save {
         r.replace(i, ' ')
     }
 
+
     class SaveWorker(private val context: Context, private val params: WorkerParameters) : Worker(context, params) {
+        @FlowPreview
+        @ExperimentalTime
         override fun doWork(): Result = try {
             val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
             val target = params.inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
             val response = okhttp.newCall(Request.Builder().url(url).build()).execute()
-            response.body.use {
-                it?.byteStream()?.use { input ->
+            response.body?.use {
+                val progress = Data.Builder().putLong("current", 0L).putLong("length", it.contentLength())
+                var last = System.currentTimeMillis()
+                setProgressAsync(progress.build())
+                it.byteStream().use { input ->
                     context.contentResolver.openOutputStream(target)?.use { output ->
-                        input.copyTo(output)
+                        input.copyTo(output) { cur ->
+                            if (last + 1000 < System.currentTimeMillis()) {
+                                last = System.currentTimeMillis()
+                                setProgressAsync(progress.putLong("current", cur).build())
+                            }
+                        }
                     }
                 }
             }
@@ -572,14 +594,38 @@ object Save {
         }
     }
 
-    fun save(url: String, target: Uri, call: ((Uri?) -> Unit)? = null) {
+    fun save(item: JImageItem, target: Uri, call: ((Uri?) -> Unit)? = null) {
+        val url = item.jpeg_url
         val params = Data.Builder().putString("url", url).putString("target", target.toString()).build()
         val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
         val manager = WorkManager.getInstance(MainApplication.instance()).apply { enqueue(request) }
         val info = manager.getWorkInfoByIdLiveData(request.id)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManagerCompat.from(MainApplication.instance()).let { notify ->
+                val channel = NotificationChannel(moe_host, moe_host, NotificationManager.IMPORTANCE_DEFAULT)
+                notify.createNotificationChannel(channel)
+            }
+        }
+        val notification = NotificationCompat.Builder(MainApplication.instance(), moe_host)
+            .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
+            .setContentText(item.jpeg_file_name)
+            .setSmallIcon(R.drawable.ic_stat_name)
+            .setOngoing(true)
         info.observe(ProcessLifecycleOwner.get(), Observer {
             when (it.state) {
-                WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> Unit
+                WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
+                    notification.setProgress(0, 0, true)
+                        .setContentText("READY")
+                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                }
+                WorkInfo.State.RUNNING -> {
+                    val current = it.progress.getLong("current", 0)
+                    val length = it.progress.getLong("length", 0)
+                    notification.setProgress(length.toInt(), current.toInt(), false)
+                        .setContentText("${current.sizeString()}/${length.sizeString()}")
+                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                }
                 WorkInfo.State.FAILED, WorkInfo.State.CANCELLED, WorkInfo.State.SUCCEEDED -> {
                     info.removeObservers(ProcessLifecycleOwner.get())
                     call?.invoke(it.outputData.getString("file")?.toUri())
@@ -587,6 +633,69 @@ object Save {
             }
         })
     }
+}
+
+fun Long.sizeString() = when {
+    this == Long.MIN_VALUE || this < 0 -> "N/A"
+    this < 1024L -> "$this B"
+    this <= 0xfffccccccccccccL shr 40 -> "%.1f KiB".format(this.toDouble() / (0x1 shl 10))
+    this <= 0xfffccccccccccccL shr 30 -> "%.1f MiB".format(this.toDouble() / (0x1 shl 20))
+    this <= 0xfffccccccccccccL shr 20 -> "%.1f GiB".format(this.toDouble() / (0x1 shl 30))
+    this <= 0xfffccccccccccccL shr 10 -> "%.1f TiB".format(this.toDouble() / (0x1 shl 40))
+    this <= 0xfffccccccccccccL -> "%.1f PiB".format((this shr 10).toDouble() / (0x1 shl 40))
+    else -> "%.1f EiB".format((this shr 20).toDouble() / (0x1 shl 40))
+}
+
+fun InputStream.copyTo(out: OutputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE, progress: (Long) -> Unit): Long {
+    var bytesCopied: Long = 0
+    val buffer = ByteArray(bufferSize)
+    var bytes = read(buffer)
+    while (bytes >= 0) {
+        out.write(buffer, 0, bytes)
+        bytesCopied += bytes
+        progress(bytesCopied)
+        bytes = read(buffer)
+    }
+    return bytesCopied
+}
+
+fun Context.notifyDownloadComplete(uri: Uri, id: Int, filename: String) {
+    val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
+    val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        type = mime ?: "image/$extension"
+        data = uri
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        NotificationManagerCompat.from(this).let { manager ->
+            val channel = NotificationChannel(moe_host, moe_host, NotificationManager.IMPORTANCE_DEFAULT)
+            manager.createNotificationChannel(channel)
+        }
+    }
+    val builder = NotificationCompat.Builder(MainApplication.instance(), moe_host)
+        .setContentTitle(getString(R.string.app_download, getString(R.string.app_name)))
+        .setContentText(filename)
+        .setAutoCancel(true)
+        .setSmallIcon(R.drawable.ic_stat_name)
+        .setContentIntent(PendingIntent.getActivity(this, id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
+    GlideApp.with(this).asBitmap().load(uri).override(500, 500)
+        .into(object : CustomTarget<Bitmap>() {
+            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                val bigPictureStyle = NotificationCompat.BigPictureStyle()
+                    .bigPicture(resource)
+                builder
+                    .setStyle(bigPictureStyle)
+                    .setLargeIcon(resource)
+                NotificationManagerCompat.from(this@notifyDownloadComplete).notify(id, builder.build())
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {
+                NotificationManagerCompat.from(this@notifyDownloadComplete).notify(id, builder.build())
+            }
+        })
 }
 
 class AlphaBlackBitmapTransformation : BitmapTransformation() {

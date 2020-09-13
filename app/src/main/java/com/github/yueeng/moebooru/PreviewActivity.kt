@@ -1,11 +1,10 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
-import android.app.*
+import android.app.Activity
+import android.app.WallpaperManager
 import android.content.ContentValues
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,8 +14,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
@@ -33,8 +30,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
@@ -147,49 +142,14 @@ class PreviewFragment : Fragment() {
                         }
                     }
                     val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
-                    Save.save(item.jpeg_url, target) {
+                    Save.save(item, target) {
                         it?.let { uri ->
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                values.clear()
                                 values.put(MediaStore.MediaColumns.IS_PENDING, false)
-                                requireContext().contentResolver.update(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values, null, null)
+                                requireContext().contentResolver.update(target, values, null, null)
                             }
-                            MainApplication.instance().apply {
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    type = mime ?: "image/*"
-                                    data = uri
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                    NotificationManagerCompat.from(this@apply).let { manager ->
-                                        val channel = NotificationChannel(moe_host, moe_host, NotificationManager.IMPORTANCE_DEFAULT)
-                                        manager.createNotificationChannel(channel)
-                                    }
-                                }
-                                val builder = NotificationCompat.Builder(MainApplication.instance(), moe_host)
-                                    .setContentTitle(getString(R.string.app_download, getString(R.string.app_name)))
-                                    .setContentText(filename)
-                                    .setAutoCancel(true)
-                                    .setSmallIcon(R.drawable.ic_stat_name)
-                                    .setContentIntent(PendingIntent.getActivity(this@apply, item.id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
-                                GlideApp.with(this).asBitmap().load(uri).override(500, 500)
-                                    .into(object : CustomTarget<Bitmap>() {
-                                        override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                                            val bigPictureStyle = NotificationCompat.BigPictureStyle()
-                                                .bigPicture(resource)
-                                            val notification = builder
-                                                .setStyle(bigPictureStyle)
-                                                .setLargeIcon(resource)
-                                                .build()
-                                            NotificationManagerCompat.from(this@apply).notify(item.id, notification)
-                                        }
-
-                                        override fun onLoadCleared(placeholder: Drawable?) {
-                                            NotificationManagerCompat.from(this@apply).notify(item.id, builder.build())
-                                        }
-                                    })
-                            }
+                            MainApplication.instance().notifyDownloadComplete(uri, item.id, filename)
                         }
                     }
                 }
@@ -203,7 +163,7 @@ class PreviewFragment : Fragment() {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
                     val file = File(requireContext().cacheDir, item.jpeg_file_name)
-                    Save.save(item.jpeg_url, Uri.fromFile(file)) {
+                    Save.save(item, Uri.fromFile(file)) {
                         it?.let { uri ->
                             requireContext().contentResolver.openInputStream(uri)?.use { stream ->
                                 WallpaperManager.getInstance(requireContext()).setStream(stream)
@@ -215,7 +175,7 @@ class PreviewFragment : Fragment() {
             binding.button6.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_file_name)
-                Save.save(item.jpeg_url, Uri.fromFile(file)) {
+                Save.save(item, Uri.fromFile(file)) {
                     it?.let { source ->
                         lifecycleScope.launchWhenCreated {
                             val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_file_name)
