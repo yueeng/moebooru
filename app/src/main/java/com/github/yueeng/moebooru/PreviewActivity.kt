@@ -185,11 +185,10 @@ class PreviewFragment : Fragment() {
                 }
             }
             binding.button7.setOnClickListener {
-                OAuth.login(this@PreviewFragment) {
-                    if (it) {
-                        val model = adapter.peek(binding.pager.currentItem)!!
-                        startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)))
-                    }
+                val model = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                fun go() = startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)))
+                if (OAuth.available) go() else OAuth.login(this@PreviewFragment) {
+                    go()
                 }
             }
         }.root

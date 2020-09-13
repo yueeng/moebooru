@@ -54,9 +54,8 @@ class UserFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        OAuth.login(this) {
-            if (it) lifecycleScope.launchWhenCreated { query() }
-            else requireActivity().finish()
+        if (OAuth.available) {
+            lifecycleScope.launchWhenCreated { query() }
         }
     }
 
