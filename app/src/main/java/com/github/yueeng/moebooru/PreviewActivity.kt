@@ -2,13 +2,14 @@ package com.github.yueeng.moebooru
 
 import android.Manifest
 import android.app.*
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -129,14 +130,29 @@ class PreviewFragment : Fragment() {
                 }
             })
             binding.button1.setOnClickListener {
-                TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
-                    val folder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), moe_host).apply { mkdirs() }
-                    val item = adapter.peek(binding.pager.currentItem)!!
-                    Save.save(item, folder.path) {
-                        it?.let { File(it) }?.let { file ->
-                            val extension = MimeTypeMap.getFileExtensionFromUrl(Uri.fromFile(file).toString())
-                            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-                            val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+                fun download() {
+                    val item = adapter.peek(binding.pager.currentItem) ?: return
+                    val filename = item.jpeg_file_name
+                    val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
+                    val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                    val values = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.MediaColumns.IS_PENDING, true)
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moe_host")
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            put(MediaStore.MediaColumns.ALBUM, moe_host)
+                        }
+                    }
+                    val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
+                    Save.save(item.jpeg_url, target) {
+                        it?.let { uri ->
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                values.put(MediaStore.MediaColumns.IS_PENDING, false)
+                                requireContext().contentResolver.update(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values, null, null)
+                            }
                             MainApplication.instance().apply {
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
                                     type = mime ?: "image/*"
@@ -153,11 +169,11 @@ class PreviewFragment : Fragment() {
                                 }
                                 val builder = NotificationCompat.Builder(MainApplication.instance(), moe_host)
                                     .setContentTitle(getString(R.string.app_download, getString(R.string.app_name)))
-                                    .setContentText(file.name)
+                                    .setContentText(filename)
                                     .setAutoCancel(true)
                                     .setSmallIcon(R.drawable.ic_stat_name)
                                     .setContentIntent(PendingIntent.getActivity(this@apply, item.id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
-                                GlideApp.with(this).asBitmap().load(file).override(500, 500)
+                                GlideApp.with(this).asBitmap().load(uri).override(500, 500)
                                     .into(object : CustomTarget<Bitmap>() {
                                         override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                                             val bigPictureStyle = NotificationCompat.BigPictureStyle()
@@ -176,23 +192,34 @@ class PreviewFragment : Fragment() {
                             }
                         }
                     }
-                }.check()
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) download() else {
+                    TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
+                        download()
+                    }.check()
+                }
             }
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
-                    Save.save(adapter.peek(binding.pager.currentItem)!!, requireContext().cacheDir.path) {
-                        it?.let { File(it) }?.inputStream()?.use { stream ->
-                            WallpaperManager.getInstance(requireContext()).setStream(stream)
+                    val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
+                    val file = File(requireContext().cacheDir, item.jpeg_file_name)
+                    Save.save(item.jpeg_url, Uri.fromFile(file)) {
+                        it?.let { uri ->
+                            requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+                                WallpaperManager.getInstance(requireContext()).setStream(stream)
+                            }
                         }
                     }
                 }.check()
             }
             binding.button6.setOnClickListener {
-                Save.save(adapter.peek(binding.pager.currentItem)!!, requireContext().cacheDir.path) {
-                    it?.let { File(it) }?.let { source ->
+                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val file = File(requireContext().cacheDir, item.jpeg_file_name)
+                Save.save(item.jpeg_url, Uri.fromFile(file)) {
+                    it?.let { source ->
                         lifecycleScope.launchWhenCreated {
-                            val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, source.name)
-                            UCrop.of(Uri.fromFile(source), Uri.fromFile(dest)).start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP)
+                            val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_file_name)
+                            UCrop.of(source, Uri.fromFile(dest)).start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP)
                         }
                     }
                 }

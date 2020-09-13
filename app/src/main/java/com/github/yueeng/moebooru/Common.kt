@@ -22,6 +22,7 @@ import android.widget.ImageView
 import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
@@ -64,7 +65,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import java.io.ByteArrayInputStream
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
@@ -550,29 +550,30 @@ fun TedPermission.Builder.onGranted(view: View, function: () -> Unit): TedPermis
 }
 
 object Save {
-    private fun encode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
+    fun encode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
         r.replace(i, ' ')
     }
 
-    class SaveWorker(context: Context, private val params: WorkerParameters) : Worker(context, params) {
+    class SaveWorker(private val context: Context, private val params: WorkerParameters) : Worker(context, params) {
         override fun doWork(): Result = try {
             val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
-            val folder = params.inputData.getString("folder") ?: throw IllegalArgumentException()
-            val target = File(folder, encode(url.pathSegments.last().toLowerCase(Locale.ROOT)))
+            val target = params.inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
             val response = okhttp.newCall(Request.Builder().url(url).build()).execute()
-            response.body?.byteStream()?.use { input ->
-                target.outputStream().use { output ->
-                    input.copyTo(output)
+            response.body.use {
+                it?.byteStream()?.use { input ->
+                    context.contentResolver.openOutputStream(target)?.use { output ->
+                        input.copyTo(output)
+                    }
                 }
             }
-            Result.success(Data.Builder().putString("file", target.path).build())
+            Result.success(Data.Builder().putString("file", target.toString()).build())
         } catch (e: Exception) {
             Result.failure(Data.Builder().putString("error", e.message).build())
         }
     }
 
-    fun save(item: JImageItem, folder: String, call: ((String?) -> Unit)? = null) {
-        val params = Data.Builder().putString("url", item.jpeg_url).putString("folder", folder).build()
+    fun save(url: String, target: Uri, call: ((Uri?) -> Unit)? = null) {
+        val params = Data.Builder().putString("url", url).putString("target", target.toString()).build()
         val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
         val manager = WorkManager.getInstance(MainApplication.instance()).apply { enqueue(request) }
         val info = manager.getWorkInfoByIdLiveData(request.id)
@@ -581,7 +582,7 @@ object Save {
                 WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> Unit
                 WorkInfo.State.FAILED, WorkInfo.State.CANCELLED, WorkInfo.State.SUCCEEDED -> {
                     info.removeObservers(ProcessLifecycleOwner.get())
-                    call?.invoke(it.outputData.getString("file"))
+                    call?.invoke(it.outputData.getString("file")?.toUri())
                 }
             }
         })
