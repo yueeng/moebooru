@@ -7,7 +7,7 @@ import java.util.*
 
 @Entity(
     tableName = "tags",
-    indices = [Index("tag")]
+    indices = [Index("tag", unique = true)]
 )
 data class DbTag(
     @PrimaryKey(autoGenerate = true) val id: Long,
@@ -66,7 +66,7 @@ class DaoConverter {
 @Database(
     entities = [DbTag::class],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 @TypeConverters(DaoConverter::class)
 abstract class Db : RoomDatabase() {
