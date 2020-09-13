@@ -78,7 +78,9 @@ data class JImageItem(
     val status: String,
     val tags: String,
     val width: Int
-) : Parcelable
+) : Parcelable {
+    val jpeg_file_name get() = Save.encode(jpeg_url.toHttpUrl().pathSegments.last())
+}
 
 open class JResult(
     val success: Boolean? = null,
