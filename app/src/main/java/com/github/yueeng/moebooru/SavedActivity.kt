@@ -43,14 +43,12 @@ class SavedViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = SavedViewModel(handle) as T
 }
 
-class SavedActivity : AppCompatActivity(R.layout.activity_main) {
+class SavedActivity : AppCompatActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment ?: SavedFragment()
-        val saved = supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment ?: SavedFragment()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.container, fragment)
-            .replace(R.id.saved, saved).commit()
+            .replace(R.id.container, fragment).commit()
     }
 }
 
@@ -59,6 +57,7 @@ class SavedFragment : Fragment() {
     private val savedAdapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
+            binding.toolbar.setTitle(R.string.saved_title)
             binding.toolbar.setOnMenuItemClickListener {
                 when (it.itemId) {
                     R.id.edit -> true.also {
