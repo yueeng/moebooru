@@ -7,11 +7,13 @@ import android.content.Context
 import android.content.DialogInterface
 import android.os.Parcel
 import android.os.Parcelable
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequestBuilder
@@ -228,6 +230,12 @@ interface MoebooruService {
     @GET("post/popular_recent.json")
     suspend fun popular_recent(): List<JImageItem>
 
+    @GET("user.json")
+    suspend fun user(@Query("id") id: Int): List<ItemUser>
+
+    @GET("user.json")
+    suspend fun user(@Query("name") name: String): List<ItemUser>
+
     @GET("user/logout.json")
     suspend fun logout(): JResult?
 
@@ -316,12 +324,12 @@ interface MoebooruService {
 object Service {
     private val retrofit: Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
-        .client(okhttp)
+        .client(okHttp)
         .baseUrl(moe_url)
         .build()
     val instance: MoebooruService = retrofit.create(MoebooruService::class.java)
     suspend fun csrf(): String? = try {
-        val home = okhttp.newCall(Request.Builder().url("$moe_url/user/home").build()).await { _, response -> response.body?.string() }
+        val home = okHttp.newCall(Request.Builder().url("$moe_url/user/home").build()).await { _, response -> response.body?.string() }
         Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
     } catch (e: Exception) {
         null
@@ -585,7 +593,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                 val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
                 val etag = preferences.getString("summary-etag", moe_summary_etag)
                 val request = Request.Builder().url(moe_summary_url).build()
-                val response = okhttp.newCall(request).execute()
+                val response = okHttp.newCall(request).execute()
                 val online = response.header("ETag")
                 if (online != null && online != etag) {
                     response.body?.byteStream()?.use { input ->
@@ -674,11 +682,19 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 }
 
 object OAuth {
-    private val uri = moe_url.toHttpUrl()
-    private val cookies get() = okcook.loadForRequest(uri).map { it.name to it.value }.toMap()
-    val name: String? get() = cookies["login"]
-    val user: Int? get() = name?.takeIf { it.isNotEmpty() }?.let { cookies["user_id"]?.toIntOrNull() }
-    val available: Boolean get() = !name.isNullOrEmpty()
+    val name: MutableLiveData<String> = MutableLiveData(okCookie.loadForRequest(moe_url.toHttpUrl()).firstOrNull { it.name == "login" }?.value ?: "")
+    val user = MutableLiveData(0)
+
+    init {
+        name.observeForever {
+            Log.i("MLDFLOW", "name: $it")
+        }
+        user.observeForever {
+            Log.i("MLDFLOW", "user: $it")
+        }
+    }
+
+    val available: Boolean get() = !name.value.isNullOrEmpty()
     private var timestamp = Calendar.getInstance().time.time / 1000
     fun face(id: Int) = if (id > 0) "$moe_url/data/avatars/$id.jpg?$timestamp" else null
 
@@ -701,6 +717,20 @@ object OAuth {
             .show()
     }
 
+    fun logout(fragment: Fragment, call: (() -> Unit)? = null): Unit =
+        MaterialAlertDialogBuilder(fragment.requireContext())
+            .setTitle(R.string.user_logout)
+            .setPositiveButton(R.string.user_logout) { _, _ ->
+                fragment.lifecycleScope.launchWhenCreated {
+                    withContext(Dispatchers.IO) {
+                        Service.instance.logout()
+                    }
+                    call?.invoke()
+                }
+            }
+            .setNeutralButton(R.string.app_cancel, null)
+            .create().show()
+
     fun login(fragment: Fragment, call: (() -> Unit)? = null): Unit =
         alert(fragment, R.layout.user_login, R.string.user_login, R.string.user_register, { register(fragment) { login(fragment, call) } }) { alert, root ->
             val view = UserLoginBinding.bind(root)
@@ -713,6 +743,9 @@ object OAuth {
                 }
                 view.root.isEnabled = true
                 if (result?.success == true) {
+                    user.postValue(withContext(Dispatchers.IO) {
+                        Service.instance.user(OAuth.name.value!!).firstOrNull()?.id ?: 0
+                    })
                     alert.dismiss()
                     call?.invoke()
                 } else {

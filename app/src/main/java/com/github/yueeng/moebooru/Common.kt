@@ -70,6 +70,7 @@ import com.gun0912.tedpermission.TedPermission
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
@@ -102,13 +103,24 @@ fun debug(call: () -> Unit) {
     if (BuildConfig.DEBUG) call()
 }
 
-val okcook = PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(MainApplication.instance()))
-val okhttp: OkHttpClient = OkHttpClient.Builder()
+val okCookieCache = SetCookieCache()
+val okPersistor = SharedPrefsCookiePersistor(MainApplication.instance())
+val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
+    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+        super.saveFromResponse(url, cookies)
+        okPersistor.removeAll(cookies.filter { !it.persistent })
+        cookies.filter { it.matches(moe_url.toHttpUrl()) }.firstOrNull { it.name == "login" }?.value?.let {
+            OAuth.name.postValue(it)
+        }
+    }
+}
+
+val okHttp: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(5, TimeUnit.SECONDS)
     .writeTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
     .cache(Cache(MainApplication.instance().cacheDir, 1024 * 1024 * 256))
-    .cookieJar(okcook)
+    .cookieJar(okCookie)
     .addNetworkInterceptor { chain ->
         val request = chain.request()
         val url = request.url.toString()
@@ -189,7 +201,7 @@ class MtAppGlideModule : AppGlideModule() {
         registry.replace(
             GlideUrl::class.java,
             InputStream::class.java,
-            OkHttpUrlLoader.Factory(okhttp)
+            OkHttpUrlLoader.Factory(okHttp)
         )
     }
 }
@@ -287,7 +299,7 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
 class GlideDecoder : ImageDecoder {
     @Throws(Exception::class)
     override fun decode(context: Context, uri: Uri): Bitmap {
-        val bytes = okhttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
+        val bytes = okHttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
         val bitmap = GlideApp.with(context).asBitmap().load(bytes).submit().get()
         return bitmap.copy(bitmap.config, bitmap.isMutable)
     }
@@ -298,7 +310,7 @@ class GlideRegionDecoder : ImageRegionDecoder {
 
     @Throws(Exception::class)
     override fun init(context: Context, uri: Uri): Point {
-        val bytes = okhttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
+        val bytes = okHttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
         decoder = BitmapRegionDecoder.newInstance(ByteArrayInputStream(bytes), false)
         return Point(decoder!!.width, decoder!!.height)
     }
@@ -572,7 +584,7 @@ object Save {
         override fun doWork(): Result = try {
             val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
             val target = params.inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
-            val response = okhttp.newCall(Request.Builder().url(url).build()).execute()
+            val response = okHttp.newCall(Request.Builder().url(url).build()).execute()
             response.body?.use {
                 val progress = Data.Builder().putLong("current", 0L).putLong("length", it.contentLength())
                 var last = System.currentTimeMillis()

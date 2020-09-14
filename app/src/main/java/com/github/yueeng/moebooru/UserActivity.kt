@@ -2,10 +2,12 @@ package com.github.yueeng.moebooru
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
@@ -18,7 +20,10 @@ import com.bumptech.glide.request.transition.Transition
 import com.github.yueeng.moebooru.databinding.FragmentUserBinding
 import com.github.yueeng.moebooru.databinding.ImageItemBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flattenMerge
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
 import okhttp3.Request
@@ -29,7 +34,7 @@ class UserActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserFragment
-            ?: UserFragment().apply { arguments = intent.extras }
+            ?: UserFragment().apply { arguments = bundleOf("name" to "otaku_emmy", "user" to 73632) }
         val saved = supportFragmentManager.findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
         supportFragmentManager.beginTransaction()
             .replace(R.id.container, fragment)
@@ -38,8 +43,8 @@ class UserActivity : AppCompatActivity(R.layout.activity_main) {
 }
 
 class UserViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
-    val user = handle.getLiveData("user", args?.getInt("user") ?: OAuth.user)
-    val name = handle.getLiveData("name", args?.getString("name") ?: OAuth.name)
+    val name = handle.getLiveData("name", args?.getString("name"))
+    val user = handle.getLiveData("user", args?.getInt("user"))
     val avatar = handle.getLiveData<Int>("avatar")
 }
 
@@ -49,36 +54,47 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
 }
 
 class UserFragment : Fragment() {
+    private val mine by lazy { arguments?.getBoolean("mine") ?: false }
     private val model: UserViewModel by viewModels { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        if (OAuth.available) {
-            lifecycleScope.launchWhenCreated { query() }
-        }
-    }
-
+    @FlowPreview
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            binding.toolbar.title = requireActivity().title
             binding.toolbar.setLogo(R.mipmap.ic_launcher)
-            lifecycleScope.launchWhenCreated {
-                model.name.asFlow().mapNotNull { it }.collectLatest { requireActivity().title = it }
-            }
-            model.avatar.observe(viewLifecycleOwner, Observer { id ->
-                lifecycleScope.launchWhenCreated {
-                    val list = withContext(Dispatchers.IO) {
-                        Service.instance.post(1, Q().id(id), 1)
-                    }
-                    if (list.isEmpty()) return@launchWhenCreated
-                    GlideApp.with(binding.image)
-                        .load(list.first().sample_url)
-                        .transform(AlphaBlackBitmapTransformation())
-                        .transition(DrawableTransitionOptions.withCrossFade())
-                        .into(binding.image)
+            binding.toolbar.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.login -> true.also { OAuth.login(this) }
+                    R.id.register -> true.also { OAuth.register(this) }
+                    R.id.reset -> true.also { OAuth.reset(this) }
+                    R.id.logout -> true.also { OAuth.logout(this) }
+                    R.id.changeEmail -> true.also { OAuth.changeEmail(this) }
+                    R.id.changePwd -> true.also { OAuth.changePwd(this) }
+                    else -> false
                 }
-            })
+            }
+            lifecycleScope.launchWhenCreated {
+                OAuth.name.asFlow().collectLatest {
+                    binding.toolbar.menu.findItem(R.id.userLogin).isVisible = it.isEmpty()
+                    binding.toolbar.menu.findItem(R.id.userLogout).isVisible = it.isNotEmpty()
+                    if (mine && it.isNotEmpty()) model.name.postValue(it)
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                OAuth.user.asFlow().collectLatest {
+                    if (mine && it != 0) model.user.postValue(it)
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                model.name.asFlow().mapNotNull { it }.collectLatest { name ->
+                    binding.toolbar.title = name
+                    if (model.user.value == null) {
+                        val id = Service.instance.user(name)
+                        id.firstOrNull()?.id?.let { model.user.postValue(it) }
+                    }
+                }
+            }
             lifecycleScope.launchWhenCreated {
                 model.user.asFlow().mapNotNull { it }.collectLatest {
                     GlideApp.with(binding.toolbar)
@@ -95,24 +111,41 @@ class UserFragment : Fragment() {
                         })
                 }
             }
+            model.avatar.observe(viewLifecycleOwner, Observer { id ->
+                lifecycleScope.launchWhenCreated {
+                    val list = withContext(Dispatchers.IO) {
+                        Service.instance.post(1, Q().id(id), 1)
+                    }
+                    if (list.isEmpty()) return@launchWhenCreated
+                    GlideApp.with(binding.image)
+                        .load(list.first().sample_url)
+                        .transform(AlphaBlackBitmapTransformation())
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .into(binding.image)
+                }
+            })
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter
             lifecycleScope.launchWhenCreated {
-                model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                    val list = withContext(Dispatchers.IO) {
-                        Service.instance.post(1, Q().user(name))
+                flowOf(model.name.asFlow().mapNotNull { it?.takeIf { it.isNotEmpty() } },
+                    OAuth.name.asFlow().mapNotNull { it.takeIf { it.isNotEmpty() } })
+                    .flattenMerge(2).collectLatest {
+                        Log.i("MLDFLOW", "${OAuth.name.value}, ${model.name.value}")
+                        if (OAuth.available) query()
                     }
-                    adapter.submitList(list)
-                }
             }
         }.root
 
     private suspend fun query() {
         val url = "$moe_url/user/show/${model.user.value}"
-        val html = okhttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
+        val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
         val jsoup = Jsoup.parse(html, url)
         val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
         model.avatar.postValue(id)
+        val list = withContext(Dispatchers.IO) {
+            Service.instance.post(1, Q().user(model.name.value!!))
+        }
+        adapter.submitList(list)
     }
 
     class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -122,7 +155,7 @@ class UserFragment : Fragment() {
         }
     }
 
-    class ImageAdapter : ListAdapter<JImageItem, ImageHolder>(diffCallback { oldItem, newItem -> oldItem.id == newItem.id }) {
+    class ImageAdapter : ListAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder {
             return ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
