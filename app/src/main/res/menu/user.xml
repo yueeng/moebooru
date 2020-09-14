@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/userLogin"
+        android:icon="@drawable/ic_reg"
+        android:title="@string/user_login"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/login"
+                android:title="@string/user_login" />
+            <item
+                android:id="@+id/register"
+                android:title="@string/user_register" />
+            <item
+                android:id="@+id/reset"
+                android:title="@string/user_reset" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/userLogout"
+        android:icon="@drawable/ic_reg"
+        android:title="@string/user_logout"
+        app:showAsAction="ifRoom">
+        <menu>
+            <item
+                android:id="@+id/logout"
+                android:title="@string/user_logout" />
+            <item
+                android:id="@+id/changeEmail"
+                android:title="@string/user_change_email" />
+            <item
+                android:id="@+id/changePwd"
+                android:title="@string/user_change_pwd" />
+        </menu>
+    </item>
+</menu>
