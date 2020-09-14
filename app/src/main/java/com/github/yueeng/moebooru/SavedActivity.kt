@@ -10,10 +10,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingDataAdapter
-import androidx.paging.insertSeparators
+import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.FragmentSavedBinding
@@ -28,12 +25,11 @@ import java.util.*
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
     val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags() }.flow
         .map {
-            it.insertHeaderItem(DbTag(0, "Pin", ""))
-                .insertSeparators { dbTag, dbTag2 ->
-                    if (dbTag?.pin == true && dbTag2?.pin == false)
-                        DbTag(0, "UnPin", "")
-                    else null
-                }
+            it.insertHeaderItem(DbTag(0, "Pin", "")).insertSeparators { dbTag, dbTag2 ->
+                if (dbTag?.pin == true && dbTag2?.pin == false)
+                    DbTag(0, "UnPin", "")
+                else null
+            }
         }
     val edit = handle.getLiveData<Boolean>("edit")
 }
@@ -54,7 +50,7 @@ class SavedActivity : AppCompatActivity(R.layout.activity_container) {
 
 class SavedFragment : Fragment() {
     private val viewModel: SavedViewModel by viewModels { SavedViewModelFactory(this, null) }
-    private val savedAdapter by lazy { SavedAdapter() }
+    private val adapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
             binding.toolbar.setTitle(R.string.saved_title)
@@ -69,7 +65,13 @@ class SavedFragment : Fragment() {
             lifecycleScope.launchWhenCreated {
                 viewModel.edit.asFlow().collectLatest {
                     binding.toolbar.menu.findItem(R.id.edit).setIcon(if (it) R.drawable.ic_done else R.drawable.ic_edit)
-                    savedAdapter.notifyItemRangeChanged(0, savedAdapter.itemCount)
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                }
+            }
+            binding.swipe.setOnRefreshListener { adapter.refresh() }
+            lifecycleScope.launchWhenCreated {
+                adapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
@@ -78,9 +80,9 @@ class SavedFragment : Fragment() {
                 alignItems = AlignItems.FLEX_START
                 justifyContent = JustifyContent.FLEX_START
             }
-            binding.recycler.adapter = savedAdapter
+            binding.recycler.adapter = adapter
             lifecycleScope.launchWhenCreated {
-                viewModel.saved.collectLatest { savedAdapter.submitData(it) }
+                viewModel.saved.collectLatest { adapter.submitData(it) }
             }
             binding.button1.setOnClickListener {
                 startActivity(Intent(requireContext(), QueryActivity::class.java))
