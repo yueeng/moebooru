@@ -16,6 +16,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.flow.collectLatest
+import java.util.*
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,8 +26,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.container, fragment)
             .replace(R.id.saved, saved).commit()
-
-        startActivity(Intent(this, SavedActivity::class.java))
     }
 }
 
@@ -51,7 +50,7 @@ class MainFragment : Fragment() {
         }.root
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
-        val data = mutableListOf("Popular" to Q())
+        val data = mutableListOf("Popular" to Q().order(Q.Order.score).date(Calendar.getInstance().also { it.add(Calendar.DAY_OF_YEAR, -1) }.time, Q.Value.Op.ge))
         override fun getItemId(position: Int): Long = data[position].hashCode().toLong()
         override fun getItemCount(): Int = data.size
         override fun createFragment(position: Int): Fragment = ImageFragment().apply {

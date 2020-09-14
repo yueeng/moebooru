@@ -340,9 +340,10 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         score_asc("score_asc"),
         mpixels("mpixels"),
         mpixels_asc("mpixels_asc"),
-        landscape("landscape"),
         portrait("portrait"),
-        vote("vote"), ;
+        landscape("landscape"),
+        vote("vote"),
+        random("random");
 
         override fun toString(): String = value
     }
@@ -354,7 +355,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         explicit("explicit"),
         _safe("-safe"),
         _questionable("-questionable"),
-        _explicit("-explicit"), ;
+        _explicit("-explicit");
 
         override fun toString(): String = value
     }

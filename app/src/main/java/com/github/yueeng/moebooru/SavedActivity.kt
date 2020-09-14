@@ -6,26 +6,36 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.*
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingDataAdapter
-import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.paging.insertSeparators
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.FragmentSavedBinding
+import com.github.yueeng.moebooru.databinding.ListStringItemBinding
 import com.github.yueeng.moebooru.databinding.QueryTagItemBinding
+import com.google.android.flexbox.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
 import java.util.*
 
 
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
-    val saved = Pager(PagingConfig(20)) { Db.tags.pagingTags() }.flow
+    val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags() }.flow
+        .map {
+            it.insertHeaderItem(DbTag(0, "Pin", ""))
+                .insertSeparators { dbTag, dbTag2 ->
+                    if (dbTag?.pin == true && dbTag2?.pin == false)
+                        DbTag(0, "UnPin", "")
+                    else null
+                }
+        }
+    val edit = handle.getLiveData<Boolean>("edit")
 }
 
 class SavedViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
@@ -49,26 +59,36 @@ class SavedFragment : Fragment() {
     private val savedAdapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
+            binding.toolbar.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    R.id.edit -> true.also {
+                        viewModel.edit.postValue(!(viewModel.edit.value ?: false))
+                    }
+                    else -> false
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                viewModel.edit.asFlow().collectLatest {
+                    binding.toolbar.menu.findItem(R.id.edit).setIcon(if (it) R.drawable.ic_done else R.drawable.ic_edit)
+                    savedAdapter.notifyItemRangeChanged(0, savedAdapter.itemCount)
+                }
+            }
+            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
+                flexWrap = FlexWrap.WRAP
+                flexDirection = FlexDirection.ROW
+                alignItems = AlignItems.FLEX_START
+                justifyContent = JustifyContent.FLEX_START
+            }
             binding.recycler.adapter = savedAdapter
             lifecycleScope.launchWhenCreated {
                 viewModel.saved.collectLatest { savedAdapter.submitData(it) }
             }
-            ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
-                override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
-                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                    lifecycleScope.launchWhenCreated {
-                        (viewHolder as? SavedHolder)?.tag?.let {
-                            Db.db.tags().deleteTag(it)
-                        }
-                    }
-                }
-            }).attachToRecyclerView(binding.recycler)
             binding.button1.setOnClickListener {
                 startActivity(Intent(requireContext(), QueryActivity::class.java))
             }
         }.root
 
-    class SavedHolder(val binding: QueryTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class SavedHolder(val binding: QueryTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setCardBackgroundColor(randomColor())
         }
@@ -77,39 +97,73 @@ class SavedFragment : Fragment() {
         fun bind(tag: DbTag) {
             this.tag = tag
             binding.text1.text = tag.name
-            binding.text2.text = tag.tag
-            binding.swipe.isChecked = tag.pin
+            binding.button2.setImageResource(if (tag.pin) R.drawable.ic_remove else R.drawable.ic_add)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                binding.root.tooltipText = tag.tag
+            }
+            binding.button1.isVisible = viewModel.edit.value == true
+            binding.button2.isVisible = viewModel.edit.value == true
+            binding.button3.isVisible = viewModel.edit.value == true
         }
     }
 
-    inner class SavedAdapter : PagingDataAdapter<DbTag, SavedHolder>(diffCallback { old, new -> old.id == new.id }) {
-        override fun onBindViewHolder(holder: SavedHolder, position: Int) {
-            holder.bind(getItem(position)!!)
+    inner class HeaderHolder(private val binding: ListStringItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(tag: DbTag) {
+            binding.text1.text = tag.tag
+        }
+    }
+
+    inner class SavedAdapter : PagingDataAdapter<DbTag, RecyclerView.ViewHolder>(diffCallback { old, new -> old.id == new.id }) {
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            when (holder) {
+                is SavedHolder -> holder.bind(getItem(position)!!)
+                is HeaderHolder -> holder.bind(getItem(position)!!)
+            }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SavedHolder =
-            SavedHolder(QueryTagItemBinding.inflate(layoutInflater, parent, false)).apply {
-                binding.root.setOnClickListener {
-                    val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                    startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)))
-                }
-                binding.button1.setOnClickListener {
-                    val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                    startActivity(
-                        Intent(requireContext(), QueryActivity::class.java)
-                            .putExtra("query", Q(item.tag))
-                            .putExtra("id", item.id)
-                    )
-                }
-                binding.swipe.setOnCheckedChangeListener { _, checked ->
-                    val item = getItem(bindingAdapterPosition) ?: return@setOnCheckedChangeListener
-                    if (item.pin == checked) return@setOnCheckedChangeListener
-                    lifecycleScope.launchWhenCreated {
-                        item.pin = checked
-                        item.create = Date()
-                        Db.tags.updateTag(item)
+        override fun getItemViewType(position: Int): Int = getItem(position).let { item ->
+            when {
+                item == null -> 0
+                item.id == 0L -> 0
+                item.pin -> 1
+                else -> 2
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder = when (viewType) {
+            0 -> HeaderHolder(ListStringItemBinding.inflate(layoutInflater, parent, false))
+            1, 2 -> {
+                SavedHolder(QueryTagItemBinding.inflate(layoutInflater, parent, false)).apply {
+                    binding.root.setOnClickListener {
+                        val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)))
+                    }
+                    binding.button1.setOnClickListener {
+                        val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                        startActivity(
+                            Intent(requireContext(), QueryActivity::class.java)
+                                .putExtra("query", Q(item.tag))
+                                .putExtra("id", item.id)
+                        )
+                    }
+                    binding.button2.setOnClickListener {
+                        val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                        lifecycleScope.launchWhenCreated {
+                            item.pin = !item.pin
+                            item.create = Date()
+                            Db.tags.updateTag(item)
+                        }
+
+                    }
+                    binding.button3.setOnClickListener {
+                        val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                        lifecycleScope.launchWhenCreated {
+                            Db.tags.deleteTag(item)
+                        }
                     }
                 }
             }
+            else -> throw IllegalArgumentException()
+        }
     }
 }

@@ -45,10 +45,6 @@
     <string name="query_rating_explicit">Query posts that are rated explicit.</string>
     <string name="query_rating_questionable">Query posts that are rated questionable.</string>
     <string name="query_rating_safe">Query posts that are rated safe.</string>
-    <string name="query_saved_empty">Can\'t save empty tag</string>
-    <string name="query_saved_pin">Pin</string>
-    <string name="query_saved_pin_desc">Pin to main page</string>
-    <string name="query_saved_title">Save tag</string>
     <string name="query_score">Score</string>
     <string name="query_score_desc">Query posts with a score of ….</string>
     <string name="query_sheet_begin">Begin</string>
@@ -72,6 +68,12 @@
     <string name="query_vote_user">User</string>
     <string name="query_width">Width</string>
     <string name="query_width_desc">Query posts with a width of ….</string>
+
+    <string name="saved_empty">Can\'t save empty tag</string>
+    <string name="saved_pin">Pin</string>
+    <string name="saved_pin_desc">Pin to main page</string>
+    <string name="saved_title">Save tag</string>
+    <string name="saved_edit">Edit</string>
 
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>

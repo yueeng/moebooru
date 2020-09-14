@@ -106,7 +106,7 @@ class QueryFragment : Fragment() {
             view.edit1.setText(saved?.name)
             view.switch1.isChecked = saved?.pin ?: false
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.query_saved_title)
+                .setTitle(R.string.saved_title)
                 .setView(view.root)
                 .setPositiveButton(R.string.app_ok) { _, _ ->
                     ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
@@ -124,7 +124,7 @@ class QueryFragment : Fragment() {
                 }
                 .setNegativeButton(R.string.app_cancel, null)
                 .create().show()
-        } ?: Snackbar.make(requireView(), R.string.query_saved_empty, Snackbar.LENGTH_SHORT)
+        } ?: Snackbar.make(requireView(), R.string.saved_empty, Snackbar.LENGTH_SHORT)
             .setAnchorView(R.id.button1)
             .setAction(R.string.app_ok) {}
             .show()

@@ -6,6 +6,18 @@
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground">
 
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?android:actionBarSize"
+            app:menu="@menu/saved" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe"
         android:layout_width="match_parent"
@@ -18,7 +30,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="end"
             android:background="?android:attr/colorBackground"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager"
             tools:listitem="@layout/query_tag_item" />
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
