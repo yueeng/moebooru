@@ -39,13 +39,13 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @SuppressLint("SimpleDateFormat")
-val moe_create_time: Calendar = Calendar.getInstance().apply {
+val moeCreateTime: Calendar = Calendar.getInstance().apply {
     time = SimpleDateFormat("yyyy-MM-dd").parse(MainApplication.instance().getString(R.string.app_create_time))!!
 }
-val moe_host = MainApplication.instance().getString(R.string.app_host)
-val moe_url = "https://$moe_host"
-val moe_summary_url = "$moe_url/tag/summary.json"
-val moe_summary_etag = MainApplication.instance().getString(R.string.app_summary_etag)
+val moeHost = MainApplication.instance().getString(R.string.app_host)
+val moeUrl = "https://$moeHost"
+val moeSummaryUrl = "$moeUrl/tag/summary.json"
+val moeSummaryEtag = MainApplication.instance().getString(R.string.app_summary_etag)
 
 @Parcelize
 data class JImageItem(
@@ -105,7 +105,7 @@ class ItemUser(
     var name: String? = null,
     var id: Int? = null
 ) {
-    val face: String get() = "$moe_url/data/avatars/$id.jpg"
+    val face: String get() = "$moeUrl/data/avatars/$id.jpg"
 }
 
 class ItemPool(
@@ -325,11 +325,11 @@ object Service {
     private val retrofit: Retrofit = Retrofit.Builder()
         .addConverterFactory(GsonConverterFactory.create())
         .client(okHttp)
-        .baseUrl(moe_url)
+        .baseUrl(moeUrl)
         .build()
     val instance: MoebooruService = retrofit.create(MoebooruService::class.java)
     suspend fun csrf(): String? = try {
-        val home = okHttp.newCall(Request.Builder().url("$moe_url/user/home").build()).await { _, response -> response.body?.string() }
+        val home = okHttp.newCall(Request.Builder().url("$moeUrl/user/home").build()).await { _, response -> response.body?.string() }
         Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
     } catch (e: Exception) {
         null
@@ -591,8 +591,8 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
             override fun doWork(): Result = try {
                 val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
-                val etag = preferences.getString("summary-etag", moe_summary_etag)
-                val request = Request.Builder().url(moe_summary_url).build()
+                val etag = preferences.getString("summary-etag", moeSummaryEtag)
+                val request = Request.Builder().url(moeSummaryUrl).build()
                 val response = okHttp.newCall(request).execute()
                 val online = response.header("ETag")
                 if (online != null && online != etag) {
@@ -682,7 +682,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 }
 
 object OAuth {
-    val name: MutableLiveData<String> = MutableLiveData(okCookie.loadForRequest(moe_url.toHttpUrl()).firstOrNull { it.name == "login" }?.value ?: "")
+    val name: MutableLiveData<String> = MutableLiveData(okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "login" }?.value ?: "")
     val user = MutableLiveData(0)
 
     init {
@@ -696,7 +696,7 @@ object OAuth {
 
     val available: Boolean get() = !name.value.isNullOrEmpty()
     private var timestamp = Calendar.getInstance().time.time / 1000
-    fun face(id: Int) = if (id > 0) "$moe_url/data/avatars/$id.jpg?$timestamp" else null
+    fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?$timestamp" else null
 
     private fun alert(fragment: Fragment, layout: Int, title: Int, subTitle: Int = 0, subCall: (() -> Unit)? = null, call: (AlertDialog, View) -> Unit) = fragment.requireContext().let { context ->
         val view = LayoutInflater.from(context).inflate(layout, null)

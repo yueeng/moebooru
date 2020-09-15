@@ -270,7 +270,7 @@ class QueryFragment : Fragment() {
             pe.first.setOnClickListener {
                 val current = Q.formatter.tryParse(pe.second.text.toString()) ?: Date()
                 val pick = DatePicker(requireContext()).apply {
-                    minDate = moe_create_time.milliseconds
+                    minDate = moeCreateTime.milliseconds
                     maxDate = Calendar.getInstance().milliseconds
                     date = Calendar.getInstance().apply { time = current }
                 }
