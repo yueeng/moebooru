@@ -14,6 +14,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequestBuilder
@@ -690,7 +691,12 @@ object OAuth {
 
     init {
         name.observeForever {
-            Log.i("MLDFLOW", "name: $it")
+            if (it.isEmpty()) return@observeForever
+            ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
+                withContext(Dispatchers.IO) {
+                    runCatching { Service.instance.user(it) }
+                }.getOrNull()?.firstOrNull()?.id?.let { id -> user.postValue(id) }
+            }
         }
         user.observeForever {
             Log.i("MLDFLOW", "user: $it")

@@ -54,6 +54,7 @@ import com.bumptech.glide.module.AppGlideModule
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.target.CustomViewTarget
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder
@@ -339,6 +340,22 @@ fun <TranscodeType> GlideRequest<TranscodeType>.onLoadFailed(call: (e: GlideExce
 
     override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false
 })
+
+class SimpleDrawableCustomViewTarget<T : View>(view: T, private val call: (view: T, drawable: Drawable?) -> Unit) : CustomViewTarget<T, Drawable>(view) {
+    override fun onLoadFailed(errorDrawable: Drawable?) {
+        call(view, errorDrawable)
+    }
+
+    override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
+        call(view, resource)
+    }
+
+    override fun onResourceCleared(placeholder: Drawable?) {
+        call(view, placeholder)
+    }
+}
+
+fun <T : View> GlideRequest<Drawable>.into(view: T, call: (view: T, drawable: Drawable?) -> Unit) = into(SimpleDrawableCustomViewTarget(view, call))
 
 val random = Random(System.currentTimeMillis())
 
@@ -703,16 +720,16 @@ fun Context.notifyDownloadComplete(uri: Uri, id: Int, filename: String) {
     GlideApp.with(this).asBitmap().load(uri).override(500, 500)
         .into(object : CustomTarget<Bitmap>() {
             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                val bigPictureStyle = NotificationCompat.BigPictureStyle()
-                    .bigPicture(resource)
-                builder
-                    .setStyle(bigPictureStyle)
+                builder.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
                     .setLargeIcon(resource)
                 NotificationManagerCompat.from(this@notifyDownloadComplete).notify(id, builder.build())
             }
 
-            override fun onLoadCleared(placeholder: Drawable?) {
+            override fun onLoadFailed(errorDrawable: Drawable?) {
                 NotificationManagerCompat.from(this@notifyDownloadComplete).notify(id, builder.build())
+            }
+
+            override fun onLoadCleared(placeholder: Drawable?) {
             }
         })
 }
