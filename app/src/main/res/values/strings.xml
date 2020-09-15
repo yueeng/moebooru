@@ -61,9 +61,9 @@
     <string name="query_value_lt">Less than</string>
     <string name="query_vote">Vote</string>
     <string name="query_vote_desc">Query posts favored by the user ….</string>
-    <string name="query_vote_star_1">1 Star</string>
-    <string name="query_vote_star_2">2 Star</string>
-    <string name="query_vote_star_3">3 Star</string>
+    <string name="query_vote_star_1">★</string>
+    <string name="query_vote_star_2">★★</string>
+    <string name="query_vote_star_3">★★★</string>
     <string name="query_vote_star_yours">You star %1$d</string>
     <string name="query_vote_user">User</string>
     <string name="query_width">Width</string>

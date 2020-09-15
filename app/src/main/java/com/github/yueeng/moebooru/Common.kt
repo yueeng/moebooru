@@ -327,6 +327,19 @@ class GlideRegionDecoder : ImageRegionDecoder {
     override fun recycle() = decoder!!.recycle()
 }
 
+fun <TranscodeType> GlideRequest<TranscodeType>.onResourceReady(call: (resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
+    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean = false
+    override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean =
+        call(resource, model, target, dataSource, isFirstResource)
+})
+
+fun <TranscodeType> GlideRequest<TranscodeType>.onLoadFailed(call: (e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
+    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean =
+        call(e, model, target, isFirstResource)
+
+    override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false
+})
+
 val random = Random(System.currentTimeMillis())
 
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
@@ -340,21 +353,15 @@ fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBa
         .transition(DrawableTransitionOptions.withCrossFade())
         .apply { if (placeholder != null) placeholder(placeholder) }
         .apply { if (progressBar != null) progress(imageUrl, progressBar) }
-        .addListener(object : RequestListener<Drawable> {
-            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
-                return false
-            }
-
-            override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                view.setImageDrawable(null)
-                view.scaleType = ImageView.ScaleType.FIT_CENTER
-                return false
-            }
-        })
+        .onResourceReady { _, _, _, _, _ ->
+            view.setImageDrawable(null)
+            view.scaleType = ImageView.ScaleType.CENTER_CROP
+            false
+        }
         .into(view)
 }
 
-fun bindImageRatio(view: ImageView, width: Int, height: Int) {
+fun bindImageRatio(view: View, width: Int, height: Int) {
     val params: ConstraintLayout.LayoutParams = view.layoutParams as ConstraintLayout.LayoutParams
     params.dimensionRatio = "$width:$height"
     view.layoutParams = params

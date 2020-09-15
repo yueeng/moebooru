@@ -37,8 +37,7 @@
         android:id="@+id/recycler"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutManager="androidx.recyclerview.widget.StaggeredGridLayoutManager"
+        app:layoutManager="com.google.android.flexbox.FlexboxLayoutManager"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
-        app:spanCount="2"
         tools:listitem="@layout/image_item" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
