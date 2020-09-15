@@ -1,7 +1,6 @@
 package com.github.yueeng.moebooru
 
 import android.content.Intent
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,8 +15,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
 import com.github.yueeng.moebooru.databinding.FragmentUserBinding
 import com.github.yueeng.moebooru.databinding.UserImageItemBinding
 import com.github.yueeng.moebooru.databinding.UserTagItemBinding
@@ -104,14 +101,9 @@ class UserFragment : Fragment() {
                         .load(OAuth.face(it))
                         .override(120, 120)
                         .circleCrop()
-                        .into(object : CustomTarget<Drawable>() {
-                            override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
-                                binding.toolbar.logo = resource
-                            }
-
-                            override fun onLoadCleared(placeholder: Drawable?) {
-                            }
-                        })
+                        .into(binding.toolbar) { view, drawable ->
+                            view.logo = drawable
+                        }
                 }
             }
             model.avatar.observe(viewLifecycleOwner, Observer { id ->
