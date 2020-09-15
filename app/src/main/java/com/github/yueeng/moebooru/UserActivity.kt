@@ -62,7 +62,6 @@ class UserFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
             binding.toolbar.title = requireActivity().title
-            binding.toolbar.setLogo(R.mipmap.ic_launcher)
             binding.toolbar.setOnMenuItemClickListener {
                 when (it.itemId) {
                     R.id.login -> true.also { OAuth.login(this) }
@@ -99,10 +98,11 @@ class UserFragment : Fragment() {
                 model.user.asFlow().mapNotNull { it }.collectLatest {
                     GlideApp.with(binding.toolbar)
                         .load(OAuth.face(it))
+                        .placeholder(R.mipmap.ic_launcher)
                         .override(120, 120)
                         .circleCrop()
                         .into(binding.toolbar) { view, drawable ->
-                            view.logo = drawable
+                            view.navigationIcon = drawable
                         }
                 }
             }
@@ -112,6 +112,9 @@ class UserFragment : Fragment() {
                         Service.instance.post(1, Q().id(id), 1)
                     }
                     if (list.isEmpty()) return@launchWhenCreated
+                    binding.toolbar.setNavigationOnClickListener {
+                        startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(id)))
+                    }
                     GlideApp.with(binding.image)
                         .load(list.first().sample_url)
                         .transform(AlphaBlackBitmapTransformation())
