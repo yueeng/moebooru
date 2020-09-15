@@ -321,22 +321,25 @@ interface MoebooruService {
     ): String?
 }
 
-object Service {
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .addConverterFactory(GsonConverterFactory.create())
-        .client(okHttp)
-        .baseUrl(moeUrl)
-        .build()
-    val instance: MoebooruService = retrofit.create(MoebooruService::class.java)
-    suspend fun csrf(): String? = try {
-        val home = okHttp.newCall(Request.Builder().url("$moeUrl/user/home").build()).await { _, response -> response.body?.string() }
-        Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
-    } catch (e: Exception) {
-        null
+class Service(private val service: MoebooruService) : MoebooruService by service {
+    override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, tags.clone().rating(Q.Rating.safe), limit)
+
+    companion object {
+        private val retrofit: Retrofit = Retrofit.Builder()
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttp)
+            .baseUrl(moeUrl)
+            .build()
+        val instance: MoebooruService = Service(retrofit.create(MoebooruService::class.java))
+        suspend fun csrf(): String? = try {
+            val home = okHttp.newCall(Request.Builder().url("$moeUrl/user/home").build()).await { _, response -> response.body?.string() }
+            Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
+        } catch (e: Exception) {
+            null
+        }
     }
 }
 
-//@Parcelize
 class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     val map: MutableMap<String, Any> = (m ?: emptyMap()).toMutableMap()
 
