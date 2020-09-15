@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
@@ -49,7 +48,7 @@ class SavedActivity : AppCompatActivity(R.layout.activity_container) {
 }
 
 class SavedFragment : Fragment() {
-    private val viewModel: SavedViewModel by viewModels { SavedViewModelFactory(this, null) }
+    private val viewModel: SavedViewModel by sharedViewModels({ "saved" }) { SavedViewModelFactory(this, null) }
     private val adapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->

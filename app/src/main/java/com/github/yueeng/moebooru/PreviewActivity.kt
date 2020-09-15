@@ -54,10 +54,7 @@ class PreviewActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment
             ?: PreviewFragment().also { it.arguments = intent.extras }
-        val saved = supportFragmentManager.findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.container, fragment)
-            .replace(R.id.saved, saved).commit()
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
     }
 }
 

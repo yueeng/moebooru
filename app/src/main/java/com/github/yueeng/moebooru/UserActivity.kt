@@ -6,10 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -33,11 +31,8 @@ class UserActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserFragment
-            ?: UserFragment().apply { arguments = bundleOf("name" to "otaku_emmy", "user" to 73632) }
-        val saved = supportFragmentManager.findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.container, fragment)
-            .replace(R.id.saved, saved).commit()
+            ?: UserFragment().apply { arguments = intent.extras }
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
     }
 }
 
@@ -54,8 +49,8 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
 }
 
 class UserFragment : Fragment() {
-    private val mine by lazy { arguments?.getBoolean("mine") ?: false }
-    private val model: UserViewModel by viewModels { UserViewModelFactory(this, arguments) }
+    private val mine by lazy { arguments?.containsKey("name") != true }
+    private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
 
     @FlowPreview
@@ -131,11 +126,11 @@ class UserFragment : Fragment() {
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter
             lifecycleScope.launchWhenCreated {
-                flowOf(model.name.asFlow().mapNotNull { it?.takeIf { it.isNotEmpty() } },
-                    OAuth.name.asFlow().mapNotNull { it.takeIf { it.isNotEmpty() } })
-                    .flattenMerge(2).collectLatest {
-                        if (OAuth.available) query()
-                    }
+                val flowUser = model.user.asFlow().mapNotNull { it?.takeIf { it != 0 } }
+                val flowName = OAuth.name.asFlow().mapNotNull { it.takeIf { it.isNotEmpty() } }
+                flowOf(flowUser, flowName).flattenMerge(2).collectLatest {
+                    query()
+                }
             }
             binding.swipe.setOnRefreshListener {
                 lifecycleScope.launchWhenCreated { query() }
@@ -144,6 +139,7 @@ class UserFragment : Fragment() {
         }.root
 
     private suspend fun query() {
+        if (!OAuth.available) return
         val name = model.name.value ?: return
         val user = model.user.value ?: return
         model.busy.postValue(true)
