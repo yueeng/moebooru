@@ -2,6 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import com.github.yueeng.moebooru.databinding.UserImageItemBinding
 import com.github.yueeng.moebooru.databinding.UserTagItemBinding
 import com.github.yueeng.moebooru.databinding.UserTitleItemBinding
 import com.google.android.flexbox.*
+import kotlinx.android.parcel.Parcelize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flattenMerge
@@ -40,7 +42,9 @@ class UserViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val name = handle.getLiveData("name", args?.getString("name"))
     val user = handle.getLiveData("user", args?.getInt("user"))
     val avatar = handle.getLiveData<Int>("avatar")
+    val background = handle.getLiveData<String>("background")
     val busy = handle.getLiveData("busy", false)
+    val data = handle.getLiveData<Array<Parcelable>>("data")
 }
 
 class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
@@ -101,22 +105,23 @@ class UserFragment : Fragment() {
                         }
                 }
             }
-            model.avatar.observe(viewLifecycleOwner, Observer { id ->
-                lifecycleScope.launchWhenCreated {
-                    val list = withContext(Dispatchers.IO) {
-                        Service.instance.post(1, Q().id(id), 1)
-                    }
-                    if (list.isEmpty()) return@launchWhenCreated
-                    binding.toolbar.setNavigationOnClickListener {
-                        startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(id)))
-                    }
+            binding.toolbar.setNavigationOnClickListener {
+                if (model.avatar.value ?: 0 == 0) return@setNavigationOnClickListener
+                startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(id)))
+            }
+            model.avatar.observe(viewLifecycleOwner, Observer {
+                if (model.background.value != null) return@Observer
+                lifecycleScope.launchWhenCreated { background(it) }
+            })
+            lifecycleScope.launchWhenCreated {
+                model.background.asFlow().mapNotNull { it }.collectLatest { url ->
                     GlideApp.with(binding.image)
-                        .load(list.first().sample_url)
+                        .load(url)
                         .transform(AlphaBlackBitmapTransformation())
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .into(binding.image)
                 }
-            })
+            }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
                 flexWrap = FlexWrap.WRAP
                 flexDirection = FlexDirection.ROW
@@ -129,14 +134,24 @@ class UserFragment : Fragment() {
                 val flowUser = model.user.asFlow().mapNotNull { it?.takeIf { it != 0 } }
                 val flowName = OAuth.name.asFlow().mapNotNull { it.takeIf { it.isNotEmpty() } }
                 flowOf(flowUser, flowName).flattenMerge(2).collectLatest {
-                    query()
+                    if (model.data.value?.isEmpty() != false) query()
                 }
             }
+            model.data.observe(viewLifecycleOwner, Observer {
+                adapter.submitList(it.toList())
+            })
             binding.swipe.setOnRefreshListener {
                 lifecycleScope.launchWhenCreated { query() }
             }
             model.busy.observe(viewLifecycleOwner, Observer { binding.swipe.isRefreshing = it })
         }.root
+
+    private suspend fun background(id: Int) {
+        val list = withContext(Dispatchers.IO) {
+            runCatching { Service.instance.post(1, Q().id(id), 1) }.getOrNull()
+        }
+        list?.firstOrNull()?.sample_url?.let { model.background.postValue(it) }
+    }
 
     private suspend fun query() {
         if (!OAuth.available) return
@@ -145,32 +160,37 @@ class UserFragment : Fragment() {
         model.busy.postValue(true)
         val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
         val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
-        val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Any>() to it.second) }.toMap()
+        val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
         coroutineScope {
             launch {
-                val url = "$moeUrl/user/show/$user"
-                val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
-                val jsoup = Jsoup.parse(html, url)
-                val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
-                model.avatar.postValue(id)
-
-                val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
-                if (posts > 0) {
-                    data["Common"]?.first?.add(Tag("Posts: ${posts}P", "user:$name"))
+                val jsoup = withContext(Dispatchers.Default) {
+                    val url = "$moeUrl/user/show/$user"
+                    val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
+                    Jsoup.parse(html, url)
                 }
-                val votes = jsoup.select("th:contains(Votes)").next().select(".stars a").map { it.text().trim('★', ' ').toIntOrNull() ?: 0 }.zip(1..3).filter { it.first > 0 }
-                for (v in votes) {
-                    data["Common"]?.first?.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
+                launch {
+                    val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
+                    model.avatar.postValue(id)
                 }
-                if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
-                for (i in tags) {
-                    for (j in i.second) {
-                        val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
-                        data[j]?.first?.addAll(m.map { Tag(it, i.first + " ${it.replace(' ', '_')}") })
+                launch {
+                    val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
+                    if (posts > 0) {
+                        data["Common"]?.first?.add(Tag("Posts: ${posts}P", "user:$name"))
                     }
+                    val votes = jsoup.select("th:contains(Votes)").next().select(".stars a").map { it.text().trim('★', ' ').toIntOrNull() ?: 0 }.zip(1..3).filter { it.first > 0 }
+                    for (v in votes) {
+                        data["Common"]?.first?.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
+                    }
+                    if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
+                    for (i in tags) {
+                        for (j in i.second) {
+                            val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
+                            data[j]?.first?.addAll(m.map { Tag(it, i.first + " ${it.replace(' ', '_')}") })
+                        }
+                    }
+                    val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
+                    model.data.postValue(submit.toTypedArray())
                 }
-                val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
-                adapter.submitList(submit)
             }
             images.map { image ->
                 launch {
@@ -179,14 +199,15 @@ class UserFragment : Fragment() {
                     }
                     data[image.first]?.first?.addAll(result)
                     val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
-                    adapter.submitList(submit)
+                    model.data.postValue(submit.toTypedArray())
                 }
             }
         }
         model.busy.postValue(false)
     }
 
-    data class Title(val name: String, val query: String? = null)
+    @Parcelize
+    data class Title(val name: String, val query: String? = null) : Parcelable
     class TitleHolder(private val binding: UserTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.button1.setOnClickListener {
@@ -202,7 +223,8 @@ class UserFragment : Fragment() {
         }
     }
 
-    data class Tag(val name: String, val query: String)
+    @Parcelize
+    data class Tag(val name: String, val query: String) : Parcelable
     class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setCardBackgroundColor(randomColor())
@@ -229,7 +251,7 @@ class UserFragment : Fragment() {
         }
     }
 
-    class ImageAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+    class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
             is Tag -> 1
