@@ -29,7 +29,7 @@ class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
                     DbTag(0, "UnPin", "")
                 else null
             }
-        }
+        }.cachedIn(viewModelScope)
     val edit = handle.getLiveData<Boolean>("edit")
 }
 
