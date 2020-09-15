@@ -2,7 +2,6 @@ package com.github.yueeng.moebooru
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -49,6 +48,7 @@ class UserViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val name = handle.getLiveData("name", args?.getString("name"))
     val user = handle.getLiveData("user", args?.getInt("user"))
     val avatar = handle.getLiveData<Int>("avatar")
+    val busy = handle.getLiveData("busy", false)
 }
 
 class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
@@ -139,15 +139,19 @@ class UserFragment : Fragment() {
                 flowOf(model.name.asFlow().mapNotNull { it?.takeIf { it.isNotEmpty() } },
                     OAuth.name.asFlow().mapNotNull { it.takeIf { it.isNotEmpty() } })
                     .flattenMerge(2).collectLatest {
-                        Log.i("MLDFLOW", "${OAuth.name.value}, ${model.name.value}")
                         if (OAuth.available) query()
                     }
             }
+            binding.swipe.setOnRefreshListener {
+                lifecycleScope.launchWhenCreated { query() }
+            }
+            model.busy.observe(viewLifecycleOwner, Observer { binding.swipe.isRefreshing = it })
         }.root
 
     private suspend fun query() {
         val name = model.name.value ?: return
         val user = model.user.value ?: return
+        model.busy.postValue(true)
         val url = "$moeUrl/user/show/$user"
         val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
         val jsoup = Jsoup.parse(html, url)
@@ -176,10 +180,12 @@ class UserFragment : Fragment() {
         adapter.submitList(data.flatMap { listOf(it.key) + it.value })
         withContext(Dispatchers.IO) {
             listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name order:id_desc").map {
-                it.first to Service.instance.post(1, Q(it.second))
+                it.first to runCatching { Service.instance.post(1, Q(it.second)) }.getOrElse { emptyList() }
             }
-        }.forEach { data.getOrPut(it.first) { mutableListOf() }.addAll(0, it.second) }
+        }.filter { it.second.any() }.forEach { data.getOrPut(it.first) { mutableListOf() }.addAll(0, it.second) }
         adapter.submitList(data.flatMap { listOf(it.key) + it.value })
+
+        model.busy.postValue(false)
     }
 
     class TitleHolder(private val binding: ListStringItemBinding) : RecyclerView.ViewHolder(binding.root) {
