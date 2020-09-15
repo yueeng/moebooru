@@ -148,7 +148,7 @@ class UserFragment : Fragment() {
     private suspend fun query() {
         val name = model.name.value ?: return
         val user = model.user.value ?: return
-        val url = "$moe_url/user/show/$user"
+        val url = "$moeUrl/user/show/$user"
         val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
         val jsoup = Jsoup.parse(html, url)
         val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0

@@ -109,7 +109,7 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
         super.saveFromResponse(url, cookies)
         okPersistor.removeAll(cookies.filter { !it.persistent })
-        cookies.filter { it.matches(moe_url.toHttpUrl()) }.firstOrNull { it.name == "login" }?.value?.let {
+        cookies.filter { it.matches(moeUrl.toHttpUrl()) }.firstOrNull { it.name == "login" }?.value?.let {
             OAuth.name.postValue(it)
         }
     }
@@ -622,11 +622,11 @@ object Save {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManagerCompat.from(MainApplication.instance()).let { notify ->
-                val channel = NotificationChannel(moe_host, moe_host, NotificationManager.IMPORTANCE_DEFAULT)
+                val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_DEFAULT)
                 notify.createNotificationChannel(channel)
             }
         }
-        val notification = NotificationCompat.Builder(MainApplication.instance(), moe_host)
+        val notification = NotificationCompat.Builder(MainApplication.instance(), moeHost)
             .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
             .setContentText(item.jpeg_file_name)
             .setSmallIcon(R.drawable.ic_stat_name)
@@ -690,11 +690,11 @@ fun Context.notifyDownloadComplete(uri: Uri, id: Int, filename: String) {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         NotificationManagerCompat.from(this).let { manager ->
-            val channel = NotificationChannel(moe_host, moe_host, NotificationManager.IMPORTANCE_DEFAULT)
+            val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_DEFAULT)
             manager.createNotificationChannel(channel)
         }
     }
-    val builder = NotificationCompat.Builder(MainApplication.instance(), moe_host)
+    val builder = NotificationCompat.Builder(MainApplication.instance(), moeHost)
         .setContentTitle(getString(R.string.app_download, getString(R.string.app_name)))
         .setContentText(filename)
         .setAutoCancel(true)

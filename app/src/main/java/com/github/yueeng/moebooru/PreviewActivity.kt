@@ -135,10 +135,10 @@ class PreviewFragment : Fragment() {
                         put(MediaStore.MediaColumns.MIME_TYPE, mime)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             put(MediaStore.MediaColumns.IS_PENDING, true)
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moe_host")
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
                         }
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            put(MediaStore.MediaColumns.ALBUM, moe_host)
+                            put(MediaStore.MediaColumns.ALBUM, moeHost)
                         }
                     }
                     val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
