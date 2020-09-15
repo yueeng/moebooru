@@ -11,14 +11,19 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity" />
 
-    <com.google.android.material.navigation.NavigationView
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/mine"
+        android:name="com.github.yueeng.moebooru.UserFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="start" />
+        android:layout_gravity="start"
+        android:background="?android:attr/colorBackground" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/saved"
+        android:name="com.github.yueeng.moebooru.SavedFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="end" />
+        android:layout_gravity="end"
+        android:background="?android:attr/colorBackground" />
 </androidx.drawerlayout.widget.DrawerLayout>

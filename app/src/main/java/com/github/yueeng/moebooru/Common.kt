@@ -18,6 +18,7 @@ import android.os.Looper
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
+import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.webkit.MimeTypeMap
