@@ -513,7 +513,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     constructor(source: Parcel) : this((1..source.readInt()).map { source.readString()!! to source.readValue(Q::class.java.classLoader)!! }.toMap().toMutableMap())
 
     constructor(source: Q?) : this(source?.map)
-    constructor(source: String?) : this(source?.split(' ')
+    constructor(source: String?) : this(source?.split(' ', '+')
         ?.map { it.split(':', limit = 2) }
         ?.map { list ->
             when (list.size) {

@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
@@ -17,17 +19,15 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.github.yueeng.moebooru.databinding.FragmentUserBinding
-import com.github.yueeng.moebooru.databinding.ListStringItemBinding
 import com.github.yueeng.moebooru.databinding.UserImageItemBinding
 import com.github.yueeng.moebooru.databinding.UserTagItemBinding
+import com.github.yueeng.moebooru.databinding.UserTitleItemBinding
 import com.google.android.flexbox.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flattenMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.jsoup.Jsoup
 
@@ -91,7 +91,7 @@ class UserFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                    binding.toolbar.title = name
+                    binding.toolbar.title = name.toTitleCase()
                     if (model.user.value == null) {
                         val id = Service.instance.user(name)
                         id.firstOrNull()?.id?.let { model.user.postValue(it) }
@@ -152,45 +152,62 @@ class UserFragment : Fragment() {
         val name = model.name.value ?: return
         val user = model.user.value ?: return
         model.busy.postValue(true)
-        val url = "$moeUrl/user/show/$user"
-        val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
-        val jsoup = Jsoup.parse(html, url)
-        val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
-        model.avatar.postValue(id)
+        val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
+        val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
+        val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Any>() to it.second) }.toMap()
+        coroutineScope {
+            launch {
+                val url = "$moeUrl/user/show/$user"
+                val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
+                val jsoup = Jsoup.parse(html, url)
+                val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
+                model.avatar.postValue(id)
 
-        val data = LinkedHashMap<String, MutableList<Any>>()
-        val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
-        if (posts > 0) {
-            data.getOrPut("Common") { mutableListOf() }.add(Tag("Posts: ${posts}P", "user:$name"))
-        }
-        val votes = jsoup.select("th:contains(Votes)").next().select(".stars a").map { it.text().trim('★', ' ').toIntOrNull() ?: 0 }.zip(1..3).filter { it.first > 0 }
-        for (v in votes) {
-            data.getOrPut("Common") { mutableListOf() }.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
-        }
-        if (votes.size > 1) data.getOrPut("Common") { mutableListOf() }.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
-        for (i in listOf(Pair("vote:3:$name order:vote", listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles")), Pair("user:$name", listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles")))) {
-            for (j in i.second) {
-                data[j] = mutableListOf()
-                val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
-                if (m.isNotEmpty()) {
-                    data[j]!!.addAll(m.map { Tag(it, i.first) })
+                val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
+                if (posts > 0) {
+                    data["Common"]?.first?.add(Tag("Posts: ${posts}P", "user:$name"))
+                }
+                val votes = jsoup.select("th:contains(Votes)").next().select(".stars a").map { it.text().trim('★', ' ').toIntOrNull() ?: 0 }.zip(1..3).filter { it.first > 0 }
+                for (v in votes) {
+                    data["Common"]?.first?.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
+                }
+                if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
+                for (i in tags) {
+                    for (j in i.second) {
+                        val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
+                        data[j]?.first?.addAll(m.map { Tag(it, i.first + " ${it.replace(' ', '_')}") })
+                    }
+                }
+                val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
+                adapter.submitList(submit)
+            }
+            images.map { image ->
+                launch {
+                    val result = withContext(Dispatchers.IO) {
+                        runCatching { Service.instance.post(1, Q(image.second)) }.getOrElse { emptyList() }
+                    }
+                    data[image.first]?.first?.addAll(result)
+                    val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
+                    adapter.submitList(submit)
                 }
             }
         }
-        adapter.submitList(data.flatMap { listOf(it.key) + it.value })
-        withContext(Dispatchers.IO) {
-            listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name order:id_desc").map {
-                it.first to runCatching { Service.instance.post(1, Q(it.second)) }.getOrElse { emptyList() }
-            }
-        }.filter { it.second.any() }.forEach { data.getOrPut(it.first) { mutableListOf() }.addAll(0, it.second) }
-        adapter.submitList(data.flatMap { listOf(it.key) + it.value })
-
         model.busy.postValue(false)
     }
 
-    class TitleHolder(private val binding: ListStringItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(tag: String) {
-            binding.text1.text = tag
+    data class Title(val name: String, val query: String? = null)
+    class TitleHolder(private val binding: UserTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.button1.setOnClickListener {
+                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)))
+            }
+        }
+
+        var tag: Title? = null
+        fun bind(tag: Title) {
+            this.tag = tag
+            binding.text1.text = tag.name
+            binding.button1.isVisible = tag.query != null
         }
     }
 
@@ -198,9 +215,14 @@ class UserFragment : Fragment() {
     class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setCardBackgroundColor(randomColor())
+            binding.root.setOnClickListener {
+                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)))
+            }
         }
 
+        var tag: Tag? = null
         fun bind(tag: Tag) {
+            this.tag = tag
             binding.text1.text = tag.name
         }
     }
@@ -218,26 +240,24 @@ class UserFragment : Fragment() {
 
     class ImageAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
-            is String -> 0
+            is Title -> 0
             is Tag -> 1
             is JImageItem -> 2
             else -> throw IllegalArgumentException()
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder = when (viewType) {
-            0 -> TitleHolder(ListStringItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+            0 -> TitleHolder(UserTitleItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
             1 -> TagHolder(UserTagItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
             2 -> ImageHolder(UserImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
             else -> throw IllegalArgumentException()
         }
 
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            when (holder) {
-                is TitleHolder -> holder.bind(getItem(position) as String)
-                is TagHolder -> holder.bind(getItem(position) as Tag)
-                is ImageHolder -> holder.bind(getItem(position) as JImageItem)
-            }
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int): Unit = when (holder) {
+            is TitleHolder -> holder.bind(getItem(position) as Title)
+            is TagHolder -> holder.bind(getItem(position) as Tag)
+            is ImageHolder -> holder.bind(getItem(position) as JImageItem)
+            else -> throw IllegalArgumentException()
         }
     }
-
 }
