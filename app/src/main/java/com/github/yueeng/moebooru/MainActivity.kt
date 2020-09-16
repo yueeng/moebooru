@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+
+        startActivity(Intent(this, PopularActivity::class.java))
     }
 }
 

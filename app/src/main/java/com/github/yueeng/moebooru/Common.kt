@@ -18,7 +18,6 @@ import android.os.Looper
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.webkit.MimeTypeMap
@@ -437,26 +436,26 @@ fun String.toTitleCase(vararg delimiters: String = arrayOf("_")) = delimiters.fo
     }
 }
 
-fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { c ->
-    c.firstDayOfWeek = firstOfWeek
-    c.time = this
-    c.set(Calendar.DAY_OF_WEEK, c.firstDayOfWeek + index - 1)
-    c.time
+fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { calendar ->
+    calendar.firstDayOfWeek = firstOfWeek
+    calendar.time = this
+    calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek + index - 1)
+    calendar.time
 }
 
 fun Date.lastDayOfWeek(): Date = firstDayOfWeek(7)
 
-fun Date.firstDayOfMonth(): Date = Calendar.getInstance().let { c ->
-    c.time = this
-    c.set(Calendar.DAY_OF_MONTH, 1)
-    c.time
+fun Date.firstDayOfMonth(): Date = Calendar.getInstance().let { calendar ->
+    calendar.time = this
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    calendar.time
 }
 
-fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { c ->
-    c.time = this
-    c.set(Calendar.DAY_OF_MONTH, 1)
-    c.roll(Calendar.DAY_OF_MONTH, -1)
-    c.time
+fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { calendar ->
+    calendar.time = this
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    calendar.roll(Calendar.DAY_OF_MONTH, -1)
+    calendar.time
 }
 
 class TimeSpan(val end: Calendar, val begin: Calendar) {
@@ -467,7 +466,7 @@ class TimeSpan(val end: Calendar, val begin: Calendar) {
     val days: Int get() = (hours / 24).toInt()
     val weeks: Int get() = days / 7
     val months: Int get() = (end.year - begin.year) * 12 + (end.month - begin.month) + 1
-    val days2: Int
+    val daysGreedy: Int
         get() = days + when {
             end.timeInMillis < begin.timeInMillis -> when {
                 end.millisecondOfDay > begin.millisecondOfDay -> -2
@@ -476,7 +475,7 @@ class TimeSpan(val end: Calendar, val begin: Calendar) {
             end.millisecondOfDay < begin.millisecondOfDay -> 2
             else -> 1
         }
-    val weeks2: Int
+    val weeksGreedy: Int
         get() = weeks + when {
             end.timeInMillis < begin.timeInMillis -> when {
                 end.dayOfWeek > begin.dayOfWeek -> -2
@@ -497,17 +496,17 @@ fun Calendar.minute(minute: Int, add: Boolean = false) = apply { if (add) add(Ca
 fun Calendar.second(second: Int, add: Boolean = false) = apply { if (add) add(Calendar.SECOND, second) else set(Calendar.SECOND, second) }
 fun Calendar.millisecond(millisecond: Int, add: Boolean = false) = apply { if (add) add(Calendar.MILLISECOND, millisecond) else set(Calendar.MILLISECOND, millisecond) }
 fun Calendar.dayOfWeek(day: Int, add: Boolean = false) = apply { if (add) add(Calendar.DAY_OF_WEEK, day) else set(Calendar.DAY_OF_WEEK, day) }
-fun Calendar.dayOfWeek2(day: Int, add: Boolean = false) = dayOfWeek((firstDayOfWeek + day - 1) % 7, add)
+fun Calendar.dayOfWeekWithLocale(day: Int, add: Boolean = false) = dayOfWeek((firstDayOfWeek + day - 1) % 7, add)
 fun Calendar.weekOfYear(week: Int, add: Boolean = false) = apply { if (add) add(Calendar.WEEK_OF_YEAR, week) else set(Calendar.WEEK_OF_YEAR, week) }
-val Calendar.firstDayOfWeek2 get() = cp().dayOfWeek2(1)
-val Calendar.lastDayOfWeek2 get() = cp().dayOfWeek2(7)
-val Calendar.firstDayOfMonth get() = cp().day(1)
-val Calendar.lastDayOfMonth get() = cp().month(1, true).day(-1)
+val Calendar.firstDayOfWeekWithLocale get() = copy().dayOfWeekWithLocale(1)
+val Calendar.lastDayOfWeekWithLocale get() = copy().dayOfWeekWithLocale(7)
+val Calendar.firstDayOfMonth get() = copy().day(1)
+val Calendar.lastDayOfMonth get() = copy().month(1, true).day(-1)
 val Calendar.year get() = get(Calendar.YEAR)
 val Calendar.month get() = get(Calendar.MONTH)
 val Calendar.day get() = get(Calendar.DAY_OF_MONTH)
 val Calendar.dayOfWeek get() = get(Calendar.DAY_OF_WEEK)
-val Calendar.dayOfWeek2 get() = (dayOfWeek - firstDayOfWeek + 7) % 7 + 1
+val Calendar.dayOfWeekWithLocale get() = (dayOfWeek - firstDayOfWeek + 7) % 7 + 1
 val Calendar.hour get() = get(Calendar.HOUR_OF_DAY)
 val Calendar.minute get() = get(Calendar.MINUTE)
 val Calendar.minuteOfDay get() = hour * 60 + minute
@@ -517,7 +516,7 @@ val Calendar.millisecond get() = get(Calendar.MILLISECOND)
 val Calendar.millisecondOfDay get() = secondOfDay * 1000 + millisecond
 val Calendar.milliseconds get() = timeInMillis
 fun Calendar.format(df: DateFormat): String = df.format(time)
-fun Calendar.cp(): Calendar = clone() as Calendar
+fun Calendar.copy(): Calendar = clone() as Calendar
 fun DateFormat.tryParse(string: CharSequence): Date? = try {
     parse(string.toString())
 } catch (e: Exception) {

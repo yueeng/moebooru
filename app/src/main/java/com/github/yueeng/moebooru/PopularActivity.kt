@@ -14,11 +14,11 @@ import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
-import androidx.transition.TransitionManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.github.yueeng.moebooru.databinding.FragmentPopularBinding
 import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
+import java.text.SimpleDateFormat
 import java.util.*
 
 class PopularActivity : AppCompatActivity(R.layout.activity_main) {
@@ -41,7 +41,7 @@ class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundl
 
 class PopularFragment : Fragment() {
     private val model: PopularViewModel by viewModels { PopularViewModelFactory(this, arguments) }
-    private val type by lazy { arguments?.getString("type") ?: "day" }
+    private val type by lazy { arguments?.getString("type") ?: "week" }
     private val adapter by lazy { PopularAdapter(this) }
     private val tabAdapter by lazy { TabAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
@@ -61,14 +61,13 @@ class PopularFragment : Fragment() {
                 if (last != position && last != -1) tabAdapter.notifyItemChanged(last, "check")
                 tabAdapter.notifyItemChanged(position, "check")
                 last = position
-                TransitionManager.beginDelayedTransition(binding.tab)
                 binding.tab.scrollToPosition(position)
             })
         }.root
 
     fun date2pos(target: Calendar) = when (type) {
-        "day" -> Calendar.getInstance().minus(target).days2 - 1
-        "week" -> Calendar.getInstance().minus(target).weeks2 - 1
+        "day" -> Calendar.getInstance().minus(target).daysGreedy - 1
+        "week" -> Calendar.getInstance().minus(target).weeksGreedy - 1
         "month" -> Calendar.getInstance().minus(target).months - 1
         else -> throw  IllegalArgumentException()
     }
@@ -87,14 +86,15 @@ class PopularFragment : Fragment() {
             arguments = bundleOf("query" to Q().popular(type, pos2date(position).time))
         }
 
+        private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        private val weekFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         fun getPageTitle(position: Int): CharSequence? = when (type) {
-            "day" -> pos2date(position).format(Q.formatter)
+            "day" -> pos2date(position).format(dayFormatter)
             "week" -> pos2date(position).let {
-                "${it.firstDayOfWeek2.format(Q.formatter)} - ${it.lastDayOfWeek2.format(Q.formatter)}"
+                "${it.lastDayOfWeekWithLocale.format(weekFormatter)} W${it.lastDayOfWeekWithLocale.get(Calendar.WEEK_OF_MONTH)}"
             }
-            "month" -> pos2date(position).let {
-                "${it.firstDayOfMonth.format(Q.formatter)} - ${it.lastDayOfMonth.format(Q.formatter)}"
-            }
+            "month" -> pos2date(position).firstDayOfMonth.format(monthFormatter)
             else -> throw IllegalArgumentException()
         }
     }
