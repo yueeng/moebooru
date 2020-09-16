@@ -24,9 +24,9 @@ import java.util.*
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
     val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags() }.flow
         .map {
-            it.insertHeaderItem(DbTag(0, "Pin", "")).insertSeparators { dbTag, dbTag2 ->
+            it.insertHeaderItem(DbTag(0, MainApplication.instance().getString(R.string.saved_pin), "")).insertSeparators { dbTag, dbTag2 ->
                 if (dbTag?.pin == true && dbTag2?.pin == false)
-                    DbTag(0, "UnPin", "")
+                    DbTag(0, MainApplication.instance().getString(R.string.saved_tags), "")
                 else null
             }
         }.cachedIn(viewModelScope)

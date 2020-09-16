@@ -69,11 +69,12 @@
     <string name="query_width">Width</string>
     <string name="query_width_desc">Query posts with a width of ….</string>
 
+    <string name="saved_edit">Edit</string>
     <string name="saved_empty">Can\'t save empty tag</string>
     <string name="saved_pin">Pin</string>
     <string name="saved_pin_desc">Pin to main page</string>
+    <string name="saved_tags">Tags</string>
     <string name="saved_title">Save tag</string>
-    <string name="saved_edit">Edit</string>
 
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>
