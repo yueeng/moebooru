@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.mapNotNull
 import java.util.*
 
-class QueryActivity : AppCompatActivity(R.layout.activity_main) {
+class QueryActivity : MoeActivity(R.layout.activity_main) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -6,7 +6,6 @@ import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
@@ -29,7 +28,7 @@ import okhttp3.Request
 import org.jsoup.Jsoup
 
 
-class UserActivity : AppCompatActivity(R.layout.activity_main) {
+class UserActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserFragment

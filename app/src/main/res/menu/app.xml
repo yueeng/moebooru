@@ -2,8 +2,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/settings"
+        android:id="@+id/daynight"
+        android:icon="@drawable/ic_daynight"
+        android:title="@string/settings_daynight_mode"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/safe"
         android:icon="@drawable/ic_settings"
-        android:title="@string/app_settings"
+        android:title="@string/settings_safe_mode"
         app:showAsAction="ifRoom" />
 </menu>
