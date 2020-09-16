@@ -13,7 +13,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
@@ -50,7 +49,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 
-class PreviewActivity : AppCompatActivity(R.layout.activity_main) {
+class PreviewActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment

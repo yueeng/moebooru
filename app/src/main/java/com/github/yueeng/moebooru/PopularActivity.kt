@@ -21,7 +21,7 @@ import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
 import java.text.SimpleDateFormat
 import java.util.*
 
-class PopularActivity : AppCompatActivity(R.layout.activity_main) {
+class PopularActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -125,14 +125,8 @@ class PopularFragment : Fragment() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
-
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main, menu)
-        inflater.inflate(R.menu.app, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 

@@ -5,12 +5,15 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
+import androidx.lifecycle.Observer
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
@@ -19,12 +22,64 @@ import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
-class MainActivity : AppCompatActivity(R.layout.activity_main) {
+open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value!!)
+        super.onCreate(savedInstanceState)
+        MoeSettings.daynight.observe(this, Observer {
+            if (AppCompatDelegate.getDefaultNightMode() != it) recreate()
+        })
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.app, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.safe -> true.also {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.settings_safe_mode)
+                .setMessage(if (MoeSettings.safe.value!!) R.string.settings_safe_turn_on else R.string.settings_safe_turn_off)
+                .setPositiveButton(R.string.settings_safe_turn_on) { _, _ -> MoeSettings.safe.postValue(true) }
+                .setNeutralButton(R.string.settings_safe_turn_off) { _, _ -> MoeSettings.safe.postValue(false) }
+                .setNegativeButton(R.string.app_cancel, null)
+                .create()
+                .show()
+        }
+        R.id.daynight -> true.also {
+            val current = MoeSettings.daynight.value!!
+            val items = listOf(
+                AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY to getString(R.string.settings_daynight_auto),
+                AppCompatDelegate.MODE_NIGHT_NO to getString(R.string.settings_daynight_day),
+                AppCompatDelegate.MODE_NIGHT_YES to getString(R.string.settings_daynight_night),
+                AppCompatDelegate.MODE_NIGHT_UNSPECIFIED to getString(R.string.settings_daynight_system)
+            )
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.settings_daynight_mode)
+                .setSingleChoiceItems(items.map { it.second }.toTypedArray(), items.indexOfFirst { it.first == current }, null)
+                .setPositiveButton(R.string.app_ok) { d, _ ->
+                    (d as? AlertDialog)?.listView?.checkedItemPosition?.let { w ->
+                        items[w].first.takeIf { it != MoeSettings.daynight.value }?.let {
+                            MoeSettings.daynight.postValue(it)
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.app_cancel, null)
+                .create()
+                .show()
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+}
+
+class MainActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
@@ -69,20 +124,15 @@ class MainFragment : Fragment() {
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         val data = mutableListOf("Popular" to Q().order(Q.Order.score).date(Calendar.getInstance().also { it.add(Calendar.DAY_OF_YEAR, -1) }.time, Q.Value.Op.ge))
         override fun getItemId(position: Int): Long = data[position].hashCode().toLong()
+        override fun containsItem(itemId: Long): Boolean = data.map { it.hashCode().toLong() }.contains(itemId)
         override fun getItemCount(): Int = data.size
         override fun createFragment(position: Int): Fragment = ImageFragment().apply {
             arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
-
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main, menu)
-        inflater.inflate(R.menu.app, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
@@ -96,7 +146,7 @@ class MainFragment : Fragment() {
     }
 }
 
-class ListActivity : AppCompatActivity(R.layout.activity_main) {
+class ListActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? ListFragment
@@ -116,14 +166,8 @@ class ListFragment : Fragment() {
             childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }.root
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
-
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main, menu)
-        inflater.inflate(R.menu.app, menu)
         super.onCreateOptionsMenu(menu, inflater)
     }
 
@@ -138,7 +182,7 @@ class ListFragment : Fragment() {
 class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
         val key = params.key ?: 1
-        val posts = Service.instance.post(page = key, Q(query).rating(Q.Rating.safe), limit = params.loadSize)
+        val posts = Service.instance.post(page = key, Q(query), limit = params.loadSize)
         LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
     } catch (e: Exception) {
         LoadResult.Error(e)
