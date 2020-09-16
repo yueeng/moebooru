@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.AdapterListUpdateCallback
 import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.RecyclerView
+import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
@@ -99,7 +100,7 @@ class PreviewFragment : Fragment() {
                         }.mapNotNull { it.await() }
                             .map { Tag(it.first, it.second.toTitleCase(), it.second) }
                             .sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
-                        TransitionManager.beginDelayedTransition(binding.sliding)
+                        TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
                         tagAdapter.submitList(tags)
                     }
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))

@@ -7,15 +7,20 @@ import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
+import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
+import androidx.transition.ChangeTransform
+import androidx.transition.TransitionManager
+import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
+import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
@@ -43,6 +48,22 @@ class MainFragment : Fragment() {
                     adapter.data.removeAll(adapter.data.drop(1))
                     adapter.data.addAll(tags.map { it.name to Q(it.tag) })
                     adapter.notifyDataSetChanged()
+                }
+            }
+
+            binding.button1.setOnClickListener {
+                val ex = binding.button1.rotation == 45F
+                val axis = MaterialSharedAxis(MaterialSharedAxis.Y, !ex)
+                val set = TransitionSet().addTransition(axis).addTransition(ChangeTransform())
+                TransitionManager.beginDelayedTransition(binding.root, set)
+                binding.button1.rotation = if (ex) 0F else 45F
+                binding.button2.isInvisible = ex
+                binding.button3.isInvisible = ex
+                binding.button4.isInvisible = ex
+            }
+            listOf(binding.button2, binding.button3, binding.button4).forEach { fab ->
+                fab.setOnClickListener {
+                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"))
                 }
             }
         }.root
