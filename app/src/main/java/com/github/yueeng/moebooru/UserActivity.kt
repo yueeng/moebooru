@@ -107,7 +107,7 @@ class UserFragment : Fragment() {
             }
             binding.toolbar.setNavigationOnClickListener {
                 if (model.avatar.value ?: 0 == 0) return@setNavigationOnClickListener
-                startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(id)))
+                startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)))
             }
             model.avatar.observe(viewLifecycleOwner, Observer {
                 if (model.background.value != null) return@Observer
