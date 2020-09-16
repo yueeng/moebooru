@@ -1,0 +1,128 @@
+package com.github.yueeng.moebooru
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.transition.TransitionManager
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
+import com.github.yueeng.moebooru.databinding.FragmentPopularBinding
+import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
+import java.util.*
+
+class PopularActivity : AppCompatActivity(R.layout.activity_main) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PopularFragment ?: PopularFragment()
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+    }
+}
+
+class PopularViewModel(handle: SavedStateHandle) : ViewModel() {
+    val index = handle.getLiveData<Int>("index")
+}
+
+class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PopularViewModel(handle) as T
+}
+
+class PopularFragment : Fragment() {
+    private val model: PopularViewModel by viewModels { PopularViewModelFactory(this, arguments) }
+    private val type by lazy { arguments?.getString("type") ?: "day" }
+    private val adapter by lazy { PopularAdapter(this) }
+    private val tabAdapter by lazy { TabAdapter() }
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+        FragmentPopularBinding.inflate(inflater, container, false).also { binding ->
+            (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            binding.pager.adapter = adapter
+            tabAdapter.submitList((1..adapter.itemCount).mapNotNull { adapter.getPageTitle(it - 1) })
+            binding.tab.adapter = tabAdapter
+            binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    model.index.postValue(position)
+                }
+            })
+            var last = -1
+            model.index.observe(viewLifecycleOwner, { position ->
+                binding.pager.currentItem = position
+                if (last != position && last != -1) tabAdapter.notifyItemChanged(last, "check")
+                tabAdapter.notifyItemChanged(position, "check")
+                last = position
+                TransitionManager.beginDelayedTransition(binding.tab)
+                binding.tab.scrollToPosition(position)
+            })
+        }.root
+
+    fun date2pos(target: Calendar) = when (type) {
+        "day" -> Calendar.getInstance().minus(target).days2 - 1
+        "week" -> Calendar.getInstance().minus(target).weeks2 - 1
+        "month" -> Calendar.getInstance().minus(target).months - 1
+        else -> throw  IllegalArgumentException()
+    }
+
+    fun pos2date(position: Int) = when (type) {
+        "day" -> Calendar.getInstance().day(-position, true)
+        "week" -> Calendar.getInstance().weekOfYear(-position, true)
+        "month" -> Calendar.getInstance().month(-position, true)
+        else -> throw  IllegalArgumentException()
+    }
+
+    inner class PopularAdapter(fm: Fragment) : FragmentStateAdapter(fm) {
+        override fun getItemCount(): Int = date2pos(moeCreateTime) + 1
+
+        override fun createFragment(position: Int) = ImageFragment().apply {
+            arguments = bundleOf("query" to Q().popular(type, pos2date(position).time))
+        }
+
+        fun getPageTitle(position: Int): CharSequence? = when (type) {
+            "day" -> pos2date(position).format(Q.formatter)
+            "week" -> pos2date(position).let {
+                "${it.firstDayOfWeek2.format(Q.formatter)} - ${it.lastDayOfWeek2.format(Q.formatter)}"
+            }
+            "month" -> pos2date(position).let {
+                "${it.firstDayOfMonth.format(Q.formatter)} - ${it.lastDayOfMonth.format(Q.formatter)}"
+            }
+            else -> throw IllegalArgumentException()
+        }
+    }
+
+    inner class TabHolder(private val binding: PopularTabItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.root.setOnClickListener {
+                model.index.postValue(bindingAdapterPosition)
+            }
+        }
+
+        fun bind(i: Int, value: CharSequence, payloads: MutableList<Any>?) {
+            binding.check1.visibility = if (i == model.index.value) View.VISIBLE else View.INVISIBLE
+            if (payloads?.isEmpty() != false) {
+                binding.text1.text = value
+            }
+        }
+    }
+
+    inner class TabAdapter : ListAdapter<CharSequence, TabHolder>(diffCallback { old, new -> old == new }) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TabHolder =
+            TabHolder(PopularTabItemBinding.inflate(layoutInflater, parent, false))
+
+        override fun onBindViewHolder(holder: TabHolder, position: Int, payloads: MutableList<Any>) {
+            holder.bind(position, getItem(position), payloads)
+        }
+
+        override fun onBindViewHolder(holder: TabHolder, position: Int) {
+        }
+    }
+}
