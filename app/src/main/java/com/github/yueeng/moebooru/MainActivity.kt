@@ -41,7 +41,6 @@ class MainFragment : Fragment() {
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.pager.adapter = adapter
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
-
             lifecycleScope.launchWhenCreated {
                 Db.db.invalidationTracker.createLiveData(arrayOf("tags"), true) { }.asFlow().collectLatest {
                     val tags = Db.tags.tags(true)
@@ -50,7 +49,6 @@ class MainFragment : Fragment() {
                     adapter.notifyDataSetChanged()
                 }
             }
-
             binding.button1.setOnClickListener {
                 val ex = binding.button1.rotation == 45F
                 val axis = MaterialSharedAxis(MaterialSharedAxis.Y, !ex)
@@ -77,6 +75,25 @@ class MainFragment : Fragment() {
         }
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.main, menu)
+        inflater.inflate(R.menu.app, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.search -> true.also {
+            val binding = FragmentMainBinding.bind(requireView())
+            val query = adapter.data[binding.pager.currentItem].second
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
 }
 
 class ListActivity : AppCompatActivity(R.layout.activity_main) {
@@ -89,6 +106,7 @@ class ListActivity : AppCompatActivity(R.layout.activity_main) {
 }
 
 class ListFragment : Fragment() {
+    private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
@@ -97,6 +115,24 @@ class ListFragment : Fragment() {
                 ?: ImageFragment().also { it.arguments = arguments }
             childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
         }.root
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.main, menu)
+        inflater.inflate(R.menu.app, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.search -> true.also {
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
 }
 
 class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
@@ -109,37 +145,20 @@ class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageIte
     }
 }
 
-class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
+class ImageViewModel(defaultArgs: Bundle?) : ViewModel() {
     val posts = Pager(PagingConfig(20, initialLoadSize = 20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }
         .flow.cachedIn(viewModelScope)
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(defaultArgs) as T
 }
 
 class ImageFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.main, menu)
-        super.onCreateOptionsMenu(menu, inflater)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.search -> true.also {
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
-        }
-        else -> super.onOptionsItemSelected(item)
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->

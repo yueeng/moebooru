@@ -1,9 +1,8 @@
 package com.github.yueeng.moebooru
 
+import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -16,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.github.yueeng.moebooru.databinding.FragmentMainBinding
 import com.github.yueeng.moebooru.databinding.FragmentPopularBinding
 import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
 import java.text.SimpleDateFormat
@@ -83,9 +83,10 @@ class PopularFragment : Fragment() {
         override fun getItemCount(): Int = date2pos(moeCreateTime) + 1
 
         override fun createFragment(position: Int) = ImageFragment().apply {
-            arguments = bundleOf("query" to Q().popular(type, pos2date(position).time))
+            arguments = bundleOf("query" to getItem(position))
         }
 
+        fun getItem(position: Int) = Q().popular(type, pos2date(position).time)
         private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         private val weekFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
@@ -118,11 +119,29 @@ class PopularFragment : Fragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TabHolder =
             TabHolder(PopularTabItemBinding.inflate(layoutInflater, parent, false))
 
-        override fun onBindViewHolder(holder: TabHolder, position: Int, payloads: MutableList<Any>) {
-            holder.bind(position, getItem(position), payloads)
-        }
+        override fun onBindViewHolder(holder: TabHolder, position: Int, payloads: MutableList<Any>) = holder.bind(position, getItem(position), payloads)
 
         override fun onBindViewHolder(holder: TabHolder, position: Int) {
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.main, menu)
+        inflater.inflate(R.menu.app, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.search -> true.also {
+            val binding = FragmentMainBinding.bind(requireView())
+            val query = adapter.getItem(binding.pager.currentItem)
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+        }
+        else -> super.onOptionsItemSelected(item)
     }
 }
