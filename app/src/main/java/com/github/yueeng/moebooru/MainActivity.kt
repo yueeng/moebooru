@@ -2,6 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
@@ -23,8 +24,6 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
-
-        startActivity(Intent(this, PopularActivity::class.java))
     }
 }
 
@@ -137,7 +136,12 @@ class ImageFragment : Fragment() {
         }.root
 
     class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
+        }
+
         fun bind(item: JImageItem) {
+            binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             bindImageRatio(binding.image1, item.preview_width, item.preview_height)
             bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher)
         }
@@ -154,6 +158,10 @@ class ImageFragment : Fragment() {
                             .putExtra("query", query)
                             .putExtra("index", bindingAdapterPosition)
                     )
+                }
+                binding.text1.setOnClickListener {
+                    val item = getItem(bindingAdapterPosition)!!
+                    startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.resolution / 1000000F, Q.Value.Op.ge)))
                 }
             }
     }

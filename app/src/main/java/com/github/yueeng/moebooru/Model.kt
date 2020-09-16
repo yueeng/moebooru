@@ -48,6 +48,16 @@ val moeUrl = "https://$moeHost"
 val moeSummaryUrl = "$moeUrl/tag/summary.json"
 val moeSummaryEtag = MainApplication.instance().getString(R.string.app_summary_etag)
 
+enum class Resolution(val title: String, val resolution: Int) {
+    R8K("8K", 7680 * 4320),
+    R4K("4K", 4096 * 2160),
+    R2K("2K", 2560 * 1440),
+    R1K("1K", 1920 * 1080),
+    HD("HD", 1280 * 720),
+    SD("SD", 720 * 480),
+    ZERO("", 0),
+}
+
 @Parcelize
 data class JImageItem(
     val actual_preview_height: Int,
@@ -85,6 +95,7 @@ data class JImageItem(
     val width: Int
 ) : Parcelable {
     val jpeg_file_name get() = Save.encode(jpeg_url.toHttpUrl().pathSegments.last())
+    val resolution get() = Resolution.values().firstOrNull { width * height >= it.resolution } ?: Resolution.ZERO
 }
 
 open class JResult(
@@ -421,7 +432,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     val width: Value<Int>? by map
     val height: Value<Int>? by map
     val score: Value<Int>? by map
-    val mpixels: Value<Int>? by map
+    val mpixels: Value<Float>? by map
     val date: Value<Date>? by map
     val order: Order? by map
     val parent: String? by map
@@ -454,9 +465,9 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     fun score(score: Int, op: Value.Op = Value.Op.eq) = apply { map["score"] = Value(op, score) }
     fun score(score: Int, score2: Int) = apply { map["score"] = Value(Value.Op.bt, score, score2) }
 
-    fun mpixels(mpixels: Value<Int>) = apply { map["mpixels"] = mpixels }
-    fun mpixels(mpixels: Int, op: Value.Op = Value.Op.eq) = apply { map["mpixels"] = Value(op, mpixels) }
-    fun mpixels(mpixels: Int, mpixels2: Int) = apply { map["mpixels"] = Value(Value.Op.bt, mpixels, mpixels2) }
+    fun mpixels(mpixels: Value<Float>) = apply { map["mpixels"] = mpixels }
+    fun mpixels(mpixels: Float, op: Value.Op = Value.Op.eq) = apply { map["mpixels"] = Value(op, mpixels) }
+    fun mpixels(mpixels: Int, mpixels2: Float) = apply { map["mpixels"] = Value(Value.Op.bt, mpixels, mpixels2) }
 
     fun date(date: Value<Date>) = apply { map["date"] = date }
     fun date(date: Date, op: Value.Op = Value.Op.eq) = apply { map["date"] = Value(op, date) }
@@ -522,8 +533,11 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                 2 -> when (list.first()) {
                     "order" -> list.first() to list.last().let { v -> Order.values().single { it.value == v } }
                     "rating" -> list.first() to list.last().let { v -> Rating.values().single { it.value == v } }
-                    "id", "width", "height", "score", "mpixels" -> list.first() to list.last().let { v ->
+                    "id", "width", "height", "score" -> list.first() to list.last().let { v ->
                         Value.from(v) { it.toIntOrNull() ?: 0 }
+                    }
+                    "mpixels" -> list.first() to list.last().let { v ->
+                        Value.from(v) { it.toFloatOrNull() ?: 0 }
                     }
                     "date" -> list.first() to list.last().let { v ->
                         Value.from(v) { formatter.parse(it) }
