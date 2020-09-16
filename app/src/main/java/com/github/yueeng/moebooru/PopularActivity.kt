@@ -25,7 +25,7 @@ class PopularActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PopularFragment ?: PopularFragment()
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PopularFragment ?: PopularFragment().apply { arguments = intent.extras }
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
     }
 }
@@ -41,7 +41,7 @@ class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundl
 
 class PopularFragment : Fragment() {
     private val model: PopularViewModel by viewModels { PopularViewModelFactory(this, arguments) }
-    private val type by lazy { arguments?.getString("type") ?: "week" }
+    private val type by lazy { arguments?.getString("type") ?: "day" }
     private val adapter by lazy { PopularAdapter(this) }
     private val tabAdapter by lazy { TabAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
