@@ -7,13 +7,13 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="?dialogPreferredPadding">
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/input1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="?dialogPreferredPadding"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -30,7 +30,6 @@
             android:id="@+id/input2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="?dialogPreferredPadding"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/input1">

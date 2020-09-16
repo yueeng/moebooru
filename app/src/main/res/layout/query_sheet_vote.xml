@@ -7,7 +7,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="?dialogPreferredPadding">
+        android:padding="?dialogPreferredPadding">
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/chipGroup"

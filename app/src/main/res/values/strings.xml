@@ -8,6 +8,7 @@
     <string name="app_retry">retry</string>
     <string name="app_search">Search</string>
     <string name="app_share">Share</string>
+    <string name="app_resolution">%1$dx%2$d[%3$s]</string>
 
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>

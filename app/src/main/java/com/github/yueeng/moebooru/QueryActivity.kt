@@ -130,7 +130,8 @@ class QueryFragment : Fragment() {
     fun edit(key: String?) {
         when (key) {
             "user", "md5", "parent", "pool", "source", "keyword" -> string(key)
-            "id", "width", "height", "score", "mpixels" -> int(key)
+            "id", "width", "height", "score" -> int<Int>(key)
+            "mpixels" -> int<Float>(key)
             "date" -> date(key)
             "vote" -> vote(key)
             "rating", "order" -> option(key)
@@ -198,7 +199,7 @@ class QueryFragment : Fragment() {
             .show()
     }
 
-    private fun int(key: String) {
+    private inline fun <reified T : Number> int(key: String) {
         val view = QuerySheetIntBinding.inflate(layoutInflater)
         view.chipGroup.setOnCheckedChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
@@ -211,7 +212,7 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         @Suppress("UNCHECKED_CAST")
-        val default = adapter.data[key] as? Q.Value<Int>
+        val default = adapter.data[key] as? Q.Value<T>
         if (default != null) {
             view.edit1.setText(default.v1string)
             view.edit2.setText(default.v2string)
@@ -235,13 +236,25 @@ class QueryFragment : Fragment() {
                                 .show()
                             return@setOnClickListener
                         }
-                        val v1 = view.edit1.text?.toString()?.toIntOrNull()
+                        val v1 = view.edit1.text?.toString()?.let {
+                            when (T::class) {
+                                Int::class -> it.toIntOrNull()
+                                Float::class -> it.toFloatOrNull()
+                                else -> throw IllegalArgumentException()
+                            }
+                        }
                         if (v1 == null) {
                             view.input1.isErrorEnabled = true
                             view.input1.error = getString(R.string.query_empty)
                             return@setOnClickListener
                         }
-                        val v2 = view.edit1.text?.toString()?.toIntOrNull()
+                        val v2 = view.edit1.text?.toString()?.let {
+                            when (T::class) {
+                                Int::class -> it.toIntOrNull()
+                                Float::class -> it.toFloatOrNull()
+                                else -> throw IllegalArgumentException()
+                            }
+                        }
                         if (op == Q.Value.Op.bt && v2 == null) {
                             view.input2.isErrorEnabled = true
                             view.input2.error = getString(R.string.query_empty)
