@@ -1,8 +1,11 @@
 package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.content.res.TypedArray
+import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AlertDialog
@@ -25,12 +28,31 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
+import com.google.android.material.transition.platform.MaterialContainerTransform
+import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
 open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
     override fun onCreate(savedInstanceState: Bundle?) {
         AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value!!)
+        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+        findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
+        setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
+        setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
+//        window.sharedElementsUseOverlay = false
+        val array: TypedArray = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground))
+        window.sharedElementEnterTransition = MaterialContainerTransform().apply {
+            addTarget(android.R.id.content)
+            endContainerColor = array.getColor(0, Color.WHITE)
+            duration = 500L
+        }
+        window.sharedElementReturnTransition = MaterialContainerTransform().apply {
+            addTarget(android.R.id.content)
+            startContainerColor = array.getColor(0, Color.WHITE)
+            duration = 400L
+        }
+        array.recycle()
         super.onCreate(savedInstanceState)
         MoeSettings.daynight.observe(this, Observer {
             if (AppCompatDelegate.getDefaultNightMode() != it) recreate()
@@ -116,7 +138,8 @@ class MainFragment : Fragment() {
             }
             listOf(binding.button2, binding.button3, binding.button4).forEach { fab ->
                 fab.setOnClickListener {
-                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"))
+                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), fab, "shared_element_container")
+                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"), options.toBundle())
                 }
             }
         }.root
@@ -145,7 +168,8 @@ class MainFragment : Fragment() {
         R.id.search -> true.also {
             val binding = FragmentMainBinding.bind(requireView())
             val query = adapter.data[binding.pager.currentItem].second
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
     }
@@ -183,7 +207,8 @@ class ListFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.search -> true.also {
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
     }
@@ -247,15 +272,16 @@ class ImageFragment : Fragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
                 binding.root.setOnClickListener {
+                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), binding.root, "shared_element_container")
                     startActivity(
-                        Intent(context, PreviewActivity::class.java)
-                            .putExtra("query", query)
-                            .putExtra("index", bindingAdapterPosition)
+                        Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", bindingAdapterPosition),
+                        options.toBundle()
                     )
                 }
                 binding.text1.setOnClickListener {
                     val item = getItem(bindingAdapterPosition)!!
-                    startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)))
+                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                    startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
                 }
             }
     }

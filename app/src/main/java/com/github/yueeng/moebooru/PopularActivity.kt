@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import android.view.*
@@ -139,7 +140,8 @@ class PopularFragment : Fragment() {
         R.id.search -> true.also {
             val binding = FragmentMainBinding.bind(requireView())
             val query = adapter.getItem(binding.pager.currentItem)
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query))
+            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
+            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
     }

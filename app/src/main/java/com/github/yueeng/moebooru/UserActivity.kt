@@ -1,5 +1,7 @@
 package com.github.yueeng.moebooru
 
+import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
@@ -121,7 +123,8 @@ class UserFragment : Fragment() {
             }
             binding.toolbar.setNavigationOnClickListener {
                 if (model.avatar.value ?: 0 == 0) return@setNavigationOnClickListener
-                startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)))
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)), options.toBundle())
             }
             model.avatar.observe(viewLifecycleOwner, Observer {
                 if (model.background.value != null) return@Observer
@@ -225,7 +228,8 @@ class UserFragment : Fragment() {
     class TitleHolder(private val binding: UserTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.button1.setOnClickListener {
-                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)))
+                val options = ActivityOptions.makeSceneTransitionAnimation(binding.root.context as Activity, binding.root, "shared_element_container")
+                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -239,11 +243,12 @@ class UserFragment : Fragment() {
 
     @Parcelize
     data class Tag(val name: String, val query: String) : Parcelable
-    class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setCardBackgroundColor(randomColor())
             binding.root.setOnClickListener {
-                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)))
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), binding.root, "shared_element_container")
+                startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -265,7 +270,7 @@ class UserFragment : Fragment() {
         }
     }
 
-    class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+    inner class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
             is Tag -> 1

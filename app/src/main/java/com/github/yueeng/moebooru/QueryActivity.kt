@@ -1,6 +1,7 @@
 package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
@@ -69,7 +70,8 @@ class QueryFragment : Fragment() {
             binding.bottomAppBar.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.search -> true.also {
-                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", viewModel.query.value))
+                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", viewModel.query.value), options.toBundle())
                     }
                     R.id.save -> true.also { save() }
                     else -> super.onOptionsItemSelected(item)
