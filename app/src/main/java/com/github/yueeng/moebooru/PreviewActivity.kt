@@ -103,7 +103,7 @@ class PreviewFragment : Fragment() {
                         tagAdapter.submitList(tags)
                     }
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
-                        .placeholder(R.mipmap.ic_launcher)
+                        .placeholder(R.mipmap.ic_launcher_foreground)
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .into(binding.button7)
                 }

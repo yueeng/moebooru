@@ -96,7 +96,7 @@ class UserFragment : Fragment() {
                 model.user.asFlow().mapNotNull { it }.collectLatest {
                     GlideApp.with(binding.toolbar)
                         .load(OAuth.face(it))
-                        .placeholder(R.mipmap.ic_launcher)
+                        .placeholder(R.mipmap.ic_launcher_foreground)
                         .override(120, 120)
                         .circleCrop()
                         .into(binding.toolbar) { view, drawable ->
@@ -246,7 +246,7 @@ class UserFragment : Fragment() {
 
         fun bind(item: JImageItem) {
             binding.root.minimumWidth = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * item.preview_width / item.preview_height
-            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher)
+            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
     }
 
