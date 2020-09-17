@@ -138,7 +138,7 @@ val okHttp: OkHttpClient = OkHttpClient.Builder()
             }
         })).build()
     }
-    .apply { debug { addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }) } }
+    .apply { debug { addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }) } }
     .build()
 
 suspend fun <T> Call.await(action: (Call, Response) -> T): T = suspendCancellableCoroutine { continuation ->
@@ -346,6 +346,12 @@ fun <TranscodeType> GlideRequest<TranscodeType>.onLoadFailed(call: (e: GlideExce
 
     override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false
 })
+
+class SimpleCustomTarget<T>(private val call: (T) -> Unit) : CustomTarget<T>() {
+    override fun onResourceReady(resource: T, transition: Transition<in T>?) = call(resource)
+
+    override fun onLoadCleared(placeholder: Drawable?) = Unit
+}
 
 class SimpleDrawableCustomViewTarget<T : View>(view: T, private val call: (view: T, drawable: Drawable?) -> Unit) : CustomViewTarget<T, Drawable>(view) {
     override fun onLoadFailed(errorDrawable: Drawable?) {

@@ -14,12 +14,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
@@ -27,6 +32,7 @@ import androidx.recyclerview.widget.AdapterListUpdateCallback
 import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.RecyclerView
+import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
@@ -40,6 +46,7 @@ import com.google.android.flexbox.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
+import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collect
@@ -48,6 +55,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.*
 
 
 class PreviewActivity : MoeActivity(R.layout.activity_main) {
@@ -59,7 +67,17 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
     }
 }
 
+class PreviewViewModel(handle: SavedStateHandle) : ViewModel() {
+    val crop = handle.getLiveData("crop", 0)
+}
+
+class PreviewViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PreviewViewModel(handle) as T
+}
+
 class PreviewFragment : Fragment() {
+    private val previewModel: PreviewViewModel by viewModels { PreviewViewModelFactory(this, arguments) }
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val index by lazy { arguments?.getInt("index") ?: -1 }
     private val adapter by lazy { ImageAdapter() }
@@ -166,6 +184,26 @@ class PreviewFragment : Fragment() {
                     }.check()
                 }
             }
+            binding.button4.setOnClickListener {
+                if (!OAuth.available) {
+                    OAuth.login(this) {
+                        binding.button4.callOnClick()
+                    }
+                    return@setOnClickListener
+                }
+                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
+                    previewModel.crop.value = item.id
+                    val dest = File(MainApplication.instance().cacheDir, UUID.randomUUID().toString())
+                    val option = UCrop.Options().apply {
+                        setAllowedGestures(UCropActivity.SCALE, UCropActivity.NONE, UCropActivity.SCALE)
+                        setHideBottomControls(true)
+                    }
+                    UCrop.of(Uri.fromFile(file), Uri.fromFile(dest))
+                        .withAspectRatio(1F, 1F).withOptions(option)
+                        .start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP + 1)
+                })
+            }
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
@@ -213,6 +251,20 @@ class PreviewFragment : Fragment() {
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }, getString(R.string.app_share)))
+                    }
+                    UCrop.REQUEST_CROP + 1 -> {
+                        if (data != null) {
+                            val ow = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_WIDTH, 0)
+                            val oh = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_HEIGHT, 0)
+                            val w = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_WIDTH, 0)
+                            val h = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_HEIGHT, 0)
+                            val x = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_X, 0)
+                            val y = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_Y, 0)
+                            OAuth.avatar(this, OAuth.user.value!!, previewModel.crop.value!!, 1F * x / ow, 1F * (x + w) / ow, 1F * y / oh, 1F * (y + h) / oh) {
+                                Toast.makeText(requireContext(), R.string.app_complete, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        previewModel.crop.value = 0
                     }
                 }
             }
