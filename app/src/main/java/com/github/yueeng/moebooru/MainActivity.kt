@@ -245,7 +245,7 @@ class ImageFragment : Fragment() {
                 }
                 binding.text1.setOnClickListener {
                     val item = getItem(bindingAdapterPosition)!!
-                    startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.resolution / 1000000F, Q.Value.Op.ge)))
+                    startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)))
                 }
             }
     }

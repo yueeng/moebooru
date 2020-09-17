@@ -94,13 +94,22 @@ class PreviewFragment : Fragment() {
                 override fun onPageSelected(position: Int) {
                     val item = adapter.snapshot()[position] ?: return
                     lifecycleScope.launchWhenCreated {
+                        val common = listOf(
+                            Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
+                            Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
+                            Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
+                        ).toMutableList()
+                        if (item.has_children) {
+                            common.add(Tag(Tag.TYPE_CHILDREN, "Children", "parent:${item.id}"))
+                        }
+                        if (item.parent_id != 0) {
+                            common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
+                        }
                         val tags = item.tags.split(' ').map {
                             withContext(Dispatchers.IO) { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
-                        }.mapNotNull { it.await() }
-                            .map { Tag(it.first, it.second.toTitleCase(), it.second) }
-                            .sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
+                        }.mapNotNull { it.await() }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
                         TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
-                        tagAdapter.submitList(tags)
+                        tagAdapter.submitList((common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag)))
                     }
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher_foreground)
