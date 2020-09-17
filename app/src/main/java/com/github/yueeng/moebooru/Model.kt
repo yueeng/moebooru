@@ -56,7 +56,9 @@ enum class Resolution(val title: String, val resolution: Int) {
     R1K("1K", 1920 * 1080),
     HD("HD", 1280 * 720),
     SD("SD", 720 * 480),
-    ZERO("", 0),
+    ZERO("", 0), ;
+
+    val mpixels get() = resolution / 1000000F
 }
 
 @Parcelize
@@ -72,6 +74,7 @@ data class JImageItem(
     val frames_pending_string: String,
     val frames_string: String,
     val has_children: Boolean,
+    var parent_id: Int,
     val height: Int,
     val id: Int,
     val is_held: Boolean,
@@ -96,7 +99,8 @@ data class JImageItem(
     val width: Int
 ) : Parcelable {
     val jpeg_file_name get() = Save.encode(jpeg_url.toHttpUrl().pathSegments.last())
-    val resolution get() = Resolution.values().firstOrNull { width * height >= it.resolution } ?: Resolution.ZERO
+    val mpixels get() = width * height
+    val resolution get() = Resolution.values().firstOrNull { mpixels >= it.resolution } ?: Resolution.ZERO
 }
 
 open class JResult(
