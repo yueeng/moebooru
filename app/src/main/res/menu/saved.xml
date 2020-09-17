@@ -5,6 +5,7 @@
     <item
         android:id="@+id/edit"
         android:icon="@drawable/ic_edit"
+        android:orderInCategory="0"
         android:title="@string/saved_edit"
         app:showAsAction="ifRoom" />
 </menu>
