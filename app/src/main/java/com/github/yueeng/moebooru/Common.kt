@@ -25,6 +25,7 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -97,6 +98,11 @@ class MainApplication : Application() {
 
     init {
         app = WeakReference(this)
+    }
+
+    override fun onCreate() {
+        AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value!!)
+        super.onCreate()
     }
 }
 

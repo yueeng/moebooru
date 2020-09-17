@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -74,7 +75,8 @@ class SavedFragment : Fragment() {
                 viewModel.saved.collectLatest { adapter.submitData(it) }
             }
             binding.button1.setOnClickListener {
-                startActivity(Intent(requireContext(), QueryActivity::class.java))
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                startActivity(Intent(requireContext(), QueryActivity::class.java), options.toBundle())
             }
         }.root
 
@@ -126,14 +128,15 @@ class SavedFragment : Fragment() {
                 SavedHolder(QueryTagItemBinding.inflate(layoutInflater, parent, false)).apply {
                     binding.root.setOnClickListener {
                         val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)))
+                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)), options.toBundle())
                     }
                     binding.button1.setOnClickListener {
                         val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
+                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                         startActivity(
-                            Intent(requireContext(), QueryActivity::class.java)
-                                .putExtra("query", Q(item.tag))
-                                .putExtra("id", item.id)
+                            Intent(requireContext(), QueryActivity::class.java).putExtra("query", Q(item.tag)).putExtra("id", item.id),
+                            options.toBundle()
                         )
                     }
                     binding.button2.setOnClickListener {

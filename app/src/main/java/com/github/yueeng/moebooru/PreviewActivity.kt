@@ -2,6 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.Manifest
 import android.app.Activity
+import android.app.ActivityOptions
 import android.app.WallpaperManager
 import android.content.ContentValues
 import android.content.Intent
@@ -192,7 +193,8 @@ class PreviewFragment : Fragment() {
             }
             binding.button7.setOnClickListener {
                 val model = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
-                fun go() = startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)))
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                fun go() = startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
                 if (OAuth.available) go() else OAuth.login(this@PreviewFragment) {
                     go()
                 }
@@ -263,10 +265,9 @@ class PreviewFragment : Fragment() {
             ImageHolder(PreviewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
 
-    class TagHolder(private val binding: PreviewTagItemBinding, click: (Int) -> Unit) : RecyclerView.ViewHolder(binding.root) {
+    class TagHolder(val binding: PreviewTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
-            binding.root.setOnClickListener { click(bindingAdapterPosition) }
         }
 
         fun bind(value: Tag) {
@@ -281,8 +282,11 @@ class PreviewFragment : Fragment() {
     inner class TagAdapter : RecyclerView.Adapter<TagHolder>() {
         private val differ = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(diffCallback<Tag> { o, n -> o.tag == n.tag }).build())
         private val data get() = differ.currentList
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)) {
-            startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(data[it].tag)))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)).apply {
+            binding.root.setOnClickListener {
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(data[bindingAdapterPosition].tag)), options.toBundle())
+            }
         }
 
         override fun onBindViewHolder(holder: TagHolder, position: Int) = holder.bind(data[position])
