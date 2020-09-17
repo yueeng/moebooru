@@ -112,7 +112,7 @@ class PreviewFragment : Fragment() {
                         tagAdapter.submitList((common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag)))
                     }
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
-                        .placeholder(R.mipmap.ic_launcher_foreground)
+                        .placeholder(R.mipmap.ic_launcher)
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .into(binding.button7)
                 }
