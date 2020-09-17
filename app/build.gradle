@@ -37,7 +37,7 @@ android {
             resValue 'string', 'app_name', 'Yande'
             resValue 'string', 'app_host', 'yande.re'
             resValue 'string', 'app_create_time', '2006-8-13'
-            resValue 'string', 'app_summary_etag', 'W/"12bb6366962a4b27920eb23874891ef9"'
+            resValue 'string', 'app_summary_etag', 'W/"29e32c88bcf1ec338259f1757bc390c9"'
         }
         konachan {
             dimension 'moe'
