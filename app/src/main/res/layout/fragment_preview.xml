@@ -106,18 +106,16 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_margin="5dp"
-            android:clickable="true"
             android:contentDescription="@string/app_name"
             android:elevation="5dp"
-            android:focusable="true"
             android:padding="4dp"
             android:scaleType="fitXY"
+            android:src="@mipmap/ic_launcher"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintStart_toEndOf="@id/button6"
             app:layout_constraintTop_toBottomOf="@id/button1"
-            app:shapeAppearanceOverlay="@style/circleStyle"
-            tools:src="@mipmap/ic_launcher" />
+            app:shapeAppearanceOverlay="@style/circleStyle" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler"
