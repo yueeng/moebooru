@@ -37,15 +37,6 @@ class SavedViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = SavedViewModel(handle) as T
 }
 
-class SavedActivity : MoeActivity(R.layout.activity_container) {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment ?: SavedFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.container, fragment).commit()
-    }
-}
-
 class SavedFragment : Fragment() {
     private val viewModel: SavedViewModel by sharedViewModels({ "saved" }) { SavedViewModelFactory(this, null) }
     private val adapter by lazy { SavedAdapter() }

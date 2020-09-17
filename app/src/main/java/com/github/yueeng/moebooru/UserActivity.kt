@@ -3,9 +3,8 @@ package com.github.yueeng.moebooru
 import android.content.Intent
 import android.os.Bundle
 import android.os.Parcelable
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
@@ -55,26 +54,41 @@ class UserFragment : Fragment() {
     private val mine by lazy { arguments?.containsKey("name") != true }
     private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(!mine)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.user, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        menu.findItem(R.id.userLogin).isVisible = OAuth.name.value?.isEmpty() ?: true
+        menu.findItem(R.id.userLogout).isVisible = OAuth.name.value?.isNotEmpty() ?: false
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.login -> true.also { OAuth.login(this) }
+        R.id.register -> true.also { OAuth.register(this) }
+        R.id.reset -> true.also { OAuth.reset(this) }
+        R.id.logout -> true.also { OAuth.logout(this) }
+        R.id.changeEmail -> true.also { OAuth.changeEmail(this) }
+        R.id.changePwd -> true.also { OAuth.changePwd(this) }
+        else -> super.onOptionsItemSelected(item)
+    }
 
     @FlowPreview
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            binding.toolbar.title = requireActivity().title
-            binding.toolbar.setOnMenuItemClickListener {
-                when (it.itemId) {
-                    R.id.login -> true.also { OAuth.login(this) }
-                    R.id.register -> true.also { OAuth.register(this) }
-                    R.id.reset -> true.also { OAuth.reset(this) }
-                    R.id.logout -> true.also { OAuth.logout(this) }
-                    R.id.changeEmail -> true.also { OAuth.changeEmail(this) }
-                    R.id.changePwd -> true.also { OAuth.changePwd(this) }
-                    else -> false
-                }
+            if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
+                binding.toolbar.title = requireActivity().title
+                binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
             }
             lifecycleScope.launchWhenCreated {
                 OAuth.name.asFlow().collectLatest {
-                    binding.toolbar.menu.findItem(R.id.userLogin).isVisible = it.isEmpty()
-                    binding.toolbar.menu.findItem(R.id.userLogout).isVisible = it.isNotEmpty()
+                    if (mine) onPrepareOptionsMenu(binding.toolbar.menu) else requireActivity().invalidateOptionsMenu()
                     if (mine && it.isNotEmpty()) model.name.postValue(it)
                 }
             }
@@ -85,7 +99,8 @@ class UserFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                    binding.toolbar.title = name.toTitleCase()
+                    if (mine) binding.toolbar.title = name.toTitleCase()
+                    else requireActivity().title = name.toTitleCase()
                     if (model.user.value == null) {
                         val id = Service.instance.user(name)
                         id.firstOrNull()?.id?.let { model.user.postValue(it) }
