@@ -100,4 +100,5 @@
     <string name="user_pwd_diff">Two passwords are different.</string>
     <string name="user_register">Register</string>
     <string name="user_reset">Reset Password</string>
+    <string name="app_complete">Complete</string>
 </resources>

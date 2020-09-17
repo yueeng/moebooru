@@ -21,10 +21,7 @@ import com.github.yueeng.moebooru.databinding.UserTitleItemBinding
 import com.google.android.flexbox.*
 import kotlinx.android.parcel.Parcelize
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flattenMerge
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.*
 import okhttp3.Request
 import org.jsoup.Jsoup
 
@@ -110,9 +107,12 @@ class UserFragment : Fragment() {
                 }
             }
             lifecycleScope.launchWhenCreated {
-                model.user.asFlow().mapNotNull { it }.collectLatest {
+                val flowUser = model.user.asFlow().mapNotNull { it }
+                val flowTime = OAuth.timestamp.asFlow().drop(1)
+                flowOf(flowUser, flowTime).flattenMerge(2).collectLatest {
+                    if (model.user.value == null) return@collectLatest
                     GlideApp.with(binding.toolbar)
-                        .load(OAuth.face(it))
+                        .load(OAuth.face(model.user.value!!))
                         .placeholder(R.mipmap.ic_launcher_foreground)
                         .override(120, 120)
                         .circleCrop()

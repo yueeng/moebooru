@@ -25,6 +25,7 @@ import androidx.work.WorkerParameters
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
@@ -335,7 +336,7 @@ interface MoebooruService {
         @Field("authenticity_token") authenticity_token: String,
         @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
         @Field("commit") commit: String = "Set avatar"
-    ): String?
+    )
 }
 
 class Service(private val service: MoebooruService) : MoebooruService by service {
@@ -343,7 +344,7 @@ class Service(private val service: MoebooruService) : MoebooruService by service
 
     companion object {
         private val retrofit: Retrofit = Retrofit.Builder()
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
             .client(okHttp)
             .baseUrl(moeUrl)
             .build()
@@ -723,8 +724,18 @@ object OAuth {
     }
 
     val available: Boolean get() = !name.value.isNullOrEmpty()
-    private var timestamp = Calendar.getInstance().time.time / 1000
-    fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?$timestamp" else null
+    val timestamp = MutableLiveData(Calendar.getInstance().time.time / 1000)
+    fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?${timestamp.value}" else null
+    fun avatar(fragment: Fragment, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
+        fragment.lifecycleScope.launchWhenCreated {
+            withContext(Dispatchers.IO) {
+                runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
+            }.onSuccess {
+                timestamp.postValue(Calendar.getInstance().time.time / 1000)
+                fn(post_id)
+            }
+        }
+    }
 
     private fun alert(fragment: Fragment, layout: Int, title: Int, subTitle: Int = 0, subCall: (() -> Unit)? = null, call: (AlertDialog, View) -> Unit) = fragment.requireContext().let { context ->
         val view = LayoutInflater.from(context).inflate(layout, null)
