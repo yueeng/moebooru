@@ -227,7 +227,7 @@ class ImageFragment : Fragment() {
         fun bind(item: JImageItem) {
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             bindImageRatio(binding.image1, item.preview_width, item.preview_height)
-            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher)
+            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
     }
 
