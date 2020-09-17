@@ -4,11 +4,13 @@
     <item
         android:id="@+id/daynight"
         android:icon="@drawable/ic_daynight"
+        android:orderInCategory="1"
         android:title="@string/settings_daynight_mode"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/safe"
         android:icon="@drawable/ic_settings"
+        android:orderInCategory="1"
         android:title="@string/settings_safe_mode"
         app:showAsAction="ifRoom" />
 </menu>
