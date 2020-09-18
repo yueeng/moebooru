@@ -17,7 +17,7 @@
             app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
             <ImageView
-                android:id="@+id/image"
+                android:id="@+id/image1"
                 android:layout_width="match_parent"
                 android:layout_height="240dp"
                 android:contentDescription="@string/app_name"

@@ -7,17 +7,17 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.github.yueeng.moebooru.databinding.FragmentUserBinding
-import com.github.yueeng.moebooru.databinding.UserImageItemBinding
-import com.github.yueeng.moebooru.databinding.UserTagItemBinding
-import com.github.yueeng.moebooru.databinding.UserTitleItemBinding
+import com.github.yueeng.moebooru.databinding.*
 import com.google.android.flexbox.*
 import kotlinx.android.parcel.Parcelize
 import kotlinx.coroutines.*
@@ -132,11 +132,11 @@ class UserFragment : Fragment() {
             })
             lifecycleScope.launchWhenCreated {
                 model.background.asFlow().mapNotNull { it }.collectLatest { url ->
-                    GlideApp.with(binding.image)
+                    GlideApp.with(binding.image1)
                         .load(url)
                         .transform(AlphaBlackBitmapTransformation())
                         .transition(DrawableTransitionOptions.withCrossFade())
-                        .into(binding.image)
+                        .into(binding.image1)
                 }
             }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
@@ -290,6 +290,154 @@ class UserFragment : Fragment() {
             is TagHolder -> holder.bind(getItem(position) as Tag)
             is ImageHolder -> holder.bind(getItem(position) as JImageItem)
             else -> throw IllegalArgumentException()
+        }
+    }
+}
+
+class StarViewModel(handle: SavedStateHandle) : ViewModel() {
+    val star = handle.getLiveData("star", 0)
+    val data = handle.getLiveData<ItemScore>("data")
+    val busy = handle.getLiveData("busy", false)
+    suspend fun data(post: Int): ItemScore? = try {
+        busy.postValue(true)
+        val result = withContext(Dispatchers.IO) {
+            Service.instance.vote(post, authenticity_token = Service.csrf()!!)
+        }
+        result?.vote?.let { score ->
+            star.postValue(score)
+            withContext(Dispatchers.IO) {
+                Service.instance.vote(post, score, authenticity_token = Service.csrf()!!)
+            }
+        }
+    } finally {
+        busy.postValue(false)
+    }
+
+    suspend fun vote(post: Int, score: Int) = try {
+        busy.postValue(true)
+        withContext(Dispatchers.IO) {
+            Service.instance.vote(post, score, authenticity_token = Service.csrf()!!)
+        }
+    } finally {
+        busy.postValue(false)
+    }
+}
+
+class StarViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = StarViewModel(handle) as T
+}
+
+class StarActivity : MoeActivity(R.layout.activity_container) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? StarFragment
+            ?: StarFragment().apply { arguments = intent.extras }
+        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+    }
+}
+
+class StarFragment : Fragment() {
+    private val post by lazy { arguments?.getInt("post") ?: 155193 }
+    private val model: StarViewModel by viewModels { StarViewModelFactory(this, arguments) }
+    private val adapter by lazy { StarAdapter() }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (model.data.value == null) {
+            lifecycleScope.launchWhenCreated {
+                model.data(post)?.let { model.data.postValue(it) }
+            }
+        }
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+        FragmentStarBinding.inflate(inflater, container, false).also { binding ->
+            (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            model.star.observe(viewLifecycleOwner, Observer {
+                binding.rating.rating = it.toFloat()
+                requireActivity().title = getString(R.string.query_vote_star_yours, it)
+            })
+            binding.rating.setOnRatingBarChangeListener { _, rating, fromUser ->
+                if (!fromUser) return@setOnRatingBarChangeListener
+                lifecycleScope.launchWhenCreated {
+                    model.vote(post, rating.toInt())?.let { model.data.postValue(it) }
+                }
+            }
+            binding.button1.setOnClickListener {
+                lifecycleScope.launchWhenCreated {
+                    model.vote(post, 0)?.let {
+                        model.data.postValue(it)
+                        binding.rating.rating = 0F
+                    }
+                }
+            }
+            (binding.recycler.layoutManager as? GridLayoutManager)?.also { manager ->
+                manager.spanSizeLookup {
+                    when (adapter.currentList[it]) {
+                        is Int -> manager.spanCount
+                        else -> 1
+                    }
+                }
+            }
+            binding.recycler.adapter = adapter
+            model.data.observe(viewLifecycleOwner, Observer { score ->
+                adapter.submitList(score.voted_by?.v?.flatMap { listOf(it.key) + it.value })
+            })
+            binding.swipe.setOnRefreshListener {
+                lifecycleScope.launchWhenCreated {
+                    model.data(post)?.let { model.data.postValue(it) }
+                }
+            }
+            model.busy.observe(viewLifecycleOwner, Observer {
+                binding.swipe.isRefreshing = it
+            })
+        }.root
+
+    class TitleHolder(private val binding: VoteTitleItemBinding) : DataViewHolder<Int>(binding.root) {
+        override fun bind(value: Int) {
+            super.bind(value)
+            binding.rating.max = value
+            binding.rating.numStars = value
+            binding.rating.progress = value
+        }
+    }
+
+    inner class StarHolder(private val binding: VoteUserItemBinding) : DataViewHolder<ItemUser>(binding.root) {
+        init {
+            binding.root.setOnClickListener {
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to value!!.id, "name" to value!!.name)), options.toBundle())
+            }
+        }
+
+        override fun bind(value: ItemUser) {
+            super.bind(value)
+            GlideApp.with(binding.image1).load(value.face)
+                .error(R.mipmap.ic_launcher)
+                .progress(value.face, binding.progress)
+                .into(binding.image1)
+            binding.text1.text = value.name
+        }
+    }
+
+    inner class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+        override fun getItemViewType(position: Int): Int = when (getItem(position)) {
+            is Int -> 0
+            is ItemUser -> 1
+            else -> throw IllegalArgumentException()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder = when (viewType) {
+            0 -> TitleHolder(VoteTitleItemBinding.inflate(layoutInflater, parent, false))
+            1 -> StarHolder(VoteUserItemBinding.inflate(layoutInflater, parent, false))
+            else -> throw  IllegalArgumentException()
+        }
+
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = when (holder) {
+            is TitleHolder -> holder.bind(getItem(position) as Int)
+            is StarHolder -> holder.bind(getItem(position) as ItemUser)
+            else -> throw  IllegalArgumentException()
         }
     }
 }

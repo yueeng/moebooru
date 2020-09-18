@@ -104,11 +104,13 @@ data class JImageItem(
     val resolution get() = Resolution.values().firstOrNull { mpixels >= it.resolution } ?: Resolution.ZERO
 }
 
+@Parcelize
 open class JResult(
     val success: Boolean? = null,
     val reason: String? = null
-)
+) : Parcelable
 
+@Parcelize
 open class JRegResult(
     val response: String? = null,
     val exists: Boolean? = null,
@@ -117,16 +119,18 @@ open class JRegResult(
     val pass_hash: String? = null,
     val user_info: String? = null,
     val errors: List<String>? = null
-) : JResult()
+) : JResult(), Parcelable
 
-class ItemUser(
+@Parcelize
+data class ItemUser(
     var name: String? = null,
     var id: Int? = null
-) {
+) : Parcelable {
     val face: String get() = "$moeUrl/data/avatars/$id.jpg"
 }
 
-class ItemPool(
+@Parcelize
+data class ItemPool(
     var id: Int? = null,
     var name: String? = null,
     var created_at: String? = null,
@@ -135,9 +139,10 @@ class ItemPool(
     var is_public: Boolean? = null,
     var post_count: Int? = null,
     var description: String? = null
-)
+) : Parcelable
 
-class ItemPoolPost(
+@Parcelize
+data class ItemPoolPost(
     var id: Int? = null,
     var pool_id: Int? = null,
     var post_id: Int? = null,
@@ -145,13 +150,14 @@ class ItemPoolPost(
     var sequence: String? = null,
     var next_post_id: Int? = null,
     var prev_post_id: Int? = null
-)
+) : Parcelable
 
-class ItemVoteBy(
+@Parcelize
+data class ItemVoteBy(
     @SerializedName("1") var v1: List<ItemUser>? = null,
     @SerializedName("2") var v2: List<ItemUser>? = null,
     @SerializedName("3") var v3: List<ItemUser>? = null
-) {
+) : Parcelable {
     val v
         get() = listOf(3 to v3, 2 to v2, 1 to v1)
             .filter { it.second?.isNotEmpty() == true }
@@ -159,7 +165,8 @@ class ItemVoteBy(
             .toMap()
 }
 
-class ItemScore(
+@Parcelize
+data class ItemScore(
     var posts: List<JImageItem>? = null,
     var pools: List<ItemPool>? = null,
     var pool_posts: List<ItemPoolPost>? = null,
