@@ -224,14 +224,15 @@ class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageIte
     }
 }
 
-class ImageViewModel(defaultArgs: Bundle?) : ViewModel() {
-    val posts = Pager(PagingConfig(20, initialLoadSize = 20)) { ImageDataSource(defaultArgs?.getParcelable("query")) }
+class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
+    val query = handle.getLiveData<Q>("query", defaultArgs?.getParcelable("query"))
+    val posts = Pager(PagingConfig(20, initialLoadSize = 20)) { ImageDataSource(query.value) }
         .flow.cachedIn(viewModelScope)
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(defaultArgs) as T
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
 }
 
 class ImageFragment : Fragment() {

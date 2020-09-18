@@ -181,7 +181,7 @@ class UserFragment : Fragment() {
             val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
             coroutineScope {
                 launch {
-                    val jsoup = withContext(Dispatchers.Default) {
+                    val jsoup = withContext(Dispatchers.IO) {
                         val url = "$moeUrl/user/show/$user"
                         val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
                         Jsoup.parse(html, url)
@@ -262,12 +262,23 @@ class UserFragment : Fragment() {
         }
     }
 
-    class ImageHolder(private val binding: UserImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ImageHolder(private val binding: UserImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
+            binding.root.setOnClickListener {
+                val title = adapter.currentList.reversed().dropWhile { it != tag }.mapNotNull { it as? Title }.firstOrNull()!!
+                val images = adapter.currentList.dropWhile { it != title }.takeWhile { it != tag }
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), binding.root, "shared_element_container")
+                startActivity(
+                    Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("index", images.size - 1),
+                    options.toBundle()
+                )
+            }
         }
 
+        var tag: JImageItem? = null
         fun bind(item: JImageItem) {
+            tag = item
             binding.root.minimumWidth = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * item.preview_width / item.preview_height
             bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
