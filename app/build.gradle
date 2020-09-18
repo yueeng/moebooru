@@ -67,7 +67,6 @@ android {
 }
 
 dependencies {
-    implementation 'org.jsoup:jsoup:1.13.1'
     def glide_version = '4.11.0'
     def okhttp_version = '4.8.1'
     def retrofit_version = '2.9.0'
@@ -102,6 +101,7 @@ dependencies {
     implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
     implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     implementation 'gun0912.ted:tedpermission:2.2.3'
+    implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'com.github.yueeng:uCrop:master-SNAPSHOT'
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
