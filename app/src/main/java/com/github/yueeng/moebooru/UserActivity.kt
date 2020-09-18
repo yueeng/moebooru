@@ -175,52 +175,55 @@ class UserFragment : Fragment() {
         val name = model.name.value ?: return
         val user = model.user.value ?: return
         busy.postValue(true)
-        val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
-        val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
-        val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
-        coroutineScope {
-            launch {
-                val jsoup = withContext(Dispatchers.Default) {
-                    val url = "$moeUrl/user/show/$user"
-                    val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
-                    Jsoup.parse(html, url)
-                }
+        try {
+            val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
+            val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
+            val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
+            coroutineScope {
                 launch {
-                    val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
-                    model.avatar.postValue(id)
-                }
-                launch {
-                    val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
-                    if (posts > 0) {
-                        data["Common"]?.first?.add(Tag("Posts: ${posts}P", "user:$name"))
+                    val jsoup = withContext(Dispatchers.Default) {
+                        val url = "$moeUrl/user/show/$user"
+                        val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
+                        Jsoup.parse(html, url)
                     }
-                    val votes = jsoup.select("th:contains(Votes)").next().select(".stars a").map { it.text().trim('★', ' ').toIntOrNull() ?: 0 }.zip(1..3).filter { it.first > 0 }
-                    for (v in votes) {
-                        data["Common"]?.first?.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
+                    launch {
+                        val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
+                        model.avatar.postValue(id)
                     }
-                    if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
-                    for (i in tags) {
-                        for (j in i.second) {
-                            val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
-                            data[j]?.first?.addAll(m.map { Tag(it, i.first + " ${it.replace(' ', '_')}") })
+                    launch {
+                        val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
+                        if (posts > 0) {
+                            data["Common"]?.first?.add(Tag("Posts: ${posts}P", "user:$name"))
                         }
+                        val votes = jsoup.select("th:contains(Votes)").next().select(".stars a").map { it.text().trim('★', ' ').toIntOrNull() ?: 0 }.zip(1..3).filter { it.first > 0 }
+                        for (v in votes) {
+                            data["Common"]?.first?.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
+                        }
+                        if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
+                        for (i in tags) {
+                            for (j in i.second) {
+                                val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
+                                data[j]?.first?.addAll(m.map { Tag(it, i.first + " ${it.replace(' ', '_')}") })
+                            }
+                        }
+                        val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
+                        model.data.postValue(submit.toTypedArray())
                     }
-                    val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
-                    model.data.postValue(submit.toTypedArray())
+                }
+                images.map { image ->
+                    launch {
+                        val result = withContext(Dispatchers.IO) {
+                            runCatching { Service.instance.post(1, Q(image.second)) }.getOrElse { emptyList() }
+                        }
+                        data[image.first]?.first?.addAll(result)
+                        val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
+                        model.data.postValue(submit.toTypedArray())
+                    }
                 }
             }
-            images.map { image ->
-                launch {
-                    val result = withContext(Dispatchers.IO) {
-                        runCatching { Service.instance.post(1, Q(image.second)) }.getOrElse { emptyList() }
-                    }
-                    data[image.first]?.first?.addAll(result)
-                    val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
-                    model.data.postValue(submit.toTypedArray())
-                }
-            }
+        } finally {
+            busy.postValue(false)
         }
-        busy.postValue(false)
     }
 
     @Parcelize
