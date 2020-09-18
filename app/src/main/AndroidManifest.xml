@@ -27,6 +27,7 @@
         <activity android:name=".PreviewActivity" />
         <activity android:name=".QueryActivity" />
         <activity android:name=".UserActivity" />
+        <activity android:name=".StarActivity" />
         <activity android:name=".PopularActivity" />
         <activity android:name="com.yalantis.ucrop.UCropActivity" />
 

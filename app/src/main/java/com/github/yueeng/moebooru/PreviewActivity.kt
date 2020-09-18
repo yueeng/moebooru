@@ -136,19 +136,6 @@ class PreviewFragment : Fragment() {
                         .into(binding.button7)
                 }
             })
-            val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
-            binding.button3.setOnClickListener {
-                val open = bottomSheetBehavior.isOpen
-                if (open) bottomSheetBehavior.close() else bottomSheetBehavior.open()
-            }
-            bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-                override fun onStateChanged(bottomSheet: View, newState: Int) {
-                }
-
-                override fun onSlide(bottomSheet: View, slideOffset: Float) {
-                    binding.button3.rotation = slideOffset * 180F
-                }
-            })
             binding.button1.setOnClickListener {
                 fun download() {
                     val item = adapter.peek(binding.pager.currentItem) ?: return
@@ -184,6 +171,30 @@ class PreviewFragment : Fragment() {
                     }.check()
                 }
             }
+            binding.button2.setOnClickListener {
+                if (!OAuth.available) {
+                    OAuth.login(this) {
+                        binding.button2.callOnClick()
+                    }
+                    return@setOnClickListener
+                }
+                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                startActivity(Intent(requireContext(), StarActivity::class.java).putExtra("post", item.id), options.toBundle())
+            }
+            val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
+            binding.button3.setOnClickListener {
+                val open = bottomSheetBehavior.isOpen
+                if (open) bottomSheetBehavior.close() else bottomSheetBehavior.open()
+            }
+            bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                }
+
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                    binding.button3.rotation = slideOffset * 180F
+                }
+            })
             binding.button4.setOnClickListener {
                 if (!OAuth.available) {
                     OAuth.login(this) {
@@ -230,12 +241,15 @@ class PreviewFragment : Fragment() {
                 }
             }
             binding.button7.setOnClickListener {
+                if (!OAuth.available) {
+                    OAuth.login(this) {
+                        binding.button7.callOnClick()
+                    }
+                    return@setOnClickListener
+                }
                 val model = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                fun go() = startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
-                if (OAuth.available) go() else OAuth.login(this@PreviewFragment) {
-                    go()
-                }
+                startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
             }
         }.root
 
