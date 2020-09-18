@@ -40,7 +40,6 @@ class UserViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val user = handle.getLiveData("user", args?.getInt("user"))
     val avatar = handle.getLiveData<Int>("avatar")
     val background = handle.getLiveData<String>("background")
-    val busy = handle.getLiveData("busy", false)
     val data = handle.getLiveData<Array<Parcelable>>("data")
 }
 
@@ -50,6 +49,7 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
 }
 
 class UserFragment : Fragment() {
+    private val busy = MutableLiveData(false)
     private val mine by lazy { arguments?.containsKey("name") != true }
     private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
@@ -160,7 +160,7 @@ class UserFragment : Fragment() {
             binding.swipe.setOnRefreshListener {
                 lifecycleScope.launchWhenCreated { query() }
             }
-            model.busy.observe(viewLifecycleOwner, Observer { binding.swipe.isRefreshing = it })
+            busy.observe(viewLifecycleOwner, Observer { binding.swipe.isRefreshing = it })
         }.root
 
     private suspend fun background(id: Int) {
@@ -174,7 +174,7 @@ class UserFragment : Fragment() {
         if (!OAuth.available) return
         val name = model.name.value ?: return
         val user = model.user.value ?: return
-        model.busy.postValue(true)
+        busy.postValue(true)
         val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
         val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
         val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
@@ -220,7 +220,7 @@ class UserFragment : Fragment() {
                 }
             }
         }
-        model.busy.postValue(false)
+        busy.postValue(false)
     }
 
     @Parcelize
