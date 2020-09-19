@@ -277,6 +277,8 @@ class UserFragment : Fragment() {
         }
 
         var tag: JImageItem? = null
+
+        @FlowPreview
         fun bind(item: JImageItem) {
             tag = item
             binding.root.minimumWidth = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * item.preview_width / item.preview_height
@@ -299,6 +301,7 @@ class UserFragment : Fragment() {
             else -> throw IllegalArgumentException()
         }
 
+        @FlowPreview
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int): Unit = when (holder) {
             is TitleHolder -> holder.bind(getItem(position) as Title)
             is TagHolder -> holder.bind(getItem(position) as Tag)
@@ -425,6 +428,7 @@ class StarFragment : Fragment() {
             }
         }
 
+        @FlowPreview
         override fun bind(value: ItemUser) {
             super.bind(value)
             GlideApp.with(binding.image1).load(value.face)
@@ -448,6 +452,7 @@ class StarFragment : Fragment() {
             else -> throw  IllegalArgumentException()
         }
 
+        @FlowPreview
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = when (holder) {
             is TitleHolder -> holder.bind(getItem(position) as Int)
             is StarHolder -> holder.bind(getItem(position) as ItemUser)
