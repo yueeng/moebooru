@@ -13,8 +13,6 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
@@ -71,6 +69,8 @@ import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -132,10 +132,12 @@ val okHttp: OkHttpClient = OkHttpClient.Builder()
     .addNetworkInterceptor { chain ->
         val request = chain.request()
         val url = request.url.toString()
+        ProgressBehavior.update(url, 0, 0)
         val response = chain.proceed(request)
+        ProgressBehavior.update(url, 0, response.body?.contentLength() ?: 0)
         response.newBuilder().body(ProgressResponseBody(response.body!!, object : ProgressListener {
             override fun update(bytesRead: Long, contentLength: Long, done: Boolean) {
-                DispatchingProgressBehavior.update(url, bytesRead, contentLength)
+                ProgressBehavior.update(url, bytesRead, contentLength)
             }
         })).build()
     }
@@ -167,13 +169,9 @@ private class ProgressResponseBody(
 ) : ResponseBody() {
     private var bufferedSource: BufferedSource? = null
 
-    override fun contentType(): MediaType? {
-        return responseBody.contentType()
-    }
+    override fun contentType(): MediaType? = responseBody.contentType()
 
-    override fun contentLength(): Long {
-        return responseBody.contentLength()
-    }
+    override fun contentLength(): Long = responseBody.contentLength()
 
     override fun source(): BufferedSource {
         if (bufferedSource == null) {
@@ -182,25 +180,23 @@ private class ProgressResponseBody(
         return bufferedSource!!
     }
 
-    private fun source(source: Source): Source {
-        return object : ForwardingSource(source) {
-            var totalBytesRead = 0L
+    private fun source(source: Source): Source = object : ForwardingSource(source) {
+        var totalBytesRead = 0L
 
-            @Throws(IOException::class)
-            override fun read(sink: Buffer, byteCount: Long): Long {
-                val bytesRead = super.read(sink, byteCount)
-                // read() returns the number of bytes read, or -1 if this source is exhausted.
-                totalBytesRead += if (bytesRead != -1L) bytesRead else 0
-                progressListener.update(totalBytesRead, responseBody.contentLength(), bytesRead == -1L)
-                return bytesRead
-            }
+        @Throws(IOException::class)
+        override fun read(sink: Buffer, byteCount: Long): Long {
+            val bytesRead = super.read(sink, byteCount)
+            // read() returns the number of bytes read, or -1 if this source is exhausted.
+            totalBytesRead += if (bytesRead != -1L) bytesRead else 0
+            progressListener.update(totalBytesRead, contentLength(), bytesRead == -1L)
+            return bytesRead
         }
     }
 }
 
 @GlideModule
 @Excludes(com.bumptech.glide.integration.okhttp3.OkHttpLibraryGlideModule::class)
-class MtAppGlideModule : AppGlideModule() {
+class MoeAppGlideModule : AppGlideModule() {
     override fun applyOptions(context: Context, builder: GlideBuilder) {
         builder.setDefaultRequestOptions(RequestOptions().format(DecodeFormat.PREFER_RGB_565))
     }
@@ -214,93 +210,75 @@ class MtAppGlideModule : AppGlideModule() {
     }
 }
 
-interface UIonProgressListener {
-    /**
-     * Control how often the listener needs an update. 0% and 100% will always be dispatched.
-     * @return in percentage (0.2 = call [.onProgress] around every 0.2 percent of progress)
-     */
-    val granualityPercentage: Float
+class ActiveMutableLiveData<T>(private val call: (active: Boolean) -> Unit) : MutableLiveData<T>() {
+    override fun onActive() {
+        call(hasActiveObservers())
+    }
 
-    fun onProgress(bytesRead: Long, expectedLength: Long)
+    override fun onInactive() {
+        call(hasActiveObservers())
+    }
 }
 
-object DispatchingProgressBehavior {
-    private val listeners = mutableMapOf<String, UIonProgressListener>()
-    private val progresses = mutableMapOf<String, Long>()
-    private val handler = Handler(Looper.getMainLooper())
-
-    fun forget(url: String) {
-        listeners.remove(url)
-        progresses.remove(url)
-    }
-
-    fun expect(url: String, listener: UIonProgressListener) {
-        listeners[url] = listener
-    }
-
+object ProgressBehavior {
+    private val map = mutableMapOf<String, ActiveMutableLiveData<Int>>()
     fun update(url: String, bytesRead: Long, contentLength: Long) {
-        //System.out.printf("%s: %d/%d = %.2f%%%n", url, bytesRead, contentLength, (100f * bytesRead) / contentLength);
-        val listener = listeners[url] ?: return
-        if (contentLength <= bytesRead) {
-            forget(url)
-        }
-        if (needsDispatch(url, bytesRead, contentLength, listener.granualityPercentage)) {
-            handler.post {
-                listener.onProgress(bytesRead, contentLength)
+        val data = synchronized(map) { map[url] } ?: return
+        val progress = if (contentLength == 0L) 0 else (bytesRead * 100 / contentLength)
+        data.postValue(progress.toInt())
+    }
+
+    fun on(url: String) = synchronized(map) {
+        map.getOrPut(url) {
+            ActiveMutableLiveData {
+                if (it) return@ActiveMutableLiveData
+                synchronized(map) { map.remove(url) }
             }
         }
     }
-
-    private fun needsDispatch(key: String, current: Long, total: Long, granularity: Float): Boolean {
-        if (granularity == 0F || current == 0L || total == current) {
-            return true
-        }
-        val percent = 100F * current / total
-        val currentProgress = (percent / granularity).toLong()
-        val lastProgress = progresses[key]
-        return if (lastProgress == null || currentProgress != lastProgress) {
-            progresses[key] = currentProgress
-            true
-        } else {
-            false
-        }
-    }
 }
 
+@FlowPreview
 @SuppressLint("CheckResult")
 fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRequest<T> {
     progressBar.progress = 0
     progressBar.max = 100
     progressBar.visibility = View.VISIBLE
-    val progress = WeakReference(progressBar)
-    fun finish() {
-        DispatchingProgressBehavior.forget(url)
-        progress.get()?.visibility = View.GONE
+    val lifecycle = object : LifecycleOwner {
+        val life = LifecycleRegistry(this)
+        override fun getLifecycle(): Lifecycle = life
     }
-    DispatchingProgressBehavior.expect(url, object : UIonProgressListener {
-        override fun onProgress(bytesRead: Long, expectedLength: Long) {
-            (100 * bytesRead / expectedLength).toInt().let {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    progress.get()?.setProgress(it, true)
-                } else {
-                    progress.get()?.progress = it
-                }
-            }
+    progressBar.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(v: View?) {
+            lifecycle.life.currentState = Lifecycle.State.CREATED
         }
 
-        override val granualityPercentage: Float
-            get() = 1.0F
+        override fun onViewDetachedFromWindow(v: View?) {
+            lifecycle.life.currentState = Lifecycle.State.DESTROYED
+            progressBar.removeOnAttachStateChangeListener(this)
+        }
     })
+    val progress = WeakReference(progressBar)
+    lifecycle.lifecycleScope.launchWhenCreated {
+        ProgressBehavior.on(url).asFlow().sample(1000).collectLatest {
+            progress.get()?.isIndeterminate = it == 0
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                progress.get()?.setProgress(it, true)
+            } else {
+                progress.get()?.progress = it
+            }
+        }
+    }
     return addListener(object : RequestListener<T> {
         override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean {
-            finish()
+            progress.get()?.visibility = View.GONE
             return false
         }
 
         override fun onResourceReady(resource: T, model: Any?, target: Target<T>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-            finish()
-            return false; }
-
+            progress.get()?.visibility = View.GONE
+            return false
+        }
     })
 }
 
@@ -375,6 +353,7 @@ val random = Random(System.currentTimeMillis())
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
     Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
 
+@FlowPreview
 fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBar?, placeholder: Int?) {
     if (imageUrl.isNullOrEmpty()) return
     view.scaleType = ImageView.ScaleType.CENTER

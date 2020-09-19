@@ -22,10 +22,7 @@ import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.*
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.AdapterListUpdateCallback
@@ -48,11 +45,9 @@ import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
@@ -286,7 +281,7 @@ class PreviewFragment : Fragment() {
         }
     }
 
-    inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root), LifecycleOwner {
         init {
             binding.image1.setBitmapDecoderClass(GlideDecoder::class.java)
             binding.image1.setRegionDecoderClass(GlideRegionDecoder::class.java)
@@ -296,39 +291,47 @@ class PreviewFragment : Fragment() {
                 if (behavior.isOpen) behavior.close()
                 else if (pager.pager.currentItem + 1 < adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
             }
-        }
-
-        fun bind(item: JImageItem) {
-            binding.progress.isVisible = true
-            DispatchingProgressBehavior.expect(item.sample_url, object : UIonProgressListener {
-                override val granualityPercentage: Float
-                    get() = 1F
-
-                override fun onProgress(bytesRead: Long, expectedLength: Long) {
-                    (100 * bytesRead / expectedLength).toInt().let {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            binding.progress.setProgress(it, true)
-                        } else {
-                            binding.progress.progress = it
-                        }
-                    }
-                }
-            })
             binding.image1.setOnImageEventListener(object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
                 override fun onImageLoaded() {
-                    DispatchingProgressBehavior.forget(item.sample_url)
                     binding.progress.isInvisible = true
                 }
             })
+        }
+
+        @FlowPreview
+        fun bind(item: JImageItem) {
+            binding.progress.isVisible = true
+            lifecycleScope.launchWhenCreated {
+                ProgressBehavior.on(item.sample_url).asFlow().sample(1000).collectLatest {
+                    binding.progress.isIndeterminate = it == 0
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        binding.progress.setProgress(it, true)
+                    } else {
+                        binding.progress.progress = it
+                    }
+                }
+            }
             binding.image1.setImage(ImageSource.uri(item.sample_url).dimensions(item.sample_width, item.sample_height), ImageSource.uri(item.preview_url))
         }
+
+        val lifecycle = LifecycleRegistry(this)
+        override fun getLifecycle(): Lifecycle = lifecycle
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
+        @FlowPreview
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(PreviewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+
+        override fun onViewAttachedToWindow(holder: ImageHolder) {
+            holder.lifecycle.currentState = Lifecycle.State.CREATED
+        }
+
+        override fun onViewDetachedFromWindow(holder: ImageHolder) {
+            holder.lifecycle.currentState = Lifecycle.State.DESTROYED
+        }
     }
 
     class TagHolder(val binding: PreviewTagItemBinding) : RecyclerView.ViewHolder(binding.root) {

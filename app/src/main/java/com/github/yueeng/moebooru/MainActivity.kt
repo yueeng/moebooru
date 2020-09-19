@@ -30,6 +30,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import com.google.android.material.transition.platform.MaterialContainerTransform
 import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
@@ -260,6 +261,7 @@ class ImageFragment : Fragment() {
             binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
         }
 
+        @FlowPreview
         fun bind(item: JImageItem) {
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             bindImageRatio(binding.image1, item.preview_width, item.preview_height)
@@ -268,6 +270,7 @@ class ImageFragment : Fragment() {
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
+        @FlowPreview
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
