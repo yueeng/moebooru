@@ -63,7 +63,7 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
 }
 
 class PreviewViewModel(handle: SavedStateHandle) : ViewModel() {
-    val crop = handle.getLiveData("crop", 0)
+    val crop = handle.getLiveData<JImageItem>("crop")
 }
 
 class PreviewViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
@@ -150,13 +150,12 @@ class PreviewFragment : Fragment() {
                     }
                     val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
                     Save.save(item, target) {
-                        it?.let { uri ->
+                        it?.let {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                 values.clear()
                                 values.put(MediaStore.MediaColumns.IS_PENDING, false)
                                 requireContext().contentResolver.update(target, values, null, null)
                             }
-                            MainApplication.instance().notifyDownloadComplete(uri, item.id, filename)
                         }
                     }
                 }
@@ -199,7 +198,7 @@ class PreviewFragment : Fragment() {
                 }
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
-                    previewModel.crop.value = item.id
+                    previewModel.crop.value = item
                     val dest = File(MainApplication.instance().cacheDir, UUID.randomUUID().toString())
                     val option = UCrop.Options().apply {
                         setAllowedGestures(UCropActivity.SCALE, UCropActivity.NONE, UCropActivity.SCALE)
@@ -213,8 +212,9 @@ class PreviewFragment : Fragment() {
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
-                    val file = File(requireContext().cacheDir, item.jpeg_file_name)
-                    Save.save(item, Uri.fromFile(file)) {
+                    val file = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_file_name)
+                    val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+                    Save.save(item, uri) {
                         it?.let { uri ->
                             requireContext().contentResolver.openInputStream(uri)?.use { stream ->
                                 WallpaperManager.getInstance(requireContext()).setStream(stream)
@@ -226,9 +226,10 @@ class PreviewFragment : Fragment() {
             binding.button6.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_file_name)
-                Save.save(item, Uri.fromFile(file)) {
+                Save.save(item, Uri.fromFile(file), false) {
                     it?.let { source ->
                         lifecycleScope.launchWhenCreated {
+                            previewModel.crop.value = item
                             val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_file_name)
                             UCrop.of(source, Uri.fromFile(dest)).start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP)
                         }
@@ -260,6 +261,9 @@ class PreviewFragment : Fragment() {
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }, getString(R.string.app_share)))
+                        val item = previewModel.crop.value!!
+                        requireContext().notifyImageComplete(uri, item.id, getString(R.string.app_name), item.jpeg_file_name)
+                        previewModel.crop.value = null
                     }
                     UCrop.REQUEST_CROP + 1 -> {
                         if (data != null) {
@@ -269,11 +273,12 @@ class PreviewFragment : Fragment() {
                             val h = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_HEIGHT, 0)
                             val x = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_X, 0)
                             val y = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_Y, 0)
-                            OAuth.avatar(this, OAuth.user.value!!, previewModel.crop.value!!, 1F * x / ow, 1F * (x + w) / ow, 1F * y / oh, 1F * (y + h) / oh) {
+                            val item = previewModel.crop.value!!
+                            OAuth.avatar(this, OAuth.user.value!!, item.id, 1F * x / ow, 1F * (x + w) / ow, 1F * y / oh, 1F * (y + h) / oh) {
                                 Toast.makeText(requireContext(), R.string.app_complete, Toast.LENGTH_SHORT).show()
                             }
                         }
-                        previewModel.crop.value = 0
+                        previewModel.crop.value = null
                     }
                 }
             }

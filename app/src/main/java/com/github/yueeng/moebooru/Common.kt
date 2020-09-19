@@ -45,6 +45,7 @@ import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.model.GlideUrl
@@ -622,7 +623,7 @@ object Save {
         }
     }
 
-    fun save(item: JImageItem, target: Uri, call: ((Uri?) -> Unit)? = null) {
+    fun save(item: JImageItem, target: Uri, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
         val url = item.jpeg_url
         val params = Data.Builder().putString("url", url).putString("target", target.toString()).build()
         val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
@@ -654,9 +655,59 @@ object Save {
                         .setContentText("${current.sizeString()}/${length.sizeString()}")
                     NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
                 }
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED, WorkInfo.State.SUCCEEDED -> {
+                WorkInfo.State.SUCCEEDED -> {
                     info.removeObservers(ProcessLifecycleOwner.get())
                     call?.invoke(it.outputData.getString("file")?.toUri())
+                    if (tip) {
+                        val extension = MimeTypeMap.getFileExtensionFromUrl(item.jpeg_file_name)
+                        val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            type = mime ?: "image/$extension"
+                            data = target
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        val padding = PendingIntent.getActivity(MainApplication.instance(), item.id, Intent.createChooser(intent, MainApplication.instance().getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
+                        notification.apply {
+                            setContentText(item.jpeg_file_name)
+                            setProgress(0, 0, false)
+                            setOngoing(false)
+                            setAutoCancel(true)
+                            setContentIntent(padding)
+                        }
+                        GlideApp.with(MainApplication.instance()).asBitmap().load(target).override(500, 500)
+                            .into(object : CustomTarget<Bitmap>() {
+                                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                                    notification.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
+                                        .setLargeIcon(resource)
+                                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                                }
+
+                                override fun onLoadFailed(errorDrawable: Drawable?) {
+                                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                                }
+
+                                override fun onLoadCleared(placeholder: Drawable?) {
+                                }
+                            })
+                    } else {
+                        NotificationManagerCompat.from(MainApplication.instance()).cancel(item.id)
+                    }
+                }
+                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
+                    info.removeObservers(ProcessLifecycleOwner.get())
+                    call?.invoke(it.outputData.getString("file")?.toUri())
+                    if (tip && it.state == WorkInfo.State.FAILED) {
+                        notification.apply {
+                            setContentText(MainApplication.instance().getText(R.string.app_failed))
+                            setProgress(0, 0, false)
+                            setOngoing(false)
+                            setAutoCancel(true)
+                        }
+                        NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                    } else {
+                        NotificationManagerCompat.from(MainApplication.instance()).cancel(item.id)
+                    }
                 }
             }
         })
@@ -687,8 +738,8 @@ fun InputStream.copyTo(out: OutputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE,
     return bytesCopied
 }
 
-fun Context.notifyDownloadComplete(uri: Uri, id: Int, filename: String) {
-    val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
+fun Context.notifyImageComplete(uri: Uri, id: Int, title: String, content: String) {
+    val extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
     val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     val intent = Intent(Intent.ACTION_VIEW).apply {
         type = mime ?: "image/$extension"
@@ -704,25 +755,26 @@ fun Context.notifyDownloadComplete(uri: Uri, id: Int, filename: String) {
         }
     }
     val builder = NotificationCompat.Builder(MainApplication.instance(), moeHost)
-        .setContentTitle(getString(R.string.app_download, getString(R.string.app_name)))
-        .setContentText(filename)
+        .setContentTitle(title)
+        .setContentText(content)
         .setAutoCancel(true)
         .setSmallIcon(R.drawable.ic_stat_name)
         .setContentIntent(PendingIntent.getActivity(this, id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
-    GlideApp.with(this).asBitmap().load(uri).override(500, 500)
+    GlideApp.with(this).asBitmap().load(uri)
+        .diskCacheStrategy(DiskCacheStrategy.NONE)
+        .skipMemoryCache(true)
+        .override(500, 500)
         .into(object : CustomTarget<Bitmap>() {
             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                 builder.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
                     .setLargeIcon(resource)
-                NotificationManagerCompat.from(this@notifyDownloadComplete).notify(id, builder.build())
+                NotificationManagerCompat.from(this@notifyImageComplete).notify(id, builder.build())
             }
 
-            override fun onLoadFailed(errorDrawable: Drawable?) {
-                NotificationManagerCompat.from(this@notifyDownloadComplete).notify(id, builder.build())
-            }
+            override fun onLoadFailed(errorDrawable: Drawable?) =
+                NotificationManagerCompat.from(this@notifyImageComplete).notify(id, builder.build())
 
-            override fun onLoadCleared(placeholder: Drawable?) {
-            }
+            override fun onLoadCleared(placeholder: Drawable?) = Unit
         })
 }
 
