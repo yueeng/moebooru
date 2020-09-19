@@ -70,8 +70,12 @@ import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.sample
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -594,27 +598,45 @@ object Save {
         r.replace(i, ' ')
     }
 
+    class SaveWorker(private val context: Context, private val params: WorkerParameters) : CoroutineWorker(context, params) {
+        fun ff() {
 
-    class SaveWorker(private val context: Context, private val params: WorkerParameters) : Worker(context, params) {
+        }
+
         @FlowPreview
         @ExperimentalTime
-        override fun doWork(): Result = try {
+        override suspend fun doWork(): Result = try {
             val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
             val target = params.inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
-            val response = okHttp.newCall(Request.Builder().url(url).build()).execute()
-            response.body?.use {
-                val progress = Data.Builder().putLong("current", 0L).putLong("length", it.contentLength())
-                var last = System.currentTimeMillis()
-                setProgressAsync(progress.build())
-                it.byteStream().use { input ->
-                    context.contentResolver.openOutputStream(target)?.use { output ->
-                        input.copyTo(output) { cur ->
-                            if (last + 1000 < System.currentTimeMillis()) {
-                                last = System.currentTimeMillis()
-                                setProgressAsync(progress.putLong("current", cur).build())
+            val id = params.inputData.getInt("id", 0)
+            coroutineScope {
+                val notification = NotificationCompat.Builder(MainApplication.instance(), moeHost)
+                    .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
+                    .setProgress(0, 0, true)
+                    .setSmallIcon(R.drawable.ic_stat_name)
+                    .setOngoing(true)
+                setForeground(ForegroundInfo(id, notification.build()))
+                val channel = Channel<Pair<Long, Long>>(Channel.CONFLATED)
+                launch {
+                    channel.consumeAsFlow().sample(1000).collectLatest {
+                        notification.setProgress(it.second.toInt(), it.first.toInt(), false)
+                            .setContentText("${it.first.sizeString()}/${it.second.sizeString()}")
+                        setForeground(ForegroundInfo(id, notification.build()))
+                    }
+                }
+                launch {
+                    okHttp.newCall(Request.Builder().url(url).build()).await { _, response ->
+                        response.body?.use {
+                            val length = it.contentLength()
+                            channel.offer(0L to length)
+                            it.byteStream().use { input ->
+                                context.contentResolver.openOutputStream(target)?.use { output ->
+                                    input.copyTo(output) { cur -> channel.offer(cur to length) }
+                                }
                             }
                         }
                     }
+                    channel.close()
                 }
             }
             Result.success(Data.Builder().putString("file", target.toString()).build())
@@ -623,16 +645,25 @@ object Save {
         }
     }
 
-    fun save(item: JImageItem, target: Uri, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
-        val url = item.jpeg_url
-        val params = Data.Builder().putString("url", url).putString("target", target.toString()).build()
-        val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
-        val manager = WorkManager.getInstance(MainApplication.instance()).apply { enqueue(request) }
-        val info = manager.getWorkInfoByIdLiveData(request.id)
+    suspend fun check(key: String): WorkInfo.State? {
+        val manager = WorkManager.getInstance(MainApplication.instance())
+        val work = manager.getWorkInfosForUniqueWork(key).await()
+        return work.firstOrNull()?.state
+    }
 
+    fun save(item: JImageItem, target: Uri, key: String? = null, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
+        val url = item.jpeg_url
+        val params = Data.Builder().putString("url", url)
+            .putString("target", target.toString())
+            .putInt("id", item.id).build()
+        val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
+        val manager = WorkManager.getInstance(MainApplication.instance()).apply {
+            if (key == null) enqueue(request) else enqueueUniqueWork(key, ExistingWorkPolicy.KEEP, request)
+        }
+        val info = manager.getWorkInfoByIdLiveData(request.id)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManagerCompat.from(MainApplication.instance()).let { notify ->
-                val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_DEFAULT)
+                val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_LOW)
                 notify.createNotificationChannel(channel)
             }
         }
@@ -645,19 +676,11 @@ object Save {
             when (it.state) {
                 WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
                     notification.setProgress(0, 0, true)
-                        .setContentText("READY")
+                        .setContentText(MainApplication.instance().getString(R.string.download_ready))
                     NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
                 }
-                WorkInfo.State.RUNNING -> {
-                    val current = it.progress.getLong("current", 0)
-                    val length = it.progress.getLong("length", 0)
-                    notification.setProgress(length.toInt(), current.toInt(), false)
-                        .setContentText("${current.sizeString()}/${length.sizeString()}")
-                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
-                }
+                WorkInfo.State.RUNNING -> Unit
                 WorkInfo.State.SUCCEEDED -> {
-                    info.removeObservers(ProcessLifecycleOwner.get())
-                    call?.invoke(it.outputData.getString("file")?.toUri())
                     if (tip) {
                         val extension = MimeTypeMap.getFileExtensionFromUrl(item.jpeg_file_name)
                         val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
@@ -695,8 +718,6 @@ object Save {
                     }
                 }
                 WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
-                    info.removeObservers(ProcessLifecycleOwner.get())
-                    call?.invoke(it.outputData.getString("file")?.toUri())
                     if (tip && it.state == WorkInfo.State.FAILED) {
                         notification.apply {
                             setContentText(MainApplication.instance().getText(R.string.app_failed))
@@ -709,6 +730,10 @@ object Save {
                         NotificationManagerCompat.from(MainApplication.instance()).cancel(item.id)
                     }
                 }
+            }
+            if (it.state.isFinished) {
+                info.removeObservers(ProcessLifecycleOwner.get())
+                call?.invoke(it.outputData.getString("file")?.toUri())
             }
         })
     }
