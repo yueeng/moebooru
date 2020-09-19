@@ -140,6 +140,7 @@ class PreviewFragment : Fragment() {
                     val values = ContentValues().apply {
                         put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                         put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                        put(MediaStore.MediaColumns.ARTIST, item.author.toTitleCase())
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             put(MediaStore.MediaColumns.IS_PENDING, true)
                             put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
