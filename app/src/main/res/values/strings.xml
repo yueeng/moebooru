@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
     <string name="app_cancel">Cancel</string>
+    <string name="app_complete">Complete</string>
     <string name="app_download">%1$s download</string>
     <string name="app_failed">Failed</string>
     <string name="app_go">GO</string>
@@ -10,6 +11,10 @@
     <string name="app_search">Search</string>
     <string name="app_settings">Settings</string>
     <string name="app_share">Share</string>
+
+    <string name="download_exists">The file already exists, do you want download again?</string>
+    <string name="download_ready">Ready</string>
+    <string name="download_running">The file already downloading, wait please.</string>
 
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>
@@ -100,5 +105,4 @@
     <string name="user_pwd_diff">Two passwords are different.</string>
     <string name="user_register">Register</string>
     <string name="user_reset">Reset Password</string>
-    <string name="app_complete">Complete</string>
 </resources>

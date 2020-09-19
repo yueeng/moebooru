@@ -33,6 +33,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
+import androidx.work.WorkInfo
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
@@ -41,6 +42,7 @@ import com.github.yueeng.moebooru.databinding.PreviewItemBinding
 import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
 import com.google.android.flexbox.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
@@ -132,8 +134,8 @@ class PreviewFragment : Fragment() {
                 }
             })
             binding.button1.setOnClickListener {
+                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 fun download() {
-                    val item = adapter.peek(binding.pager.currentItem) ?: return
                     val filename = item.jpeg_file_name
                     val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
                     val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
@@ -150,7 +152,7 @@ class PreviewFragment : Fragment() {
                         }
                     }
                     val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
-                    Save.save(item, target) {
+                    Save.save(item, target, "save-${item.id}") {
                         it?.let {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                 values.clear()
@@ -160,9 +162,32 @@ class PreviewFragment : Fragment() {
                         }
                     }
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) download() else {
+
+                fun check() {
+                    lifecycleScope.launchWhenCreated {
+                        when (Save.check("save-${item.id}")) {
+                            WorkInfo.State.ENQUEUED,
+                            WorkInfo.State.BLOCKED,
+                            WorkInfo.State.RUNNING -> {
+                                Toast.makeText(requireContext(), getString(R.string.download_running), Toast.LENGTH_SHORT).show()
+                                return@launchWhenCreated
+                            }
+                            WorkInfo.State.SUCCEEDED -> {
+                                Snackbar.make(it, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
+                                    .setAnchorView(it)
+                                    .setAction(R.string.app_ok) {
+                                        download()
+                                    }
+                                    .show()
+                                return@launchWhenCreated
+                            }
+                            else -> download()
+                        }
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
                     TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
-                        download()
+                        check()
                     }.check()
                 }
             }
@@ -227,7 +252,7 @@ class PreviewFragment : Fragment() {
             binding.button6.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_file_name)
-                Save.save(item, Uri.fromFile(file), false) {
+                Save.save(item, Uri.fromFile(file), tip = false) {
                     it?.let { source ->
                         lifecycleScope.launchWhenCreated {
                             previewModel.crop.value = item
