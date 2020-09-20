@@ -16,8 +16,8 @@
             android:layout_width="match_parent"
             android:layout_height="?android:actionBarSize"
             app:layout_collapseMode="pin"
-            app:menu="@menu/main"
-            app:layout_scrollFlags="scroll|enterAlways|enterAlwaysCollapsed" />
+            app:layout_scrollFlags="scroll|enterAlways|enterAlwaysCollapsed"
+            app:menu="@menu/main" />
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tab"
@@ -36,7 +36,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:padding="16dp"
         app:layout_anchor="@id/pager"
         app:layout_anchorGravity="end|bottom">
 
