@@ -599,10 +599,6 @@ object Save {
     }
 
     class SaveWorker(private val context: Context, private val params: WorkerParameters) : CoroutineWorker(context, params) {
-        fun ff() {
-
-        }
-
         @FlowPreview
         @ExperimentalTime
         override suspend fun doWork(): Result = try {
@@ -710,8 +706,7 @@ object Save {
                                     NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
                                 }
 
-                                override fun onLoadCleared(placeholder: Drawable?) {
-                                }
+                                override fun onLoadCleared(placeholder: Drawable?) = Unit
                             })
                     } else {
                         NotificationManagerCompat.from(MainApplication.instance()).cancel(item.id)

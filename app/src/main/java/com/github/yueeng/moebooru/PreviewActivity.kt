@@ -206,9 +206,7 @@ class PreviewFragment : Fragment() {
                 if (open) bottomSheetBehavior.close() else bottomSheetBehavior.open()
             }
             bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-                override fun onStateChanged(bottomSheet: View, newState: Int) {
-                }
-
+                override fun onStateChanged(bottomSheet: View, newState: Int) = Unit
                 override fun onSlide(bottomSheet: View, slideOffset: Float) {
                     binding.button3.rotation = slideOffset * 180F
                 }

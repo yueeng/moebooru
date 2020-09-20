@@ -140,8 +140,7 @@ class PopularFragment : Fragment() {
 
         override fun onBindViewHolder(holder: TabHolder, position: Int, payloads: MutableList<Any>) = holder.bind(position, getItem(position), payloads)
 
-        override fun onBindViewHolder(holder: TabHolder, position: Int) {
-        }
+        override fun onBindViewHolder(holder: TabHolder, position: Int) = Unit
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
