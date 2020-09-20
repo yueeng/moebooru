@@ -16,7 +16,9 @@ import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
-import androidx.recyclerview.widget.*
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import androidx.room.withTransaction
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.TransitionManager
@@ -51,7 +53,8 @@ class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bu
 }
 
 class QueryFragment : Fragment() {
-    val viewModel: QueryViewModel by viewModels { QueryViewModelFactory(this, arguments) }
+    val model: QueryViewModel by viewModels { QueryViewModelFactory(this, arguments) }
+    val data get() = model.query.value!!.map
     private val adapter by lazy { QueryAdapter() }
 
     @SuppressLint("RestrictedApi")
@@ -60,28 +63,28 @@ class QueryFragment : Fragment() {
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             requireActivity().title = getString(R.string.app_name)
             lifecycleScope.launchWhenCreated {
-                viewModel.name.asFlow().mapNotNull { it }.collectLatest { requireActivity().title = it }
+                model.name.asFlow().mapNotNull { it }.collectLatest { requireActivity().title = it }
             }
             lifecycleScope.launchWhenCreated {
-                viewModel.id.asFlow().mapNotNull { it }.filter { it != 0L }.collectLatest { id ->
-                    Db.tags.tag(id)?.let { viewModel.name.postValue(it.name) }
+                model.id.asFlow().mapNotNull { it }.filter { it != 0L }.collectLatest { id ->
+                    Db.tags.tag(id)?.let { model.name.postValue(it.name) }
                 }
             }
             binding.bottomAppBar.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.search -> true.also {
                         val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
-                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", viewModel.query.value), options.toBundle())
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", model.query.value), options.toBundle())
                     }
                     R.id.save -> true.also { save() }
                     else -> super.onOptionsItemSelected(item)
                 }
             }
-            binding.recycler.adapter = adapter.apply { submitList() }
+            binding.recycler.adapter = adapter.apply { submitList(data.toList()) }
             ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
                 override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
                 override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                    adapter.remove(adapter.data.toList()[viewHolder.bindingAdapterPosition].first)
+                    adapter.remove(adapter.currentList[viewHolder.bindingAdapterPosition].first)
                 }
             }).attachToRecyclerView(binding.recycler)
             binding.button1.setOnClickListener {
@@ -98,9 +101,9 @@ class QueryFragment : Fragment() {
         }.root
 
     private fun save() = lifecycleScope.launchWhenCreated {
-        viewModel.query.value?.toString()?.takeIf { it.isNotBlank() }?.let { tag ->
+        model.query.value?.toString()?.takeIf { it.isNotBlank() }?.let { tag ->
             val view = QuerySavedBinding.inflate(layoutInflater)
-            val saved = viewModel.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
+            val saved = model.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
             view.input1.hint = tag
             view.edit1.setText(saved?.name)
             view.switch1.isChecked = saved?.pin ?: false
@@ -115,9 +118,9 @@ class QueryFragment : Fragment() {
                             if (saved != null) {
                                 Db.tags.updateTag(saved.update(tag, name, pin))
                             } else {
-                                viewModel.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
+                                model.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
                             }
-                            viewModel.name.postValue(name)
+                            model.name.postValue(name)
                         }
                     }
                 }
@@ -143,7 +146,7 @@ class QueryFragment : Fragment() {
 
     private fun string(key: String) {
         val view = QuerySheetStringBinding.inflate(layoutInflater)
-        val default = adapter.data[key] as? String
+        val default = data[key] as? String
         if (default != null) {
             view.text1.setText(default)
         }
@@ -214,7 +217,7 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         @Suppress("UNCHECKED_CAST")
-        val default = adapter.data[key] as? Q.Value<T>
+        val default = data[key] as? Q.Value<T>
         if (default != null) {
             view.edit1.setText(default.v1string)
             view.edit2.setText(default.v2string)
@@ -301,7 +304,7 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = Q.formatter.tryParse(it.toString()) == null
         }
         @Suppress("UNCHECKED_CAST")
-        val default = adapter.data[key] as? Q.Value<Date>
+        val default = data[key] as? Q.Value<Date>
         if (default != null) {
             view.edit1.setText(default.v1string)
             view.edit2.setText(default.v2string)
@@ -353,7 +356,7 @@ class QueryFragment : Fragment() {
             view.chip2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
         }
         @Suppress("UNCHECKED_CAST")
-        val default = adapter.data[key] as? Q.Value<Int>
+        val default = data[key] as? Q.Value<Int>
         if (default != null) {
             view.edit1.setText(default.ex)
             view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
@@ -431,7 +434,7 @@ class QueryFragment : Fragment() {
                     findViewById<RadioButton>(R.id.radio).isChecked = position == checked
                 }
         }
-        val value = when (val v = this@QueryFragment.adapter.data[key]) {
+        val value = when (val v = this@QueryFragment.data[key]) {
             is Q.Order -> v.value
             is Q.Rating -> v.value
             else -> null
@@ -468,39 +471,27 @@ class QueryFragment : Fragment() {
     }
 
     class QueryHolder(val binding: QueryItemBinding) : RecyclerView.ViewHolder(binding.root)
-    inner class QueryAdapter : RecyclerView.Adapter<QueryHolder>() {
-        private val differ = AsyncListDiffer(
-            AdapterListUpdateCallback(this),
-            AsyncDifferConfig.Builder(diffCallback<Pair<String, Any>> { old, new -> old.first == new.first }).build()
-        )
-        val data get() = viewModel.query.value!!.map
-
-        fun submitList() {
-            differ.submitList(viewModel.query.value!!.map.toList())
-        }
-
+    inner class QueryAdapter : ListAdapter<Pair<String, Any>, QueryHolder>(diffCallback { old, new -> old.first == new.first }) {
         fun add(k: String, v: Any) {
-            viewModel.query.value!!.map[k] = v
-            differ.submitList(viewModel.query.value!!.map.toList())
+            data[k] = v
+            submitList(data.toList())
         }
 
         fun remove(k: String) {
-            viewModel.query.value!!.map.remove(k)
-            differ.submitList(viewModel.query.value!!.map.toList())
+            data.remove(k)
+            submitList(data.toList())
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): QueryHolder = QueryHolder(QueryItemBinding.inflate(layoutInflater, parent, false)).apply {
             binding.root.setOnClickListener {
-                edit(differ.currentList[bindingAdapterPosition].first)
+                edit(currentList[bindingAdapterPosition].first)
             }
         }
 
         override fun onBindViewHolder(holder: QueryHolder, position: Int) {
-            val item = differ.currentList[position]
+            val item = currentList[position]
             holder.binding.text1.text = item.first
             holder.binding.text2.text = "${item.second}"
         }
-
-        override fun getItemCount(): Int = differ.currentList.size
     }
 }
