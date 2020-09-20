@@ -19,6 +19,8 @@ import androidx.viewpager2.widget.ViewPager2
 import com.github.yueeng.moebooru.databinding.FragmentMainBinding
 import com.github.yueeng.moebooru.databinding.FragmentPopularBinding
 import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,6 +66,21 @@ class PopularFragment : Fragment() {
                 last = position
                 binding.tab.scrollToPosition(position)
             })
+            binding.button1.setOnClickListener {
+                val constraints = CalendarConstraints.Builder()
+                    .setStart(moeCreateTime.timeInMillis)
+                    .setEnd(Calendar.getInstance().timeInMillis)
+                    .setOpenAt(adapter.getTime(binding.pager.currentItem).timeInMillis)
+                    .build()
+                val picker = MaterialDatePicker.Builder.datePicker()
+                    .setSelection(adapter.getTime(binding.pager.currentItem).timeInMillis)
+                    .setCalendarConstraints(constraints)
+                    .build()
+                picker.addOnPositiveButtonClickListener {
+                    binding.pager.currentItem = date2pos(Calendar.getInstance().apply { time = Date(it) })
+                }
+                picker.show(childFragmentManager, "picker")
+            }
         }.root
 
     fun date2pos(target: Calendar) = when (type) {
@@ -91,6 +108,7 @@ class PopularFragment : Fragment() {
         private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         private val weekFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        fun getTime(position: Int) = pos2date(position)
         fun getPageTitle(position: Int): CharSequence? = when (type) {
             "day" -> pos2date(position).format(dayFormatter)
             "week" -> pos2date(position).let {
