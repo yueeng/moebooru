@@ -46,12 +46,12 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
         window.sharedElementEnterTransition = MaterialContainerTransform().apply {
             addTarget(android.R.id.content)
             endContainerColor = array.getColor(0, Color.WHITE)
-            duration = 500L
+            duration = 400L
         }
         window.sharedElementReturnTransition = MaterialContainerTransform().apply {
             addTarget(android.R.id.content)
             startContainerColor = array.getColor(0, Color.WHITE)
-            duration = 400L
+            duration = 300L
         }
         array.recycle()
         super.onCreate(savedInstanceState)
