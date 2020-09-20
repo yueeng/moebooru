@@ -25,9 +25,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
-import androidx.recyclerview.widget.AdapterListUpdateCallback
-import androidx.recyclerview.widget.AsyncDifferConfig
-import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeBounds
@@ -379,9 +377,8 @@ class PreviewFragment : Fragment() {
         }
     }
 
-    inner class TagAdapter : RecyclerView.Adapter<TagHolder>() {
-        private val differ = AsyncListDiffer(AdapterListUpdateCallback(this), AsyncDifferConfig.Builder(diffCallback<Tag> { o, n -> o.tag == n.tag }).build())
-        private val data get() = differ.currentList
+    inner class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
+        private val data get() = currentList
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)).apply {
             binding.root.setOnClickListener {
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
@@ -390,7 +387,5 @@ class PreviewFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: TagHolder, position: Int) = holder.bind(data[position])
-        override fun getItemCount(): Int = data.size
-        fun submitList(tags: List<Tag>?) = differ.submitList(tags)
     }
 }
