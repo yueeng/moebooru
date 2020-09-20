@@ -28,6 +28,7 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
+import com.google.android.material.transition.platform.MaterialArcMotion
 import com.google.android.material.transition.platform.MaterialContainerTransform
 import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback
 import kotlinx.coroutines.FlowPreview
@@ -45,11 +46,13 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
         val array: TypedArray = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground))
         window.sharedElementEnterTransition = MaterialContainerTransform().apply {
             addTarget(android.R.id.content)
+            pathMotion = MaterialArcMotion()
             endContainerColor = array.getColor(0, Color.WHITE)
             duration = 400L
         }
         window.sharedElementReturnTransition = MaterialContainerTransform().apply {
             addTarget(android.R.id.content)
+            pathMotion = MaterialArcMotion()
             startContainerColor = array.getColor(0, Color.WHITE)
             duration = 300L
         }
