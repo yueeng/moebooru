@@ -211,7 +211,7 @@ class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultA
 class ImageFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
-    private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
+    private val model: ImageViewModel by sharedViewModels(query.toString()) { ImageViewModelFactory(this, arguments) }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->

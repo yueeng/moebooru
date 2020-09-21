@@ -502,14 +502,14 @@ var DatePicker.date
     set(value) = updateDate(value.year, value.month, value.day)
 
 inline fun <reified VM : ViewModel> Fragment.sharedViewModels(
-    noinline key: () -> String,
+    key: String,
     noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
-) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), this).viewModelStore }, factoryProducer)
+) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key, this).viewModelStore }, factoryProducer)
 
 inline fun <reified VM : ViewModel> Fragment.sharedActivityViewModels(
-    noinline key: () -> String,
+    key: String,
     noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
-) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), requireActivity()).viewModelStore }, factoryProducer)
+) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key, requireActivity()).viewModelStore }, factoryProducer ?: { requireActivity().defaultViewModelProviderFactory })
 
 class SharedViewModelStoreOwner(private val key: String, life: LifecycleOwner) : ViewModelStoreOwner, LifecycleEventObserver {
     companion object {
