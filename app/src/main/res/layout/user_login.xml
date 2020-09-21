@@ -43,5 +43,19 @@
                 android:inputType="textPassword"
                 tools:text="@string/app_name" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.progressindicator.ProgressIndicator
+            android:id="@+id/indicator"
+            style="@style/Widget.MaterialComponents.ProgressIndicator.Circular.Determinate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="invisible"
+            android:elevation="5dp"
+            android:layout_margin="5dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

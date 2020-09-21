@@ -10,8 +10,10 @@ import android.os.Parcelable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -28,8 +30,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -719,9 +719,8 @@ object OAuth {
         name.observeForever {
             if (it.isEmpty()) return@observeForever
             ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-                withContext(Dispatchers.IO) {
-                    runCatching { Service.instance.user(it) }
-                }.getOrNull()?.firstOrNull()?.id?.let { id -> user.postValue(id) }
+                runCatching { Service.instance.user(it) }
+                    .getOrNull()?.firstOrNull()?.id?.let { id -> user.postValue(id) }
             }
         }
         user.observeForever {
@@ -734,12 +733,11 @@ object OAuth {
     fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?${timestamp.value}" else null
     fun avatar(fragment: Fragment, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
         fragment.lifecycleScope.launchWhenCreated {
-            withContext(Dispatchers.IO) {
-                runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
-            }.onSuccess {
-                timestamp.postValue(Calendar.getInstance().time.time / 1000)
-                fn(post_id)
-            }
+            runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
+                .onSuccess {
+                    timestamp.postValue(Calendar.getInstance().time.time / 1000)
+                    fn(post_id)
+                }
         }
     }
 
@@ -767,9 +765,7 @@ object OAuth {
             .setTitle(R.string.user_logout)
             .setPositiveButton(R.string.user_logout) { _, _ ->
                 fragment.lifecycleScope.launchWhenCreated {
-                    withContext(Dispatchers.IO) {
-                        Service.instance.logout()
-                    }
+                    runCatching { Service.instance.logout() }
                     call?.invoke()
                 }
             }
@@ -781,16 +777,13 @@ object OAuth {
             val view = UserLoginBinding.bind(root)
             val name = view.edit1.text.toString()
             val pass = view.edit2.text.toString()
-            view.root.isEnabled = false
+            view.indicator.isInvisible = false
+            alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
             fragment.lifecycleScope.launchWhenCreated {
-                val result = withContext(Dispatchers.IO) {
-                    Service.instance.login(name, pass, Service.csrf()!!)
-                }
-                view.root.isEnabled = true
+                val result = runCatching { Service.instance.login(name, pass, Service.csrf()!!) }.getOrNull()
+                view.indicator.isInvisible = true
+                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
                 if (result?.success == true) {
-                    user.postValue(withContext(Dispatchers.IO) {
-                        Service.instance.user(OAuth.name.value!!).firstOrNull()?.id ?: 0
-                    })
                     alert.dismiss()
                     call?.invoke()
                 } else {
@@ -813,12 +806,12 @@ object OAuth {
                     .setAction(R.string.app_ok) {}.show()
                 return@alert
             }
-            view.root.isEnabled = false
+            view.indicator.isInvisible = false
+            alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
             fragment.lifecycleScope.launchWhenCreated {
-                val result = withContext(Dispatchers.IO) {
-                    Service.instance.register(name, pwd, email, Service.csrf()!!)
-                }
-                view.root.isEnabled = true
+                val result = runCatching { Service.instance.register(name, pwd, email, Service.csrf()!!) }.getOrNull()
+                view.indicator.isInvisible = true
+                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
                 if (result?.success == true) {
                     alert.dismiss()
                     call?.invoke()
@@ -835,12 +828,12 @@ object OAuth {
             val view = UserResetBinding.bind(root)
             val name = view.editName.text.toString()
             val email = view.editEmail.text.toString()
-            view.root.isEnabled = false
+            view.indicator.isInvisible = false
+            alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
             fragment.lifecycleScope.launchWhenCreated {
-                val result = withContext(Dispatchers.IO) {
-                    Service.instance.reset(name, email, Service.csrf()!!)
-                }
-                view.root.isEnabled = true
+                val result = runCatching { Service.instance.reset(name, email, Service.csrf()!!) }.getOrNull()
+                view.indicator.isInvisible = true
+                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
                 if (result?.success == true) {
                     alert.dismiss()
                     call?.invoke()
@@ -857,12 +850,12 @@ object OAuth {
             val view = UserChangeEmailBinding.bind(root)
             val email = view.editEmail.text.toString()
             val pwd = view.editPwd.text.toString()
-            view.root.isEnabled = false
+            view.indicator.isInvisible = false
+            alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
             fragment.lifecycleScope.launchWhenCreated {
-                val result = withContext(Dispatchers.IO) {
-                    Service.instance.change_email(pwd, email, Service.csrf()!!)
-                }
-                view.root.isEnabled = true
+                val result = runCatching { Service.instance.change_email(pwd, email, Service.csrf()!!) }.getOrNull()
+                view.indicator.isInvisible = true
+                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
                 if (result?.success == true) {
                     alert.dismiss()
                     call?.invoke()
@@ -885,12 +878,12 @@ object OAuth {
                     .setAction(R.string.app_ok) {}.show()
                 return@alert
             }
-            view.root.isEnabled = false
+            view.indicator.isInvisible = false
+            alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
             fragment.lifecycleScope.launchWhenCreated {
-                val result = withContext(Dispatchers.IO) {
-                    Service.instance.change_pwd(old, pwd, Service.csrf()!!)
-                }
-                view.root.isEnabled = true
+                val result = runCatching { Service.instance.change_pwd(old, pwd, Service.csrf()!!) }.getOrNull()
+                view.indicator.isInvisible = true
+                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
                 if (result?.success == true) {
                     alert.dismiss()
                     call?.invoke()
