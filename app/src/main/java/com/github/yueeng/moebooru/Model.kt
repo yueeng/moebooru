@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.os.Parcel
 import android.os.Parcelable
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
@@ -713,7 +712,8 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
 object OAuth {
     val name: MutableLiveData<String> = MutableLiveData(okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "login" }?.value ?: "")
-    val user = MutableLiveData(0)
+    val user = MutableLiveData<Int>()
+    val avatar = MutableLiveData<Int>()
 
     init {
         name.observeForever {
@@ -722,9 +722,6 @@ object OAuth {
                 runCatching { Service.instance.user(it) }
                     .getOrNull()?.firstOrNull()?.id?.let { id -> user.postValue(id) }
             }
-        }
-        user.observeForever {
-            Log.i("MLDFLOW", "user: $it")
         }
     }
 
@@ -736,6 +733,7 @@ object OAuth {
             runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
                 .onSuccess {
                     timestamp.postValue(Calendar.getInstance().time.time / 1000)
+                    avatar.postValue(post_id)
                     fn(post_id)
                 }
         }
