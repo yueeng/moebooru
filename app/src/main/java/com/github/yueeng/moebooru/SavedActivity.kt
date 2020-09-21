@@ -39,7 +39,7 @@ class SavedViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?
 }
 
 class SavedFragment : Fragment() {
-    private val viewModel: SavedViewModel by sharedViewModels({ "saved" }) { SavedViewModelFactory(this, null) }
+    private val viewModel: SavedViewModel by sharedViewModels("saved") { SavedViewModelFactory(this, null) }
     private val adapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
