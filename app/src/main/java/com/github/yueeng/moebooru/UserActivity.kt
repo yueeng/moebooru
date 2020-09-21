@@ -126,7 +126,14 @@ class UserFragment : Fragment() {
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)), options.toBundle())
             }
+            OAuth.avatar.observe(viewLifecycleOwner, Observer {
+                if (mine && model.avatar.value != it) {
+                    model.avatar.postValue(it)
+                    lifecycleScope.launchWhenCreated { background(it) }
+                }
+            })
             model.avatar.observe(viewLifecycleOwner, Observer {
+                if (mine && OAuth.avatar.value != it) OAuth.avatar.postValue(it)
                 if (model.background.value != null) return@Observer
                 lifecycleScope.launchWhenCreated { background(it) }
             })
