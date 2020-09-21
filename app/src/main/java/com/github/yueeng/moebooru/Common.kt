@@ -84,7 +84,6 @@ import okio.*
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStream
 import java.lang.ref.WeakReference
 import java.security.MessageDigest
 import java.text.DateFormat
@@ -123,11 +122,10 @@ fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
         ProgressBehavior.update(url, 0, 0)
         val response = chain.proceed(request)
         ProgressBehavior.update(url, 0, response.body?.contentLength() ?: 0)
-        response.newBuilder().body(ProgressResponseBody(response.body!!, object : ProgressListener {
-            override fun update(bytesRead: Long, contentLength: Long, done: Boolean) {
-                ProgressBehavior.update(url, bytesRead, contentLength)
-            }
-        })).build()
+        val body = ProgressResponseBody(response.body!!) { bytesRead, contentLength, _ ->
+            ProgressBehavior.update(url, bytesRead, contentLength)
+        }
+        response.newBuilder().body(body).build()
     }
     .apply { debug { addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }) } }
     .build()
@@ -147,13 +145,9 @@ suspend fun <T> Call.await(action: (Call, Response) -> T): T = suspendCancellabl
     })
 }
 
-interface ProgressListener {
-    fun update(bytesRead: Long, contentLength: Long, done: Boolean)
-}
-
 private class ProgressResponseBody(
     private val responseBody: ResponseBody,
-    private val progressListener: ProgressListener
+    private val progressListener: (bytesRead: Long, contentLength: Long, done: Boolean) -> Unit
 ) : ResponseBody() {
     private var bufferedSource: BufferedSource? = null
 
@@ -176,7 +170,7 @@ private class ProgressResponseBody(
             val bytesRead = super.read(sink, byteCount)
             // read() returns the number of bytes read, or -1 if this source is exhausted.
             totalBytesRead += if (bytesRead != -1L) bytesRead else 0
-            progressListener.update(totalBytesRead, contentLength(), bytesRead == -1L)
+            progressListener(totalBytesRead, contentLength(), bytesRead == -1L)
             return bytesRead
         }
     }
@@ -606,11 +600,13 @@ object Save {
                 launch {
                     okHttp.newCall(Request.Builder().url(url).build()).await { _, response ->
                         response.body?.use {
-                            val length = it.contentLength()
-                            channel.offer(0L to length)
-                            it.byteStream().use { input ->
+                            val body = ProgressResponseBody(it) { bytesRead, contentLength, _ ->
+                                channel.offer(bytesRead to contentLength)
+                            }
+                            channel.offer(0L to body.contentLength())
+                            body.byteStream().use { input ->
                                 context.contentResolver.openOutputStream(target)?.use { output ->
-                                    input.copyTo(output) { cur -> channel.offer(cur to length) }
+                                    input.copyTo(output)
                                 }
                             }
                         }
@@ -726,19 +722,6 @@ fun Long.sizeString() = when {
     this <= 0xfffccccccccccccL shr 10 -> "%.1f TiB".format(this.toDouble() / (0x1 shl 40))
     this <= 0xfffccccccccccccL -> "%.1f PiB".format((this shr 10).toDouble() / (0x1 shl 40))
     else -> "%.1f EiB".format((this shr 20).toDouble() / (0x1 shl 40))
-}
-
-fun InputStream.copyTo(out: OutputStream, bufferSize: Int = DEFAULT_BUFFER_SIZE, progress: (Long) -> Unit): Long {
-    var bytesCopied: Long = 0
-    val buffer = ByteArray(bufferSize)
-    var bytes = read(buffer)
-    while (bytes >= 0) {
-        out.write(buffer, 0, bytes)
-        bytesCopied += bytes
-        progress(bytesCopied)
-        bytes = read(buffer)
-    }
-    return bytesCopied
 }
 
 fun Context.notifyImageComplete(uri: Uri, id: Int, title: String, content: String) {
