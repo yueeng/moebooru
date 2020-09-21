@@ -101,8 +101,8 @@ class UserFragment : Fragment() {
                     if (mine) binding.toolbar.title = name.toTitleCase()
                     else requireActivity().title = name.toTitleCase()
                     if (model.user.value == null) {
-                        val id = Service.instance.user(name)
-                        id.firstOrNull()?.id?.let { model.user.postValue(it) }
+                        runCatching { Service.instance.user(name) }.getOrNull()
+                            ?.firstOrNull()?.id?.let { model.user.postValue(it) }
                     }
                 }
             }
@@ -164,10 +164,8 @@ class UserFragment : Fragment() {
         }.root
 
     private suspend fun background(id: Int) {
-        val list = withContext(Dispatchers.IO) {
-            runCatching { Service.instance.post(1, Q().id(id), 1) }.getOrNull()
-        }
-        list?.firstOrNull()?.sample_url?.let { model.background.postValue(it) }
+        runCatching { Service.instance.post(1, Q().id(id), 1) }.getOrNull()
+            ?.firstOrNull()?.sample_url?.let { model.background.postValue(it) }
     }
 
     private suspend fun query() {
@@ -181,11 +179,9 @@ class UserFragment : Fragment() {
             val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
             coroutineScope {
                 launch {
-                    val jsoup = withContext(Dispatchers.IO) {
-                        val url = "$moeUrl/user/show/$user"
-                        val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
-                        Jsoup.parse(html, url)
-                    }
+                    val url = "$moeUrl/user/show/$user"
+                    val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
+                    val jsoup = withContext(Dispatchers.IO) { Jsoup.parse(html, url) }
                     launch {
                         val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
                         model.avatar.postValue(id)
@@ -212,9 +208,7 @@ class UserFragment : Fragment() {
                 }
                 images.map { image ->
                     launch {
-                        val result = withContext(Dispatchers.IO) {
-                            runCatching { Service.instance.post(1, Q(image.second)) }.getOrElse { emptyList() }
-                        }
+                        val result = runCatching { Service.instance.post(1, Q(image.second)) }.getOrElse { emptyList() }
                         data[image.first]?.first?.addAll(result)
                         val submit = data.filter { it.value.first.any() }.flatMap { listOf(Title(it.key, it.value.second)) + it.value.first }
                         model.data.postValue(submit.toTypedArray())
@@ -317,24 +311,18 @@ class StarViewModel(handle: SavedStateHandle) : ViewModel() {
     val busy = handle.getLiveData("busy", false)
     suspend fun data(post: Int): ItemScore? = try {
         busy.postValue(true)
-        val result = withContext(Dispatchers.IO) {
-            Service.instance.vote(post, authenticity_token = Service.csrf()!!)
-        }
-        result?.vote?.let { score ->
-            star.postValue(score)
-            withContext(Dispatchers.IO) {
-                Service.instance.vote(post, score, authenticity_token = Service.csrf()!!)
+        runCatching { Service.instance.vote(post, authenticity_token = Service.csrf()!!) }
+            .getOrNull()?.vote?.let { score ->
+                star.postValue(score)
+                runCatching { Service.instance.vote(post, score, authenticity_token = Service.csrf()!!) }.getOrNull()
             }
-        }
     } finally {
         busy.postValue(false)
     }
 
     suspend fun vote(post: Int, score: Int) = try {
         busy.postValue(true)
-        withContext(Dispatchers.IO) {
-            Service.instance.vote(post, score, authenticity_token = Service.csrf()!!)
-        }
+        runCatching { Service.instance.vote(post, score, authenticity_token = Service.csrf()!!) }.getOrNull()
     } finally {
         busy.postValue(false)
     }

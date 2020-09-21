@@ -17,6 +17,7 @@ import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
 import android.util.TypedValue
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import android.widget.DatePicker
 import android.widget.ImageView
@@ -824,3 +825,13 @@ fun GridLayoutManager.spanSizeLookup(call: (position: Int) -> Int) = this.apply 
         override fun getSpanSize(position: Int): Int = call(position)
     }
 }
+
+val View.childrenRecursively: Sequence<View>
+    get() = sequence {
+        yield(this@childrenRecursively)
+        if (this@childrenRecursively is ViewGroup) {
+            for (child in this@childrenRecursively.children) {
+                yieldAll(child.childrenRecursively)
+            }
+        }
+    }
