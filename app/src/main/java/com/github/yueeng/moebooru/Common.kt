@@ -3,7 +3,6 @@
 package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
-import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -23,7 +22,6 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -95,23 +93,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.time.ExperimentalTime
 
-class MainApplication : Application() {
-    companion object {
-        private var app: WeakReference<MainApplication>? = null
-
-        fun instance() = app!!.get()!!
-    }
-
-    init {
-        app = WeakReference(this)
-    }
-
-    override fun onCreate() {
-        AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value!!)
-        super.onCreate()
-    }
-}
-
 fun debug(call: () -> Unit) {
     if (BuildConfig.DEBUG) call()
 }
@@ -127,12 +108,13 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
         }
     }
 }
+val okHttp get() = MainApplication.instance().okHttp
 
-val okHttp: OkHttpClient = OkHttpClient.Builder()
-    .connectTimeout(5, TimeUnit.SECONDS)
-    .writeTimeout(15, TimeUnit.SECONDS)
-    .readTimeout(30, TimeUnit.SECONDS)
-    .cache(Cache(MainApplication.instance().cacheDir, 1024 * 1024 * 256))
+fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+    .connectTimeout(10, TimeUnit.SECONDS)
+    .writeTimeout(30, TimeUnit.SECONDS)
+    .readTimeout(60, TimeUnit.SECONDS)
+    .cache(Cache(MainApplication.instance().cacheDir, (1L shl 20) * (MoeSettings.cache.value ?: 256)))
     .cookieJar(okCookie)
     .addNetworkInterceptor { chain ->
         val request = chain.request()

@@ -29,6 +29,7 @@
         <activity android:name=".UserActivity" />
         <activity android:name=".StarActivity" />
         <activity android:name=".PopularActivity" />
+        <activity android:name=".SettingsActivity" />
         <activity android:name="com.yalantis.ucrop.UCropActivity" />
 
         <provider
