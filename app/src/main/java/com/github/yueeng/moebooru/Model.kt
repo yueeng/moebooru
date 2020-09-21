@@ -11,7 +11,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
@@ -902,23 +901,4 @@ object OAuth {
                 }
             }
         }
-
-}
-
-object MoeSettings {
-    private val context: Context get() = MainApplication.instance()
-    private val config by lazy { PreferenceManager.getDefaultSharedPreferences(context) }
-    private const val KEY_DAY_NIGHT_MODE = "app.day_night_mode"
-    private const val KEY_SAFE_MODE = "app.safe_mode"
-    var safe = MutableLiveData(config.getBoolean(KEY_SAFE_MODE, true))
-    var daynight = MutableLiveData(config.getInt(KEY_DAY_NIGHT_MODE, AppCompatDelegate.getDefaultNightMode()))
-
-    init {
-        safe.observeForever {
-            config.edit().putBoolean(KEY_SAFE_MODE, it).apply()
-        }
-        daynight.observeForever {
-            config.edit().putInt(KEY_DAY_NIGHT_MODE, it).apply()
-        }
-    }
 }

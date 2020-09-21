@@ -92,6 +92,18 @@
     <string name="settings_safe_turn_off">All</string>
     <string name="settings_safe_turn_on">Safe</string>
 
+    <string-array name="settings_daynight_names">
+        <item>System</item>
+        <item>Day</item>
+        <item>Night</item>
+        <item>Auto</item>
+    </string-array>
+    <string-array name="settings_daynight_values">
+        <item>-1</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>
     <string name="user_email">Email</string>

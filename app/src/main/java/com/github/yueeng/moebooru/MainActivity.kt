@@ -8,15 +8,12 @@ import android.content.res.TypedArray
 import android.graphics.Color
 import android.os.Bundle
 import android.view.*
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
@@ -25,7 +22,6 @@ import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import com.google.android.material.transition.platform.MaterialArcMotion
@@ -33,16 +29,15 @@ import com.google.android.material.transition.platform.MaterialContainerTransfor
 import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import java.util.*
 
 open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
     override fun onCreate(savedInstanceState: Bundle?) {
-        AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value!!)
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
         setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
         setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-//        window.sharedElementsUseOverlay = false
         val array: TypedArray = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground))
         window.sharedElementEnterTransition = MaterialContainerTransform().apply {
             addTarget(android.R.id.content)
@@ -58,9 +53,11 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
         }
         array.recycle()
         super.onCreate(savedInstanceState)
-        MoeSettings.daynight.observe(this, Observer {
-            if (AppCompatDelegate.getDefaultNightMode() != it) recreate()
-        })
+        lifecycleScope.launchWhenCreated {
+            MoeSettings.daynight.asFlow().drop(1).collectLatest {
+                recreate()
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -69,37 +66,9 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.safe -> true.also {
-            MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.settings_safe_mode)
-                .setMessage(if (MoeSettings.safe.value!!) R.string.settings_safe_turn_on else R.string.settings_safe_turn_off)
-                .setPositiveButton(R.string.settings_safe_turn_on) { _, _ -> MoeSettings.safe.postValue(true) }
-                .setNeutralButton(R.string.settings_safe_turn_off) { _, _ -> MoeSettings.safe.postValue(false) }
-                .setNegativeButton(R.string.app_cancel, null)
-                .create()
-                .show()
-        }
-        R.id.daynight -> true.also {
-            val current = MoeSettings.daynight.value!!
-            val items = listOf(
-                AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY to getString(R.string.settings_daynight_auto),
-                AppCompatDelegate.MODE_NIGHT_NO to getString(R.string.settings_daynight_day),
-                AppCompatDelegate.MODE_NIGHT_YES to getString(R.string.settings_daynight_night),
-                AppCompatDelegate.MODE_NIGHT_UNSPECIFIED to getString(R.string.settings_daynight_system)
-            )
-            MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.settings_daynight_mode)
-                .setSingleChoiceItems(items.map { it.second }.toTypedArray(), items.indexOfFirst { it.first == current }, null)
-                .setPositiveButton(R.string.app_ok) { d, _ ->
-                    (d as? AlertDialog)?.listView?.checkedItemPosition?.let { w ->
-                        items[w].first.takeIf { it != MoeSettings.daynight.value }?.let {
-                            MoeSettings.daynight.postValue(it)
-                        }
-                    }
-                }
-                .setNegativeButton(R.string.app_cancel, null)
-                .create()
-                .show()
+        R.id.settings -> true.also {
+            val options = ActivityOptions.makeSceneTransitionAnimation(this, findViewById(item.itemId), "shared_element_container")
+            startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
     }
