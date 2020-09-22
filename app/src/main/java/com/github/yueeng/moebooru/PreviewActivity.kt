@@ -35,6 +35,7 @@ import androidx.work.WorkInfo
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+import com.github.yueeng.moebooru.Save.fileName
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
 import com.github.yueeng.moebooru.databinding.PreviewItemBinding
 import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
@@ -142,7 +143,7 @@ class PreviewFragment : Fragment() {
             binding.button1.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 fun download() {
-                    val filename = item.jpeg_file_name
+                    val filename = item.source_url.fileName
                     val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
                     val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
                     val values = ContentValues().apply {
@@ -242,7 +243,7 @@ class PreviewFragment : Fragment() {
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
-                    val file = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_file_name)
+                    val file = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                     val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
                     Save.save(item, uri) {
                         it?.let { uri ->
@@ -255,12 +256,12 @@ class PreviewFragment : Fragment() {
             }
             binding.button6.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
-                val file = File(requireContext().cacheDir, item.jpeg_file_name)
+                val file = File(requireContext().cacheDir, item.jpeg_url.fileName)
                 Save.save(item, Uri.fromFile(file), tip = false) {
                     it?.let { source ->
                         lifecycleScope.launchWhenCreated {
                             previewModel.crop.value = item
-                            val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_file_name)
+                            val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                             UCrop.of(source, Uri.fromFile(dest)).start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP)
                         }
                     }
@@ -292,7 +293,7 @@ class PreviewFragment : Fragment() {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }, getString(R.string.app_share)))
                         val item = previewModel.crop.value!!
-                        requireContext().notifyImageComplete(uri, item.id, getString(R.string.app_name), item.jpeg_file_name)
+                        requireContext().notifyImageComplete(uri, item.id, getString(R.string.app_name), item.jpeg_url.fileName)
                         previewModel.crop.value = null
                     }
                     UCrop.REQUEST_CROP + 1 -> {

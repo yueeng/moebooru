@@ -83,6 +83,7 @@
     <string name="saved_tags">标签</string>
     <string name="saved_title">保存标签</string>
 
+    <string name="settings_cache_size">网络缓存</string>
     <string name="settings_daynight_auto">自动</string>
     <string name="settings_daynight_day">白天</string>
     <string name="settings_daynight_mode">夜间模式</string>
@@ -94,6 +95,9 @@
     </string-array>
     <string name="settings_daynight_night">夜晚</string>
     <string name="settings_daynight_system">跟随系统</string>
+    <string name="settings_high_quality">下载高质量图片</string>
+    <string name="settings_high_quality_on">Png 或 Jpeg原图</string>
+    <string name="settings_high_quality_off">相同大小的Jpeg</string>
     <string name="settings_safe_mode">安全模式</string>
     <string name="settings_safe_turn_off">全部</string>
     <string name="settings_safe_turn_on">安全</string>
@@ -111,5 +115,4 @@
     <string name="user_pwd_diff">密码不一致</string>
     <string name="user_register">注册</string>
     <string name="user_reset">重置</string>
-    <string name="settings_cache_size">网络缓存</string>
 </resources>
