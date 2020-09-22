@@ -83,6 +83,9 @@
     <string name="saved_tags">标签</string>
     <string name="saved_title">保存标签</string>
 
+    <string name="settings_animation">动画页面跳转</string>
+    <string name="settings_animation_off">默认</string>
+    <string name="settings_animation_on">动画</string>
     <string name="settings_cache_size">网络缓存</string>
     <string name="settings_daynight_auto">自动</string>
     <string name="settings_daynight_day">白天</string>
@@ -96,11 +99,11 @@
     <string name="settings_daynight_night">夜晚</string>
     <string name="settings_daynight_system">跟随系统</string>
     <string name="settings_high_quality">下载高质量图片</string>
-    <string name="settings_high_quality_on">Png 或 Jpeg原图</string>
     <string name="settings_high_quality_off">相同大小的Jpeg</string>
+    <string name="settings_high_quality_on">Png 或 Jpeg原图</string>
     <string name="settings_safe_mode">安全模式</string>
-    <string name="settings_safe_turn_off">全部</string>
-    <string name="settings_safe_turn_on">安全</string>
+    <string name="settings_safe_turn_off">安全</string>
+    <string name="settings_safe_turn_on">安全 + 疑似 + 确认</string>
 
     <string name="user_change_email">变更邮箱</string>
     <string name="user_change_pwd">变更密码</string>

@@ -346,7 +346,7 @@ interface MoebooruService {
 }
 
 class Service(private val service: MoebooruService) : MoebooruService by service {
-    override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, if (MoeSettings.safe.value == true) Q(tags).rating(Q.Rating.safe) else tags, limit)
+    override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, if (MoeSettings.safe.value != true) Q(tags).rating(Q.Rating.safe) else tags, limit)
 
     companion object {
         private val retrofit: Retrofit = Retrofit.Builder()

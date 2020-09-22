@@ -40,6 +40,7 @@ object MoeSettings {
     private const val KEY_SAFE_MODE = "app.safe_mode"
     private const val KEY_CACHE_SIZE = "app.cache_size"
     private const val KEY_HIGH_QUALITY = "app.high_quality"
+    private const val KEY_ANIMATION = "app.animation"
     private fun daynightvalues() = when (val value = config.getString(KEY_DAY_NIGHT_MODE, null)?.toIntOrNull()) {
         AppCompatDelegate.MODE_NIGHT_NO,
         AppCompatDelegate.MODE_NIGHT_YES,
@@ -47,15 +48,18 @@ object MoeSettings {
         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
     }
 
+    val animation = MutableLiveData(config.getBoolean(KEY_ANIMATION, false))
     val quality = MutableLiveData(config.getBoolean(KEY_HIGH_QUALITY, false))
-    val safe = MutableLiveData(config.getBoolean(KEY_SAFE_MODE, true))
+    val safe = MutableLiveData(config.getBoolean(KEY_SAFE_MODE, false))
     val daynight = MutableLiveData(daynightvalues())
     val cache = MutableLiveData(config.getInt(KEY_CACHE_SIZE, 256))
 
     init {
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener { _, key ->
             when (key) {
-                KEY_SAFE_MODE -> safe.postValue(config.getBoolean(key, true))
+                KEY_SAFE_MODE -> safe.postValue(config.getBoolean(key, false))
+                KEY_ANIMATION -> animation.postValue(config.getBoolean(key, false))
+                KEY_HIGH_QUALITY -> quality.postValue(config.getBoolean(key, false))
                 KEY_DAY_NIGHT_MODE -> {
                     AppCompatDelegate.setDefaultNightMode(daynightvalues())
                     daynight.postValue(daynightvalues())

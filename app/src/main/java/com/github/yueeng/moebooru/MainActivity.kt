@@ -4,11 +4,11 @@ import android.annotation.SuppressLint
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.content.res.TypedArray
 import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.res.use
 import androidx.core.os.bundleOf
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -33,25 +33,31 @@ import kotlinx.coroutines.flow.drop
 import java.util.*
 
 open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
+    override fun startActivity(intent: Intent?, options: Bundle?) =
+        super.startActivity(intent, if (MoeSettings.animation.value == true) options else null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-        findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
-        setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-        setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-        val array: TypedArray = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground))
-        window.sharedElementEnterTransition = MaterialContainerTransform().apply {
-            addTarget(android.R.id.content)
-            pathMotion = MaterialArcMotion()
-            endContainerColor = array.getColor(0, Color.WHITE)
-            duration = 400L
+        if (MoeSettings.animation.value == true) {
+            window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+            findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
+            setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
+            setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
+            val background = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground)).use {
+                it.getColor(0, Color.WHITE)
+            }
+            window.sharedElementEnterTransition = MaterialContainerTransform().apply {
+                addTarget(android.R.id.content)
+                pathMotion = MaterialArcMotion()
+                endContainerColor = background
+                duration = 400L
+            }
+            window.sharedElementReturnTransition = MaterialContainerTransform().apply {
+                addTarget(android.R.id.content)
+                pathMotion = MaterialArcMotion()
+                startContainerColor = background
+                duration = 300L
+            }
         }
-        window.sharedElementReturnTransition = MaterialContainerTransform().apply {
-            addTarget(android.R.id.content)
-            pathMotion = MaterialArcMotion()
-            startContainerColor = array.getColor(0, Color.WHITE)
-            duration = 300L
-        }
-        array.recycle()
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenCreated {
             MoeSettings.daynight.asFlow().drop(1).collectLatest {
