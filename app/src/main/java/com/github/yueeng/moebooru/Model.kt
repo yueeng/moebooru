@@ -97,7 +97,6 @@ data class JImageItem(
     val tags: String,
     val width: Int
 ) : Parcelable {
-    val source_url get() = if (MoeSettings.quality.value!!) file_url else jpeg_url
     val mpixels get() = width * height
     val resolution get() = Resolution.values().firstOrNull { mpixels >= it.resolution } ?: Resolution.ZERO
 }
@@ -190,6 +189,7 @@ data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
         const val TYPE_PARENT = -5
         const val TYPE_URL = -6
         const val TYPE_CLIPBOARD = -7
+        const val TYPE_DOWNLOAD = -8
 
         fun string(type: Int) = when (type) {
             TYPE_GENERAL -> "GENERAL"
@@ -204,6 +204,7 @@ data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
             TYPE_PARENT -> "PARENT"
             TYPE_URL -> "WEBSITE"
             TYPE_CLIPBOARD -> "COPY"
+            TYPE_DOWNLOAD -> "DOWNLOAD"
             else -> ""
         }
 
