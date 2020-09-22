@@ -77,7 +77,7 @@ class PreviewFragment : Fragment() {
     private val index by lazy { arguments?.getInt("index") ?: -1 }
     private val adapter by lazy { ImageAdapter() }
     private val tagAdapter by lazy { TagAdapter() }
-    private val model: ImageViewModel by sharedViewModels(query.toString()) { ImageViewModelFactory(this, arguments) }
+    private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
             binding.pager.adapter = adapter
