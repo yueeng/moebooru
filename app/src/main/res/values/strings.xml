@@ -91,8 +91,6 @@
     <string name="settings_animation_off">Default</string>
     <string name="settings_animation_on">Animation</string>
     <string name="settings_cache_size">Http disk cache size</string>
-    <string name="settings_daynight_auto">Auto</string>
-    <string name="settings_daynight_day">Day</string>
     <string name="settings_daynight_mode">Day night mode</string>
     <string-array name="settings_daynight_names">
         <item>Follow System</item>
@@ -100,8 +98,6 @@
         <item>Night Mode</item>
         <item>Follow Battery Saver Mode</item>
     </string-array>
-    <string name="settings_daynight_night">Night</string>
-    <string name="settings_daynight_system">System</string>
     <string name="settings_high_quality">Download high quality image</string>
     <string name="settings_high_quality_off">The same size Jpeg</string>
     <string name="settings_high_quality_on">Png or Original Jpeg</string>
@@ -112,7 +108,6 @@
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>
     <string name="user_email">Email</string>
-    <string name="user_email_current">Current Email</string>
     <string name="user_login">Login</string>
     <string name="user_logout">Logout</string>
     <string name="user_name">Name</string>
