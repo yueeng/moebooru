@@ -3,6 +3,7 @@
 package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -23,6 +24,7 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -68,6 +70,7 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
+import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -823,3 +826,31 @@ val View.childrenRecursively: Sequence<View>
             }
         }
     }
+
+class CropImageResult(
+    val output: Uri,
+    val aspectRatio: Float,
+    val imageWidth: Int,
+    val imageHeight: Int,
+    val offsetX: Int,
+    val offsetY: Int,
+    val originWidth: Int,
+    val originHeight: Int,
+)
+
+class CropImage : ActivityResultContract<UCrop, CropImageResult?>() {
+    override fun createIntent(context: Context, input: UCrop?): Intent = input!!.getIntent(context)
+
+    override fun parseResult(resultCode: Int, data: Intent?): CropImageResult? = if (resultCode == Activity.RESULT_OK) {
+        val uri = UCrop.getOutput(data!!)
+        val ar = data.getFloatExtra(UCrop.EXTRA_OUTPUT_CROP_ASPECT_RATIO, 0F)
+        val w = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_WIDTH, 0)
+        val h = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_HEIGHT, 0)
+        val x = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_X, 0)
+        val y = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_Y, 0)
+        val ow = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_WIDTH, 0)
+        val oh = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_HEIGHT, 0)
+        CropImageResult(uri!!, ar, w, h, x, y, ow, oh)
+    } else null
+
+}

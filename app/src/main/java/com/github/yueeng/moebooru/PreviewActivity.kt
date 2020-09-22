@@ -1,7 +1,6 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
-import android.app.Activity
 import android.app.ActivityOptions
 import android.app.WallpaperManager
 import android.content.ContentValues
@@ -68,19 +67,21 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
     }
 }
 
-class PreviewViewModel(handle: SavedStateHandle) : ViewModel() {
+class PreviewViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
+    val index = handle.getLiveData("index", args?.getInt("index") ?: -1)
     val crop = handle.getLiveData<JImageItem>("crop")
 }
 
-class PreviewViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PreviewViewModel(handle) as T
+    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PreviewViewModel(handle, defaultArgs) as T
 }
 
 class PreviewFragment : Fragment() {
     private val previewModel: PreviewViewModel by viewModels { PreviewViewModelFactory(this, arguments) }
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
-    private val index by lazy { arguments?.getInt("index") ?: -1 }
+
+    //    private val index by lazy { arguments?.getInt("index") ?: -1 }
     private val adapter by lazy { ImageAdapter() }
     private val tagAdapter by lazy { TagAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
@@ -99,7 +100,7 @@ class PreviewFragment : Fragment() {
                 adapter.loadStateFlow
                     .distinctUntilChangedBy { it.refresh }
                     .filter { it.refresh is LoadState.NotLoading }
-                    .collect { if (index >= 0) binding.pager.post { binding.pager.setCurrentItem(index, false) } }
+                    .collect { if (previewModel.index.value!! >= 0) binding.pager.post { binding.pager.setCurrentItem(previewModel.index.value!!, false) } }
             }
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
@@ -229,15 +230,15 @@ class PreviewFragment : Fragment() {
                 }
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
-                    previewModel.crop.value = item
                     val dest = File(MainApplication.instance().cacheDir, UUID.randomUUID().toString())
                     val option = UCrop.Options().apply {
                         setAllowedGestures(UCropActivity.SCALE, UCropActivity.NONE, UCropActivity.SCALE)
                         setHideBottomControls(true)
                     }
-                    UCrop.of(Uri.fromFile(file), Uri.fromFile(dest))
+                    val crop = UCrop.of(Uri.fromFile(file), Uri.fromFile(dest))
                         .withAspectRatio(1F, 1F).withOptions(option)
-                        .start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP + 1)
+                    previewModel.crop.value = item
+                    cropAvatar.launch(crop)
                 })
             }
             binding.button5.setOnClickListener {
@@ -260,9 +261,9 @@ class PreviewFragment : Fragment() {
                 Save.save(item, Uri.fromFile(file), tip = false) {
                     it?.let { source ->
                         lifecycleScope.launchWhenCreated {
-                            previewModel.crop.value = item
                             val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
-                            UCrop.of(source, Uri.fromFile(dest)).start(requireContext(), this@PreviewFragment, UCrop.REQUEST_CROP)
+                            previewModel.crop.value = item
+                            cropShare.launch(UCrop.of(source, Uri.fromFile(dest)))
                         }
                     }
                 }
@@ -280,40 +281,28 @@ class PreviewFragment : Fragment() {
             }
         }.root
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        when (resultCode) {
-            Activity.RESULT_OK -> {
-                when (requestCode) {
-                    UCrop.REQUEST_CROP -> {
-                        val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", File(UCrop.getOutput(data!!)!!.path!!))
-                        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                            type = "image/jpeg"
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }, getString(R.string.app_share)))
-                        val item = previewModel.crop.value!!
-                        requireContext().notifyImageComplete(uri, item.id, getString(R.string.app_name), item.jpeg_url.fileName)
-                        previewModel.crop.value = null
-                    }
-                    UCrop.REQUEST_CROP + 1 -> {
-                        if (data != null) {
-                            val ow = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_WIDTH, 0)
-                            val oh = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_HEIGHT, 0)
-                            val w = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_WIDTH, 0)
-                            val h = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_HEIGHT, 0)
-                            val x = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_X, 0)
-                            val y = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_Y, 0)
-                            val item = previewModel.crop.value!!
-                            OAuth.avatar(this, OAuth.user.value!!, item.id, 1F * x / ow, 1F * (x + w) / ow, 1F * y / oh, 1F * (y + h) / oh) {
-                                Toast.makeText(requireContext(), R.string.app_complete, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        previewModel.crop.value = null
-                    }
-                }
-            }
-            else -> super.onActivityResult(requestCode, resultCode, data)
+    private val cropShare = registerForActivityResult(CropImage()) { result ->
+        val item = previewModel.crop.value ?: return@registerForActivityResult
+        previewModel.crop.value = null
+        if (result == null) return@registerForActivityResult
+        val extension = MimeTypeMap.getFileExtensionFromUrl(result.output.path!!)
+        val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", File(result.output.path!!))
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = mime
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }, getString(R.string.app_share)))
+        requireContext().notifyImageComplete(uri, item.id, getString(R.string.app_name), item.jpeg_url.fileName)
+    }
+
+    private val cropAvatar = registerForActivityResult(CropImage()) { data ->
+        val item = previewModel.crop.value ?: return@registerForActivityResult
+        previewModel.crop.value = null
+        if (data == null) return@registerForActivityResult
+        OAuth.avatar(this, OAuth.user.value!!, item.id, 1F * data.offsetX / data.originWidth, 1F * (data.offsetX + data.imageWidth) / data.originWidth, 1F * data.offsetY / data.originHeight, 1F * (data.offsetY + data.imageHeight) / data.originHeight) {
+            Toast.makeText(requireContext(), R.string.app_complete, Toast.LENGTH_SHORT).show()
         }
     }
 
