@@ -1,53 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <ListPreference
-        android:defaultValue="-1"
-        android:entries="@array/settings_daynight_names"
-        android:entryValues="@array/settings_daynight_values"
-        android:icon="@drawable/ic_daynight"
-        android:key="app.day_night_mode"
-        android:title="@string/settings_daynight_mode"
-        app:useSimpleSummaryProvider="true" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:icon="@drawable/ic_safe"
-        android:key="app.safe_mode"
-        android:summaryOff="@string/settings_safe_turn_off"
-        android:summaryOn="@string/settings_safe_turn_on"
-        android:title="@string/settings_safe_mode" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:icon="@drawable/ic_high_quality"
-        android:key="app.high_quality"
-        android:summaryOff="@string/settings_high_quality_off"
-        android:summaryOn="@string/settings_high_quality_on"
-        android:title="@string/settings_high_quality" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:icon="@drawable/ic_anim"
-        android:key="app.animation"
-        android:summaryOff="@string/settings_animation_off"
-        android:summaryOn="@string/settings_animation_on"
-        android:title="@string/settings_animation" />
-    <SeekBarPreference
-        android:defaultValue="256"
-        android:icon="@drawable/ic_storage"
-        android:key="app.cache_size"
-        android:max="2048"
-        android:title="@string/settings_cache_size"
-        app:min="256"
-        app:showSeekBarValue="true" />
-    <Preference
-        android:icon="@drawable/ic_github"
-        android:key="github"
-        android:title="@string/app_github" />
-    <Preference
-        android:icon="@drawable/ic_update"
-        android:key="update"
-        android:title="@string/app_update" />
-    <Preference
-        android:icon="@drawable/ic_about"
-        android:key="about"
-        android:title="@string/app_about" />
+    <PreferenceCategory>
+        <ListPreference
+            android:defaultValue="-1"
+            android:entries="@array/settings_daynight_names"
+            android:entryValues="@array/settings_daynight_values"
+            android:icon="@drawable/ic_daynight"
+            android:key="app.day_night_mode"
+            android:title="@string/settings_daynight_mode"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_safe"
+            android:key="app.safe_mode"
+            android:summaryOff="@string/settings_safe_turn_off"
+            android:summaryOn="@string/settings_safe_turn_on"
+            android:title="@string/settings_safe_mode" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_high_quality"
+            android:key="app.high_quality"
+            android:summaryOff="@string/settings_high_quality_off"
+            android:summaryOn="@string/settings_high_quality_on"
+            android:title="@string/settings_high_quality" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_anim"
+            android:key="app.animation"
+            android:summaryOff="@string/settings_animation_off"
+            android:summaryOn="@string/settings_animation_on"
+            android:title="@string/settings_animation" />
+        <SeekBarPreference
+            android:defaultValue="256"
+            android:icon="@drawable/ic_storage"
+            android:key="app.cache_size"
+            android:max="2048"
+            android:title="@string/settings_cache_size"
+            app:min="256"
+            app:showSeekBarValue="true" />
+    </PreferenceCategory>
+    <PreferenceCategory>
+        <Preference
+            android:icon="@drawable/ic_github"
+            android:key="github"
+            android:title="@string/app_github" />
+        <Preference
+            android:icon="@drawable/ic_update"
+            android:key="update"
+            android:title="@string/app_update" />
+        <Preference
+            android:icon="@drawable/ic_about"
+            android:key="about"
+            android:title="@string/app_about" />
+    </PreferenceCategory>
 </PreferenceScreen>
