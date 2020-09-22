@@ -38,7 +38,8 @@ import com.github.yueeng.moebooru.Save.fileName
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
 import com.github.yueeng.moebooru.databinding.PreviewItemBinding
 import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
-import com.google.android.flexbox.*
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.TedPermission
@@ -68,7 +69,7 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
 }
 
 class PreviewViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
-    val index = handle.getLiveData("index", args?.getInt("index") ?: -1)
+    val index = handle.getLiveData("index", args?.getInt("index") ?: 0)
     val crop = handle.getLiveData<JImageItem>("crop")
 }
 
@@ -87,43 +88,42 @@ class PreviewFragment : Fragment() {
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
-            binding.pager.adapter = adapter
-            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
-                flexWrap = FlexWrap.WRAP
-                flexDirection = FlexDirection.ROW
-                alignItems = AlignItems.STRETCH
-                justifyContent = JustifyContent.FLEX_START
+            lifecycleScope.launchWhenCreated {
+                model.posts.collectLatest { adapter.submitData(it) }
             }
-            binding.recycler.itemAnimator = null
-            binding.recycler.adapter = tagAdapter
+            binding.pager.adapter = adapter
+            binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) = previewModel.index.postValue(position)
+            })
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow
                     .distinctUntilChangedBy { it.refresh }
                     .filter { it.refresh is LoadState.NotLoading }
-                    .collect { if (previewModel.index.value!! >= 0) binding.pager.post { binding.pager.setCurrentItem(previewModel.index.value!!, false) } }
+                    .collect {
+                        if (previewModel.index.value!! >= 0) binding.pager.post {
+                            binding.pager.setCurrentItem(previewModel.index.value!!, false)
+                        }
+                    }
             }
             lifecycleScope.launchWhenCreated {
-                model.posts.collectLatest { adapter.submitData(it) }
+                previewModel.index.asFlow().filter { it < adapter.itemCount }.collectLatest { position ->
+                    val item = adapter.peek(position) ?: return@collectLatest
+                    GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
+                        .placeholder(R.mipmap.ic_launcher)
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .into(binding.button7)
+                    tagAdapter.submit(item)
+                    TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
+                }
             }
+            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
+            binding.recycler.adapter = tagAdapter
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow.collectLatest {
                     binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
             binding.swipe.setOnRefreshListener { adapter.refresh() }
-            binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    val item = adapter.snapshot()[position] ?: return
-                    lifecycleScope.launchWhenCreated {
-                        tagAdapter.submit(item)
-                        TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
-                    }
-                    GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
-                        .placeholder(R.mipmap.ic_launcher)
-                        .transition(DrawableTransitionOptions.withCrossFade())
-                        .into(binding.button7)
-                }
-            })
             binding.button1.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author)

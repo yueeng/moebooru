@@ -15,7 +15,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.FragmentSavedBinding
 import com.github.yueeng.moebooru.databinding.ListStringItemBinding
 import com.github.yueeng.moebooru.databinding.QueryTagItemBinding
-import com.google.android.flexbox.*
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexboxLayoutManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import java.util.*
@@ -64,12 +65,7 @@ class SavedFragment : Fragment() {
                     binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
-            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
-                flexWrap = FlexWrap.WRAP
-                flexDirection = FlexDirection.ROW
-                alignItems = AlignItems.FLEX_START
-                justifyContent = JustifyContent.FLEX_START
-            }
+            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             binding.recycler.adapter = adapter
             lifecycleScope.launchWhenCreated {
                 viewModel.saved.collectLatest { adapter.submitData(it) }
