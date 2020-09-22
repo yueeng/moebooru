@@ -82,7 +82,6 @@ class UserFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
-                binding.toolbar.title = requireActivity().title
                 binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
             }
             lifecycleScope.launchWhenCreated {

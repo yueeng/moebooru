@@ -29,7 +29,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="?android:actionBarSize"
                 app:layout_collapseMode="pin"
-                app:menu="@menu/user" />
+                app:menu="@menu/user"
+                app:title="@string/app_name" />
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
