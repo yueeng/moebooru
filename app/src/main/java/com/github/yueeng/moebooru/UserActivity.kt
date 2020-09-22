@@ -18,12 +18,14 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.databinding.*
-import com.google.android.flexbox.*
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexboxLayoutManager
 import kotlinx.android.parcel.Parcelize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import okhttp3.Request
 import org.jsoup.Jsoup
+import kotlin.math.roundToInt
 
 
 class UserActivity : MoeActivity(R.layout.activity_main) {
@@ -145,12 +147,7 @@ class UserFragment : Fragment() {
                         .into(binding.image1)
                 }
             }
-            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.apply {
-                flexWrap = FlexWrap.WRAP
-                flexDirection = FlexDirection.ROW
-                alignItems = AlignItems.FLEX_START
-                justifyContent = JustifyContent.FLEX_START
-            }
+            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter
             lifecycleScope.launchWhenCreated {
@@ -281,7 +278,8 @@ class UserFragment : Fragment() {
         @FlowPreview
         fun bind(item: JImageItem) {
             tag = item
-            binding.root.minimumWidth = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * item.preview_width / item.preview_height
+            val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * 0.75F
+            binding.root.minimumWidth = (height * item.preview_width / item.preview_height).roundToInt()
             bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
     }
