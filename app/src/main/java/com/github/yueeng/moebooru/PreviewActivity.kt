@@ -405,9 +405,9 @@ class PreviewFragment : Fragment() {
             if (item.source.isNotEmpty()) {
                 common.add(Tag(Tag.TYPE_URL, "Source", item.source))
             }
-            listOf(item.file_url to item.file_size, item.jpeg_url to item.jpeg_file_size).filter { it.first.isNotEmpty() }.forEach { i ->
+            listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size).filter { it.first.isNotEmpty() }.forEach { i ->
                 val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
-                val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" }}"
+                val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
                 common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
             }
             val tags = item.tags.split(' ').map {
