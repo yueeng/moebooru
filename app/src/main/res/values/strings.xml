@@ -83,6 +83,7 @@
     <string name="saved_tags">Tags</string>
     <string name="saved_title">Save tag</string>
 
+    <string name="settings_cache_size">Http disk cache size</string>
     <string name="settings_daynight_auto">Auto</string>
     <string name="settings_daynight_day">Day</string>
     <string name="settings_daynight_mode">Day night mode</string>
@@ -94,10 +95,12 @@
     </string-array>
     <string name="settings_daynight_night">Night</string>
     <string name="settings_daynight_system">System</string>
+    <string name="settings_high_quality">Download high quality image</string>
+    <string name="settings_high_quality_on">Png or Original Jpeg</string>
+    <string name="settings_high_quality_off">The same size Jpeg</string>
     <string name="settings_safe_mode">Safe mode</string>
     <string name="settings_safe_turn_off">All</string>
     <string name="settings_safe_turn_on">Safe</string>
-    <string name="settings_cache_size">Http disk cache size</string>
 
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>

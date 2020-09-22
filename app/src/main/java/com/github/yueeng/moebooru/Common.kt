@@ -575,6 +575,8 @@ object Save {
         r.replace(i, ' ')
     }
 
+    val String.fileName get() = encode(toHttpUrl().pathSegments.last())
+
     class SaveWorker(private val context: Context, private val params: WorkerParameters) : CoroutineWorker(context, params) {
         @FlowPreview
         @ExperimentalTime
@@ -642,9 +644,10 @@ object Save {
                 notify.createNotificationChannel(channel)
             }
         }
+        val fileName = if (key == null) item.jpeg_url.fileName else item.source_url.fileName
         val notification = NotificationCompat.Builder(MainApplication.instance(), moeHost)
             .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
-            .setContentText(item.jpeg_file_name)
+            .setContentText(fileName)
             .setSmallIcon(R.drawable.ic_stat_name)
             .setOngoing(true)
         info.observe(ProcessLifecycleOwner.get(), Observer {
@@ -657,7 +660,7 @@ object Save {
                 WorkInfo.State.RUNNING -> Unit
                 WorkInfo.State.SUCCEEDED -> {
                     if (tip) {
-                        val extension = MimeTypeMap.getFileExtensionFromUrl(item.jpeg_file_name)
+                        val extension = MimeTypeMap.getFileExtensionFromUrl(fileName)
                         val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
                         val intent = Intent(Intent.ACTION_VIEW).apply {
                             type = mime ?: "image/$extension"
@@ -667,7 +670,7 @@ object Save {
                         }
                         val padding = PendingIntent.getActivity(MainApplication.instance(), item.id, Intent.createChooser(intent, MainApplication.instance().getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
                         notification.apply {
-                            setContentText(item.jpeg_file_name)
+                            setContentText(fileName)
                             setProgress(0, 0, false)
                             setOngoing(false)
                             setAutoCancel(true)

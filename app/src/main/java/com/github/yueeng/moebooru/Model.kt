@@ -97,7 +97,7 @@ data class JImageItem(
     val tags: String,
     val width: Int
 ) : Parcelable {
-    val jpeg_file_name get() = Save.encode(jpeg_url.toHttpUrl().pathSegments.last())
+    val source_url get() = if (MoeSettings.quality.value!!) file_url else jpeg_url
     val mpixels get() = width * height
     val resolution get() = Resolution.values().firstOrNull { mpixels >= it.resolution } ?: Resolution.ZERO
 }

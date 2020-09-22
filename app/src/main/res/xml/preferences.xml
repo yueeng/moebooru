@@ -16,6 +16,13 @@
         android:summaryOff="@string/settings_safe_turn_off"
         android:summaryOn="@string/settings_safe_turn_on"
         android:title="@string/settings_safe_mode" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:icon="@drawable/ic_high_quality"
+        android:key="app.high_quality"
+        android:summaryOff="@string/settings_high_quality_off"
+        android:summaryOn="@string/settings_high_quality_on"
+        android:title="@string/settings_high_quality" />
     <SeekBarPreference
         android:defaultValue="256"
         android:icon="@drawable/ic_storage"
