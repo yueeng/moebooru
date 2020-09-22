@@ -91,8 +91,6 @@
     <string name="settings_animation_off">默认</string>
     <string name="settings_animation_on">动画</string>
     <string name="settings_cache_size">网络缓存</string>
-    <string name="settings_daynight_auto">自动</string>
-    <string name="settings_daynight_day">白天</string>
     <string name="settings_daynight_mode">夜间模式</string>
     <string-array name="settings_daynight_names">
         <item>跟随系统</item>
@@ -100,8 +98,6 @@
         <item>夜晚模式</item>
         <item>跟随电量</item>
     </string-array>
-    <string name="settings_daynight_night">夜晚</string>
-    <string name="settings_daynight_system">跟随系统</string>
     <string name="settings_high_quality">下载高质量图片</string>
     <string name="settings_high_quality_off">相同大小的Jpeg</string>
     <string name="settings_high_quality_on">Png 或 Jpeg原图</string>
@@ -112,7 +108,6 @@
     <string name="user_change_email">变更邮箱</string>
     <string name="user_change_pwd">变更密码</string>
     <string name="user_email">邮箱</string>
-    <string name="user_email_current">当前邮箱</string>
     <string name="user_login">登录</string>
     <string name="user_logout">登出</string>
     <string name="user_name">用户名</string>
