@@ -631,11 +631,10 @@ object Save {
         return work.firstOrNull()?.state
     }
 
-    fun save(item: JImageItem, target: Uri, key: String? = null, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
-        val url = item.jpeg_url
+    fun save(id: Int, url: String, target: Uri, key: String? = null, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
         val params = Data.Builder().putString("url", url)
             .putString("target", target.toString())
-            .putInt("id", item.id).build()
+            .putInt("id", id).build()
         val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
         val manager = WorkManager.getInstance(MainApplication.instance()).apply {
             if (key == null) enqueue(request) else enqueueUniqueWork(key, ExistingWorkPolicy.KEEP, request)
@@ -647,7 +646,7 @@ object Save {
                 notify.createNotificationChannel(channel)
             }
         }
-        val fileName = if (key == null) item.jpeg_url.fileName else item.source_url.fileName
+        val fileName = url.fileName
         val notification = NotificationCompat.Builder(MainApplication.instance(), moeHost)
             .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
             .setContentText(fileName)
@@ -658,7 +657,7 @@ object Save {
                 WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
                     notification.setProgress(0, 0, true)
                         .setContentText(MainApplication.instance().getString(R.string.download_ready))
-                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                    NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
                 }
                 WorkInfo.State.RUNNING -> Unit
                 WorkInfo.State.SUCCEEDED -> {
@@ -671,7 +670,7 @@ object Save {
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
-                        val padding = PendingIntent.getActivity(MainApplication.instance(), item.id, Intent.createChooser(intent, MainApplication.instance().getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
+                        val padding = PendingIntent.getActivity(MainApplication.instance(), id, Intent.createChooser(intent, MainApplication.instance().getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
                         notification.apply {
                             setContentText(fileName)
                             setProgress(0, 0, false)
@@ -684,17 +683,17 @@ object Save {
                                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                                     notification.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
                                         .setLargeIcon(resource)
-                                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                                    NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
                                 }
 
                                 override fun onLoadFailed(errorDrawable: Drawable?) {
-                                    NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                                    NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
                                 }
 
                                 override fun onLoadCleared(placeholder: Drawable?) = Unit
                             })
                     } else {
-                        NotificationManagerCompat.from(MainApplication.instance()).cancel(item.id)
+                        NotificationManagerCompat.from(MainApplication.instance()).cancel(id)
                     }
                 }
                 WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
@@ -705,9 +704,9 @@ object Save {
                             setOngoing(false)
                             setAutoCancel(true)
                         }
-                        NotificationManagerCompat.from(MainApplication.instance()).notify(item.id, notification.build())
+                        NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
                     } else {
-                        NotificationManagerCompat.from(MainApplication.instance()).cancel(item.id)
+                        NotificationManagerCompat.from(MainApplication.instance()).cancel(id)
                     }
                 }
             }

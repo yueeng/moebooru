@@ -115,25 +115,8 @@ class PreviewFragment : Fragment() {
                 override fun onPageSelected(position: Int) {
                     val item = adapter.snapshot()[position] ?: return
                     lifecycleScope.launchWhenCreated {
-                        val common = listOf(
-                            Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
-                            Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
-                            Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
-                        ).toMutableList()
-                        if (item.has_children) {
-                            common.add(Tag(Tag.TYPE_CHILDREN, "Children", "parent:${item.id}"))
-                        }
-                        if (item.parent_id != 0) {
-                            common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
-                        }
-                        if (item.source.isNotEmpty()) {
-                            common.add(Tag(Tag.TYPE_URL, "Source", item.source))
-                        }
-                        val tags = item.tags.split(' ').map {
-                            withContext(Dispatchers.IO) { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
-                        }.mapNotNull { it.await() }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
+                        tagAdapter.submit(item)
                         TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
-                        tagAdapter.submitList((common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag)))
                     }
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher)
@@ -143,61 +126,7 @@ class PreviewFragment : Fragment() {
             })
             binding.button1.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
-                fun download() {
-                    val filename = item.source_url.fileName
-                    val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
-                    val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-                    val values = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                        put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                        put(MediaStore.MediaColumns.ARTIST, item.author.toTitleCase())
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            put(MediaStore.MediaColumns.IS_PENDING, true)
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
-                        }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            put(MediaStore.MediaColumns.ALBUM, moeHost)
-                        }
-                    }
-                    val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
-                    Save.save(item, target, "save-${item.id}") {
-                        it?.let {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                values.clear()
-                                values.put(MediaStore.MediaColumns.IS_PENDING, false)
-                                requireContext().contentResolver.update(target, values, null, null)
-                            }
-                        }
-                    }
-                }
-
-                fun check() {
-                    lifecycleScope.launchWhenCreated {
-                        when (Save.check("save-${item.id}")) {
-                            WorkInfo.State.ENQUEUED,
-                            WorkInfo.State.BLOCKED,
-                            WorkInfo.State.RUNNING -> {
-                                Toast.makeText(requireContext(), getString(R.string.download_running), Toast.LENGTH_SHORT).show()
-                                return@launchWhenCreated
-                            }
-                            WorkInfo.State.SUCCEEDED -> {
-                                Snackbar.make(it, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
-                                    .setAnchorView(it)
-                                    .setAction(R.string.app_ok) {
-                                        download()
-                                    }
-                                    .show()
-                                return@launchWhenCreated
-                            }
-                            else -> download()
-                        }
-                    }
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
-                    TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
-                        check()
-                    }.check()
-                }
+                download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author)
             }
             binding.button2.setOnClickListener {
                 if (!OAuth.available) {
@@ -246,7 +175,7 @@ class PreviewFragment : Fragment() {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
                     val file = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                     val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
-                    Save.save(item, uri) {
+                    Save.save(item.id, item.jpeg_url, uri) {
                         it?.let { uri ->
                             requireContext().contentResolver.openInputStream(uri)?.use { stream ->
                                 WallpaperManager.getInstance(requireContext()).setStream(stream)
@@ -258,7 +187,7 @@ class PreviewFragment : Fragment() {
             binding.button6.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_url.fileName)
-                Save.save(item, Uri.fromFile(file), tip = false) {
+                Save.save(item.id, item.jpeg_url, Uri.fromFile(file), tip = false) {
                     it?.let { source ->
                         lifecycleScope.launchWhenCreated {
                             val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
@@ -280,6 +209,65 @@ class PreviewFragment : Fragment() {
                 startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
             }
         }.root
+
+    private fun download(id: Int, url: String, author: String) {
+        val binding = FragmentPreviewBinding.bind(requireView())
+        fun download() {
+            val filename = url.fileName
+            val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
+            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                put(MediaStore.MediaColumns.ARTIST, author.toTitleCase())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.IS_PENDING, true)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    put(MediaStore.MediaColumns.ALBUM, moeHost)
+                }
+            }
+            val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
+            Save.save(id, url, target, "save-${id}") {
+                it?.let {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        values.clear()
+                        values.put(MediaStore.MediaColumns.IS_PENDING, false)
+                        requireContext().contentResolver.update(target, values, null, null)
+                    }
+                }
+            }
+        }
+
+        fun check() {
+            lifecycleScope.launchWhenCreated {
+                when (Save.check("save-${id}")) {
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.BLOCKED,
+                    WorkInfo.State.RUNNING -> {
+                        Toast.makeText(requireContext(), getString(R.string.download_running), Toast.LENGTH_SHORT).show()
+                        return@launchWhenCreated
+                    }
+                    WorkInfo.State.SUCCEEDED -> {
+                        Snackbar.make(binding.button1, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
+                            .setAnchorView(binding.button1)
+                            .setAction(R.string.app_ok) {
+                                download()
+                            }
+                            .show()
+                        return@launchWhenCreated
+                    }
+                    else -> download()
+                }
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
+            TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
+                check()
+            }.check()
+        }
+    }
 
     private val cropShare = registerForActivityResult(CropImage()) { result ->
         val item = previewModel.crop.value ?: return@registerForActivityResult
@@ -388,6 +376,7 @@ class PreviewFragment : Fragment() {
                 val tag = data[bindingAdapterPosition]
                 when (tag.type) {
                     Tag.TYPE_URL -> requireContext().openWeb(tag.tag)
+                    Tag.TYPE_DOWNLOAD -> download(item!!.id, tag.tag, item!!.author)
                     else -> {
                         val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                         startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
@@ -397,5 +386,34 @@ class PreviewFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: TagHolder, position: Int) = holder.bind(data[position])
+
+        var item: JImageItem? = null
+        suspend fun submit(item: JImageItem) {
+            this.item = item
+
+            val common = listOf(
+                Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
+                Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
+                Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
+            ).toMutableList()
+            if (item.has_children) {
+                common.add(Tag(Tag.TYPE_CHILDREN, "Children", "parent:${item.id}"))
+            }
+            if (item.parent_id != 0) {
+                common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
+            }
+            if (item.source.isNotEmpty()) {
+                common.add(Tag(Tag.TYPE_URL, "Source", item.source))
+            }
+            listOf(item.file_url to item.file_size, item.jpeg_url to item.jpeg_file_size).filter { it.first.isNotEmpty() }.forEach { i ->
+                val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
+                val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" }}"
+                common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
+            }
+            val tags = item.tags.split(' ').map {
+                withContext(Dispatchers.IO) { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
+            }.mapNotNull { it.await() }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
+            tagAdapter.submitList((common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag)))
+        }
     }
 }
