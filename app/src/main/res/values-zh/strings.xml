@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
+    <string name="app_about">关于</string>
     <string name="app_cancel">取消</string>
     <string name="app_complete">成功</string>
     <string name="app_download">%1$s 下载</string>
     <string name="app_failed">失败</string>
+    <string name="app_github">GitHub</string>
     <string name="app_go">跳转</string>
     <string name="app_ok">确定</string>
     <string name="app_resolution">%1$dx%2$d[%3$s]</string>
@@ -11,6 +13,8 @@
     <string name="app_search">搜索</string>
     <string name="app_settings">设置</string>
     <string name="app_share">分享</string>
+    <string name="app_update">检查更新</string>
+    <string name="app_version">%1$s v%2$s</string>
 
     <string name="download_exists">已经下载过了，要重新下载吗？</string>
     <string name="download_ready">准备中</string>

@@ -47,6 +47,8 @@ val moeHost = MainApplication.instance().getString(R.string.app_host)
 val moeUrl = "https://$moeHost"
 val moeSummaryUrl = "$moeUrl/tag/summary.json"
 val moeSummaryEtag = MainApplication.instance().getString(R.string.app_summary_etag)
+const val github = "https://github.com/yueeng/moebooru"
+const val release = "$github/releases"
 
 enum class Resolution(val title: String, val resolution: Int) {
     R8K("8K", 7680 * 4320),

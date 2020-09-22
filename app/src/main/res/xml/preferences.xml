@@ -38,4 +38,16 @@
         android:title="@string/settings_cache_size"
         app:min="256"
         app:showSeekBarValue="true" />
+    <Preference
+        android:icon="@drawable/ic_github"
+        android:key="github"
+        android:title="@string/app_github" />
+    <Preference
+        android:icon="@drawable/ic_update"
+        android:key="update"
+        android:title="@string/app_update" />
+    <Preference
+        android:icon="@drawable/ic_about"
+        android:key="about"
+        android:title="@string/app_about" />
 </PreferenceScreen>

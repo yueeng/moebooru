@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SeekBarPreference
@@ -15,6 +16,7 @@ class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setSupportActionBar(findViewById(R.id.toolbar))
+        supportActionBar?.setLogo(R.mipmap.ic_launcher_round)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? SettingsFragment ?: SettingsFragment()
         supportFragmentManager.beginTransaction().replace(R.id.preferences, fragment).commit()
     }
@@ -29,6 +31,21 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     seek.summary = (it * (1L shl 20)).sizeString()
                 }
             }
+        }
+        findPreference<Preference>("github")?.let {
+            it.setOnPreferenceClickListener {
+                requireContext().openWeb(github)
+                true
+            }
+        }
+        findPreference<Preference>("update")?.let {
+            it.setOnPreferenceClickListener {
+                requireContext().openWeb(release)
+                true
+            }
+        }
+        findPreference<Preference>("about")?.let {
+            it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME)
         }
     }
 }
