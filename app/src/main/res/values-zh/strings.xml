@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="app_cancel">取消</string>
+    <string name="app_complete">成功</string>
+    <string name="app_download">%1$s 下载</string>
+    <string name="app_failed">失败</string>
+    <string name="app_go">跳转</string>
+    <string name="app_ok">确定</string>
+    <string name="app_resolution">%1$dx%2$d[%3$s]</string>
+    <string name="app_retry">重试</string>
+    <string name="app_search">搜索</string>
+    <string name="app_settings">设置</string>
+    <string name="app_share">分享</string>
+
+    <string name="download_exists">已经下载过了，要重新下载吗？</string>
+    <string name="download_ready">准备中</string>
+    <string name="download_running">已经在下载队列中，请等待</string>
+
+    <string name="query_date">时间</string>
+    <string name="query_date_desc">按创建日期搜索.</string>
+    <string name="query_empty">无效输入</string>
+    <string name="query_height">高</string>
+    <string name="query_height_desc">按图片高搜索.</string>
+    <string name="query_id">ID</string>
+    <string name="query_id_desc">按图片ID搜索.</string>
+    <string name="query_keyword">关键字</string>
+    <string name="query_keyword_desc">按关键字搜索.</string>
+    <string name="query_md5">MD5</string>
+    <string name="query_md5_desc">按MD5哈希搜索.</string>
+    <string name="query_mpixels">像素</string>
+    <string name="query_mpixels_desc">按像素数搜索（百万）.</string>
+    <string name="query_order">排序</string>
+    <string name="query_order_desc">排序结果.</string>
+    <string name="query_order_id">按图片ID排序.</string>
+    <string name="query_order_id_desc">按图片ID升序排序.</string>
+    <string name="query_order_landscape">横屏图片排序.</string>
+    <string name="query_order_mpixels">按图片像素数排序.</string>
+    <string name="query_order_mpixels_asc">按图片像素数升序排序.</string>
+    <string name="query_order_portrait">竖屏图片排序.</string>
+    <string name="query_order_score">按图片评分排序.</string>
+    <string name="query_order_score_asc">按图片评分升序排序.</string>
+    <string name="query_order_vote">按投票图片排序（只包含有效投票图片）</string>
+    <string name="query_parent">所属</string>
+    <string name="query_parent_desc">按图片所属搜索（包含图片）.</string>
+    <string name="query_pool">专辑</string>
+    <string name="query_pool_desc">按专辑搜索.</string>
+    <string name="query_rating">分级</string>
+    <string name="query_rating__explicit">排除限制评级图片.</string>
+    <string name="query_rating__questionable">排除可疑评级图片.</string>
+    <string name="query_rating__safe">排除安全评级图片.</string>
+    <string name="query_rating_desc">按分级搜索.</string>
+    <string name="query_rating_explicit">显示限制评级图片.</string>
+    <string name="query_rating_questionable">显示可疑评级图片.</string>
+    <string name="query_rating_safe">显示安全评级图片.</string>
+    <string name="query_score">得分</string>
+    <string name="query_score_desc">按得分搜索.</string>
+    <string name="query_sheet_begin">开始</string>
+    <string name="query_sheet_end">结束</string>
+    <string name="query_source">来源</string>
+    <string name="query_source_desc">按图片来源搜索.</string>
+    <string name="query_user">用户</string>
+    <string name="query_user_desc">按上传用户搜索.</string>
+    <string name="query_value_bt">区间</string>
+    <string name="query_value_eq">等于</string>
+    <string name="query_value_ge">大于等于</string>
+    <string name="query_value_gt">大于</string>
+    <string name="query_value_le">小于等于</string>
+    <string name="query_value_lt">小于</string>
+    <string name="query_vote">投票</string>
+    <string name="query_vote_desc">按指定用户评分搜索.</string>
+    <string name="query_vote_star_1">1星</string>
+    <string name="query_vote_star_2">2星</string>
+    <string name="query_vote_star_3">3星</string>
+    <string name="query_vote_star_yours">你的评分 %1$d星</string>
+    <string name="query_vote_user">用户名</string>
+    <string name="query_width">宽</string>
+    <string name="query_width_desc">按图片宽搜索.</string>
+
+    <string name="saved_edit">编辑</string>
+    <string name="saved_empty">不能保存空白标签</string>
+    <string name="saved_pin">固定</string>
+    <string name="saved_pin_desc">添加到主页</string>
+    <string name="saved_tags">标签</string>
+    <string name="saved_title">保存标签</string>
+
+    <string name="settings_daynight_auto">自动</string>
+    <string name="settings_daynight_day">白天</string>
+    <string name="settings_daynight_mode">夜间模式</string>
+    <string-array name="settings_daynight_names">
+        <item>跟随系统</item>
+        <item>白天模式</item>
+        <item>夜晚模式</item>
+        <item>跟随电量</item>
+    </string-array>
+    <string name="settings_daynight_night">夜晚</string>
+    <string name="settings_daynight_system">跟随系统</string>
+    <string name="settings_safe_mode">安全模式</string>
+    <string name="settings_safe_turn_off">全部</string>
+    <string name="settings_safe_turn_on">安全</string>
+
+    <string name="user_change_email">变更邮箱</string>
+    <string name="user_change_pwd">变更密码</string>
+    <string name="user_email">邮箱</string>
+    <string name="user_email_current">当前邮箱</string>
+    <string name="user_login">登录</string>
+    <string name="user_logout">登出</string>
+    <string name="user_name">用户名</string>
+    <string name="user_pwd">密码</string>
+    <string name="user_pwd_confirm">确认密码</string>
+    <string name="user_pwd_current">当前密码</string>
+    <string name="user_pwd_diff">密码不一致</string>
+    <string name="user_register">注册</string>
+    <string name="user_reset">重置</string>
+    <string name="settings_cache_size">网络缓存</string>
+</resources>

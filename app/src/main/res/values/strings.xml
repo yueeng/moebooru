@@ -86,24 +86,19 @@
     <string name="settings_daynight_auto">Auto</string>
     <string name="settings_daynight_day">Day</string>
     <string name="settings_daynight_mode">Day night mode</string>
+    <string-array name="settings_daynight_names">
+        <item>Follow System</item>
+        <item>Day Mode</item>
+        <item>Night Mode</item>
+        <item>Follow Battery Saver Mode</item>
+    </string-array>
     <string name="settings_daynight_night">Night</string>
     <string name="settings_daynight_system">System</string>
     <string name="settings_safe_mode">Safe mode</string>
     <string name="settings_safe_turn_off">All</string>
     <string name="settings_safe_turn_on">Safe</string>
+    <string name="settings_cache_size">Http disk cache size</string>
 
-    <string-array name="settings_daynight_names">
-        <item>System</item>
-        <item>Day</item>
-        <item>Night</item>
-        <item>Auto</item>
-    </string-array>
-    <string-array name="settings_daynight_values">
-        <item>-1</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-    </string-array>
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>
     <string name="user_email">Email</string>
