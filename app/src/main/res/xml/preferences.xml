@@ -10,7 +10,7 @@
         android:title="@string/settings_daynight_mode"
         app:useSimpleSummaryProvider="true" />
     <SwitchPreference
-        android:defaultValue="true"
+        android:defaultValue="false"
         android:icon="@drawable/ic_safe"
         android:key="app.safe_mode"
         android:summaryOff="@string/settings_safe_turn_off"
@@ -23,6 +23,13 @@
         android:summaryOff="@string/settings_high_quality_off"
         android:summaryOn="@string/settings_high_quality_on"
         android:title="@string/settings_high_quality" />
+    <SwitchPreference
+        android:defaultValue="false"
+        android:icon="@drawable/ic_anim"
+        android:key="app.animation"
+        android:summaryOff="@string/settings_animation_off"
+        android:summaryOn="@string/settings_animation_on"
+        android:title="@string/settings_animation" />
     <SeekBarPreference
         android:defaultValue="256"
         android:icon="@drawable/ic_storage"
