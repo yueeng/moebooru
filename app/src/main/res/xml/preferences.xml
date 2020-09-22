@@ -21,7 +21,7 @@
         android:icon="@drawable/ic_storage"
         android:key="app.cache_size"
         android:max="2048"
-        android:title="Disk Cache Size"
+        android:title="@string/settings_cache_size"
         app:min="256"
         app:showSeekBarValue="true" />
 </PreferenceScreen>
