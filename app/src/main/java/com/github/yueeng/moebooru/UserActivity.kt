@@ -51,7 +51,7 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
 class UserFragment : Fragment() {
     private val busy = MutableLiveData(false)
     private val mine by lazy { arguments?.containsKey("name") != true }
-    private val model: UserViewModel by sharedViewModels(arguments?.getString("name") ?: "") { UserViewModelFactory(this, arguments) }
+    private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
