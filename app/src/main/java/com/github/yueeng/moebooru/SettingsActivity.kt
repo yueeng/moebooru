@@ -16,7 +16,6 @@ class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setSupportActionBar(findViewById(R.id.toolbar))
-        supportActionBar?.setLogo(R.mipmap.ic_launcher_round)
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? SettingsFragment ?: SettingsFragment()
         supportFragmentManager.beginTransaction().replace(R.id.preferences, fragment).commit()
     }
