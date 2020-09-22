@@ -764,6 +764,8 @@ fun Context.notifyImageComplete(uri: Uri, id: Int, title: String, content: Strin
         })
 }
 
+fun Context.openWeb(uri: String) = startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+
 class AlphaBlackBitmapTransformation : BitmapTransformation() {
     companion object {
         private const val VERSION = 1

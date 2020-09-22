@@ -60,6 +60,11 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
             ?: PreviewFragment().also { it.arguments = intent.extras }
         supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
     }
+
+    override fun onBackPressed() {
+        if ((supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment)?.onBackPressed() == true) return
+        super.onBackPressed()
+    }
 }
 
 class PreviewViewModel(handle: SavedStateHandle) : ViewModel() {
@@ -118,6 +123,9 @@ class PreviewFragment : Fragment() {
                         }
                         if (item.parent_id != 0) {
                             common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
+                        }
+                        if (item.source.isNotEmpty()) {
+                            common.add(Tag(Tag.TYPE_URL, "Source", item.source))
                         }
                         val tags = item.tags.split(' ').map {
                             withContext(Dispatchers.IO) { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
@@ -308,6 +316,14 @@ class PreviewFragment : Fragment() {
         }
     }
 
+    fun onBackPressed(): Boolean {
+        val binding = FragmentPreviewBinding.bind(requireView())
+        val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
+        val open = bottomSheetBehavior.isOpen
+        if (open) bottomSheetBehavior.close()
+        return open
+    }
+
     inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root), LifecycleOwner {
         init {
             binding.image1.setBitmapDecoderClass(GlideDecoder::class.java)
@@ -379,8 +395,14 @@ class PreviewFragment : Fragment() {
         private val data get() = currentList
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)).apply {
             binding.root.setOnClickListener {
-                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(data[bindingAdapterPosition].tag)), options.toBundle())
+                val tag = data[bindingAdapterPosition]
+                when (tag.type) {
+                    Tag.TYPE_URL -> requireContext().openWeb(tag.tag)
+                    else -> {
+                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
+                    }
+                }
             }
         }
 
