@@ -225,7 +225,7 @@ object ProgressBehavior {
     }
 }
 
-@FlowPreview
+@OptIn(FlowPreview::class)
 @SuppressLint("CheckResult")
 fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRequest<T> {
     progressBar.progress = 0
@@ -340,7 +340,6 @@ val random = Random(System.currentTimeMillis())
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
     Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
 
-@FlowPreview
 fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBar?, placeholder: Int?) {
     if (imageUrl.isNullOrEmpty()) return
     view.scaleType = ImageView.ScaleType.CENTER
@@ -583,7 +582,7 @@ object Save {
     val String.fileName get() = encode(toHttpUrl().pathSegments.last())
 
     class SaveWorker(private val context: Context, private val params: WorkerParameters) : CoroutineWorker(context, params) {
-        @FlowPreview
+        @OptIn(FlowPreview::class)
         @ExperimentalTime
         override suspend fun doWork(): Result = try {
             val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()

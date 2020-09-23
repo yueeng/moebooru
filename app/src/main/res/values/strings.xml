@@ -75,8 +75,8 @@
     <string name="query_vote_star_1">★</string>
     <string name="query_vote_star_2">★★</string>
     <string name="query_vote_star_3">★★★</string>
-    <string name="query_vote_star_yours">You star %1$d</string>
     <string name="query_vote_star_title">%1$s [%2$d]</string>
+    <string name="query_vote_star_yours">You star %1$d</string>
     <string name="query_vote_user">User</string>
     <string name="query_width">Width</string>
     <string name="query_width_desc">Query posts with a width of ….</string>
@@ -89,8 +89,17 @@
     <string name="saved_title">Save tag</string>
 
     <string name="settings_animation">Switch page animation</string>
-    <string name="settings_animation_off">Default</string>
-    <string name="settings_animation_on">Animation</string>
+    <string-array name="settings_animation_names">
+        <item>Shared Elements</item>
+        <item>Elevation Scale</item>
+        <item>Fade Through</item>
+        <item>Axis X</item>
+        <item>Axis Y</item>
+        <item>Axis Z</item>
+        <item>Explode</item>
+        <item>Slide</item>
+        <item>Default</item>
+    </string-array>
     <string name="settings_cache_size">Http disk cache size</string>
     <string name="settings_daynight_mode">Day night mode</string>
     <string-array name="settings_daynight_names">

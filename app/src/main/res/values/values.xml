@@ -9,4 +9,15 @@
         <item>2</item>
         <item>3</item>
     </string-array>
+    <string-array name="settings_animation_values">
+        <item>shared</item>
+        <item>scale</item>
+        <item>fade</item>
+        <item>axis_x</item>
+        <item>axis_y</item>
+        <item>axis_z</item>
+        <item>explode</item>
+        <item>slide</item>
+        <item>default</item>
+    </string-array>
 </resources>

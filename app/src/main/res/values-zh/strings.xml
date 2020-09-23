@@ -75,8 +75,8 @@
     <string name="query_vote_star_1">1星</string>
     <string name="query_vote_star_2">2星</string>
     <string name="query_vote_star_3">3星</string>
-    <string name="query_vote_star_yours">你的评分 %1$d星</string>
     <string name="query_vote_star_title">%1$s [%2$d]</string>
+    <string name="query_vote_star_yours">你的评分 %1$d星</string>
     <string name="query_vote_user">用户名</string>
     <string name="query_width">宽</string>
     <string name="query_width_desc">按图片宽搜索.</string>
@@ -89,8 +89,17 @@
     <string name="saved_title">保存标签</string>
 
     <string name="settings_animation">动画页面跳转</string>
-    <string name="settings_animation_off">默认</string>
-    <string name="settings_animation_on">动画</string>
+    <string-array name="settings_animation_names">
+        <item>共享元素</item>
+        <item>缩放</item>
+        <item>淡入</item>
+        <item>X轴</item>
+        <item>Y轴</item>
+        <item>Z轴</item>
+        <item>爆炸</item>
+        <item>侧移</item>
+        <item>默认</item>
+    </string-array>
     <string name="settings_cache_size">网络缓存</string>
     <string name="settings_daynight_mode">夜间模式</string>
     <string-array name="settings_daynight_names">
