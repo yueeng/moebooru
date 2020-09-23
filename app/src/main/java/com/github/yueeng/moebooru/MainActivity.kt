@@ -73,55 +73,69 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             }
             "scale" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                window.enterTransition = MaterialElevationScale(true)
-                window.exitTransition = MaterialElevationScale(false)
-                window.allowEnterTransitionOverlap = true
+                val growingUp = MaterialElevationScale(true)
+                val growingDown = MaterialElevationScale(false)
+                window.enterTransition = growingUp
+                window.exitTransition = growingDown
+                window.reenterTransition = growingUp
+                window.returnTransition = growingDown
             }
             "fade" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                window.enterTransition = MaterialFadeThrough()
-                window.exitTransition = MaterialFadeThrough()
-                window.allowEnterTransitionOverlap = true
+                val fade = MaterialFadeThrough()
+                window.enterTransition = fade
+                window.exitTransition = fade
+                window.reenterTransition = fade
+                window.returnTransition = fade
             }
             "axis_x" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                window.reenterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, false)
-                window.exitTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, true)
-                window.enterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, true)
-                window.returnTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, false)
-                window.allowEnterTransitionOverlap = true
+                val forward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, true)
+                val backward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, false)
+                window.reenterTransition = backward
+                window.exitTransition = forward
+                window.enterTransition = forward
+                window.returnTransition = backward
             }
             "axis_y" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                window.reenterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, false)
-                window.exitTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, true)
-                window.enterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, true)
-                window.returnTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, false)
-                window.allowEnterTransitionOverlap = true
+                val forward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, true)
+                val backward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, false)
+                window.reenterTransition = backward
+                window.exitTransition = forward
+                window.enterTransition = forward
+                window.returnTransition = backward
             }
             "axis_z" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                window.reenterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, false)
-                window.exitTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, true)
-                window.enterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, true)
-                window.returnTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, false)
-                window.allowEnterTransitionOverlap = true
+                val forward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, true)
+                val backward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, false)
+                window.reenterTransition = backward
+                window.exitTransition = forward
+                window.enterTransition = forward
+                window.returnTransition = backward
             }
             "explode" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val trans = WindowTransitionSet().addTransition(Explode()).addTransition(Fade())
-                window.enterTransition = trans
-                window.exitTransition = trans
-                window.allowEnterTransitionOverlap = true
+                val explodeFade = WindowTransitionSet().addTransition(Explode()).addTransition(Fade())
+                window.enterTransition = explodeFade
+                window.exitTransition = explodeFade
+                window.returnTransition = explodeFade
+                window.reenterTransition = explodeFade
             }
             "slide" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                window.enterTransition = Slide(Gravity.END)
-                window.exitTransition = Slide(Gravity.START)
-                window.allowEnterTransitionOverlap = true
+                val start = WindowTransitionSet().addTransition(Slide(Gravity.START)).addTransition(Fade())
+                val end = WindowTransitionSet().addTransition(Slide(Gravity.END)).addTransition(Fade())
+                window.enterTransition = end
+                window.exitTransition = start
+                window.returnTransition = end
+                window.reenterTransition = start
             }
             else -> Unit
         }
+//        window.allowEnterTransitionOverlap = false
+//        window.allowReturnTransitionOverlap = false
     }
 
     @OptIn(FlowPreview::class)
