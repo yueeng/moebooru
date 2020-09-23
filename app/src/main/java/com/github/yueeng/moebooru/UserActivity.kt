@@ -80,7 +80,7 @@ class UserFragment : Fragment() {
         else -> super.onOptionsItemSelected(item)
     }
 
-    @FlowPreview
+    @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
@@ -275,7 +275,6 @@ class UserFragment : Fragment() {
 
         var tag: JImageItem? = null
 
-        @FlowPreview
         fun bind(item: JImageItem) {
             tag = item
             val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * 0.75F
@@ -299,7 +298,6 @@ class UserFragment : Fragment() {
             else -> throw IllegalArgumentException()
         }
 
-        @FlowPreview
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int): Unit = when (holder) {
             is TitleHolder -> holder.bind(getItem(position) as Title)
             is TagHolder -> holder.bind(getItem(position) as Tag)
@@ -431,7 +429,6 @@ class StarFragment : Fragment() {
             }
         }
 
-        @FlowPreview
         override fun bind(value: ItemUser) {
             super.bind(value)
             GlideApp.with(binding.image1).load(value.face)
@@ -455,7 +452,6 @@ class StarFragment : Fragment() {
             else -> throw  IllegalArgumentException()
         }
 
-        @FlowPreview
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = when (holder) {
             is TitleHolder -> holder.bind(getItem(position) as Title)
             is StarHolder -> holder.bind(getItem(position) as ItemUser)

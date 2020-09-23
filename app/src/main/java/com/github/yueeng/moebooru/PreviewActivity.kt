@@ -319,7 +319,7 @@ class PreviewFragment : Fragment() {
             })
         }
 
-        @FlowPreview
+        @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
             binding.progress.isVisible = true
             lifecycleScope.launchWhenCreated {
@@ -340,7 +340,6 @@ class PreviewFragment : Fragment() {
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
-        @FlowPreview
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =

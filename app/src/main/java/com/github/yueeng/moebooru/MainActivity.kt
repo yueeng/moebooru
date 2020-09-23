@@ -6,6 +6,9 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.transition.Explode
+import android.transition.Fade
+import android.transition.Slide
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.use
@@ -24,44 +27,111 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
-import com.google.android.material.transition.platform.MaterialArcMotion
-import com.google.android.material.transition.platform.MaterialContainerTransform
-import com.google.android.material.transition.platform.MaterialContainerTransformSharedElementCallback
+import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flattenMerge
+import kotlinx.coroutines.flow.flowOf
 import java.util.*
+import android.transition.TransitionSet as WindowTransitionSet
+import com.google.android.material.transition.platform.MaterialSharedAxis as WindowMaterialSharedAxis
 
 open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
     override fun startActivity(intent: Intent?, options: Bundle?) =
-        super.startActivity(intent, if (MoeSettings.animation.value == true) options else null)
+        super.startActivity(
+            intent, when (MoeSettings.animation.value) {
+                "shared" -> options
+                "scale", "explode", "fade", "slide", "axis_x", "axis_y", "axis_z" -> ActivityOptions.makeSceneTransitionAnimation(this).toBundle()
+                else -> null
+            }
+        )
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        if (MoeSettings.animation.value == true) {
-            window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-            findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
-            setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-            setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-            val background = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground)).use {
-                it.getColor(0, Color.WHITE)
+    private fun ensureTransform() {
+        when (MoeSettings.animation.value) {
+            "shared" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
+                setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
+                setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
+                val background = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground)).use {
+                    it.getColor(0, Color.WHITE)
+                }
+                window.sharedElementEnterTransition = MaterialContainerTransform().apply {
+                    addTarget(android.R.id.content)
+                    pathMotion = MaterialArcMotion()
+                    endContainerColor = background
+                    duration = 400L
+                }
+                window.sharedElementReturnTransition = MaterialContainerTransform().apply {
+                    addTarget(android.R.id.content)
+                    pathMotion = MaterialArcMotion()
+                    startContainerColor = background
+                    duration = 300L
+                }
+                window.allowEnterTransitionOverlap = true
             }
-            window.sharedElementEnterTransition = MaterialContainerTransform().apply {
-                addTarget(android.R.id.content)
-                pathMotion = MaterialArcMotion()
-                endContainerColor = background
-                duration = 400L
+            "scale" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.enterTransition = MaterialElevationScale(true)
+                window.exitTransition = MaterialElevationScale(false)
+                window.allowEnterTransitionOverlap = true
             }
-            window.sharedElementReturnTransition = MaterialContainerTransform().apply {
-                addTarget(android.R.id.content)
-                pathMotion = MaterialArcMotion()
-                startContainerColor = background
-                duration = 300L
+            "fade" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.enterTransition = MaterialFadeThrough()
+                window.exitTransition = MaterialFadeThrough()
+                window.allowEnterTransitionOverlap = true
             }
-            window.allowEnterTransitionOverlap = true
+            "axis_x" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.reenterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, false)
+                window.exitTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, true)
+                window.enterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, true)
+                window.returnTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, false)
+                window.allowEnterTransitionOverlap = true
+            }
+            "axis_y" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.reenterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, false)
+                window.exitTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, true)
+                window.enterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, true)
+                window.returnTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, false)
+                window.allowEnterTransitionOverlap = true
+            }
+            "axis_z" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.reenterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, false)
+                window.exitTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, true)
+                window.enterTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, true)
+                window.returnTransition = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, false)
+                window.allowEnterTransitionOverlap = true
+            }
+            "explode" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                val trans = WindowTransitionSet().addTransition(Explode()).addTransition(Fade())
+                window.enterTransition = trans
+                window.exitTransition = trans
+                window.allowEnterTransitionOverlap = true
+            }
+            "slide" -> {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.enterTransition = Slide(Gravity.END)
+                window.exitTransition = Slide(Gravity.START)
+                window.allowEnterTransitionOverlap = true
+            }
+            else -> Unit
         }
+    }
+
+    @OptIn(FlowPreview::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        ensureTransform()
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenCreated {
-            MoeSettings.daynight.asFlow().drop(1).collectLatest {
+            val flow1 = MoeSettings.daynight.asFlow().drop(1)
+            val flow2 = MoeSettings.animation.asFlow().drop(1)
+            flowOf(flow1, flow2).flattenMerge(2).collectLatest {
                 recreate()
             }
         }
@@ -240,7 +310,6 @@ class ImageFragment : Fragment() {
             binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
         }
 
-        @FlowPreview
         fun bind(item: JImageItem) {
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             bindImageRatio(binding.image1, item.preview_width, item.preview_height)
@@ -249,7 +318,6 @@ class ImageFragment : Fragment() {
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
-        @FlowPreview
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =

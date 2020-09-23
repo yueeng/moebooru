@@ -24,13 +24,14 @@
             android:summaryOff="@string/settings_high_quality_off"
             android:summaryOn="@string/settings_high_quality_on"
             android:title="@string/settings_high_quality" />
-        <SwitchPreference
-            android:defaultValue="false"
+        <ListPreference
+            android:defaultValue="default"
+            android:entries="@array/settings_animation_names"
+            android:entryValues="@array/settings_animation_values"
             android:icon="@drawable/ic_anim"
             android:key="app.animation"
-            android:summaryOff="@string/settings_animation_off"
-            android:summaryOn="@string/settings_animation_on"
-            android:title="@string/settings_animation" />
+            android:title="@string/settings_animation"
+            app:useSimpleSummaryProvider="true" />
         <SeekBarPreference
             android:defaultValue="256"
             android:icon="@drawable/ic_storage"

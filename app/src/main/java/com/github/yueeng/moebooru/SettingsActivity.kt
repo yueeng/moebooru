@@ -64,7 +64,7 @@ object MoeSettings {
         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
     }
 
-    val animation = MutableLiveData(config.getBoolean(KEY_ANIMATION, false))
+    val animation = MutableLiveData(config.getString(KEY_ANIMATION, "default"))
     val quality = MutableLiveData(config.getBoolean(KEY_HIGH_QUALITY, false))
     val safe = MutableLiveData(config.getBoolean(KEY_SAFE_MODE, false))
     val daynight = MutableLiveData(daynightvalues())
@@ -74,7 +74,7 @@ object MoeSettings {
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener { _, key ->
             when (key) {
                 KEY_SAFE_MODE -> safe.postValue(config.getBoolean(key, false))
-                KEY_ANIMATION -> animation.postValue(config.getBoolean(key, false))
+                KEY_ANIMATION -> animation.postValue(config.getString(KEY_ANIMATION, "default"))
                 KEY_HIGH_QUALITY -> quality.postValue(config.getBoolean(key, false))
                 KEY_DAY_NIGHT_MODE -> {
                     AppCompatDelegate.setDefaultNightMode(daynightvalues())
