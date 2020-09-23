@@ -57,6 +57,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 startContainerColor = background
                 duration = 300L
             }
+            window.allowEnterTransitionOverlap = true
         }
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenCreated {
