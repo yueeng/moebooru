@@ -146,6 +146,7 @@ class QueryFragment : Fragment() {
 
     private fun string(key: String) {
         val view = QuerySheetStringBinding.inflate(layoutInflater)
+        view.input1.hint = getString(Q.cheats[key]!!.first)
         val default = data[key] as? String
         if (default != null) {
             view.text1.setText(default)
@@ -183,7 +184,6 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -226,7 +226,6 @@ class QueryFragment : Fragment() {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -313,7 +312,6 @@ class QueryFragment : Fragment() {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -369,7 +367,6 @@ class QueryFragment : Fragment() {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
         MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
-            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -441,7 +438,6 @@ class QueryFragment : Fragment() {
         }
         adapter.checked = data.indexOfFirst { it["n"] == value }
         MaterialAlertDialogBuilder(requireActivity())
-            .setCancelable(false)
             .setTitle(Q.cheats[key]!!.first)
             .setSingleChoiceItems(adapter, 0) { _, w -> adapter.checked = w }
             .setPositiveButton(R.string.app_ok, null)
