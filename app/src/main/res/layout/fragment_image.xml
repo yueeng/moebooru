@@ -12,6 +12,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layoutManager="androidx.recyclerview.widget.StaggeredGridLayoutManager"
-        app:spanCount="2"
+        app:spanCount="@integer/list_image_column"
         tools:listitem="@layout/image_item" />
 </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -9,6 +9,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -37,6 +38,7 @@ import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewbinding.ViewBinding
 import androidx.work.*
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
@@ -853,3 +855,8 @@ class CropImage : ActivityResultContract<UCrop, CropImageResult?>() {
     } else null
 
 }
+
+val ViewBinding.context: Context get() = root.context
+val ViewBinding.resources: Resources get() = context.resources
+val RecyclerView.ViewHolder.context: Context get() = itemView.context
+val RecyclerView.ViewHolder.resources: Resources get() = context.resources
