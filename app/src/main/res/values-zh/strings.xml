@@ -76,6 +76,7 @@
     <string name="query_vote_star_2">2星</string>
     <string name="query_vote_star_3">3星</string>
     <string name="query_vote_star_yours">你的评分 %1$d星</string>
+    <string name="query_vote_star_title">%1$s [%2$d]</string>
     <string name="query_vote_user">用户名</string>
     <string name="query_width">宽</string>
     <string name="query_width_desc">按图片宽搜索.</string>

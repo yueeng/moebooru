@@ -370,7 +370,10 @@ class StarFragment : Fragment() {
             binding.rating.setOnRatingBarChangeListener { _, rating, fromUser ->
                 if (!fromUser) return@setOnRatingBarChangeListener
                 lifecycleScope.launchWhenCreated {
-                    model.vote(post, rating.toInt())?.let { model.data.postValue(it) }
+                    model.vote(post, rating.toInt())?.let {
+                        model.data.postValue(it)
+                        model.star.postValue(rating.toInt())
+                    }
                 }
             }
             binding.button1.setOnClickListener {
@@ -378,20 +381,21 @@ class StarFragment : Fragment() {
                     model.vote(post, 0)?.let {
                         model.data.postValue(it)
                         binding.rating.rating = 0F
+                        model.star.postValue(0)
                     }
                 }
             }
             (binding.recycler.layoutManager as? GridLayoutManager)?.also { manager ->
                 manager.spanSizeLookup {
                     when (adapter.currentList[it]) {
-                        is Int -> manager.spanCount
+                        is Title -> manager.spanCount
                         else -> 1
                     }
                 }
             }
             binding.recycler.adapter = adapter
             model.data.observe(viewLifecycleOwner, Observer { score ->
-                adapter.submitList(score.voted_by?.v?.flatMap { listOf(it.key) + it.value })
+                adapter.submitList(score.voted_by?.v?.flatMap { listOf(Title(it.key, it.value.size)) + it.value })
             })
             binding.swipe.setOnRefreshListener {
                 lifecycleScope.launchWhenCreated {
@@ -403,12 +407,19 @@ class StarFragment : Fragment() {
             })
         }.root
 
-    class TitleHolder(private val binding: VoteTitleItemBinding) : DataViewHolder<Int>(binding.root) {
-        override fun bind(value: Int) {
+    data class Title(val star: Int, val count: Int)
+    class TitleHolder(private val binding: VoteTitleItemBinding) : DataViewHolder<Title>(binding.root) {
+        override fun bind(value: Title) {
             super.bind(value)
-            binding.rating.max = value
-            binding.rating.numStars = value
-            binding.rating.progress = value
+            val star = context.getString(
+                when (value.star) {
+                    1 -> R.string.query_vote_star_1
+                    2 -> R.string.query_vote_star_2
+                    3 -> R.string.query_vote_star_3
+                    else -> R.string.app_name
+                }
+            )
+            binding.rating.text = context.getString(R.string.query_vote_star_title, star, value.count)
         }
     }
 
@@ -433,7 +444,7 @@ class StarFragment : Fragment() {
 
     inner class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
-            is Int -> 0
+            is Title -> 0
             is ItemUser -> 1
             else -> throw IllegalArgumentException()
         }
@@ -446,7 +457,7 @@ class StarFragment : Fragment() {
 
         @FlowPreview
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = when (holder) {
-            is TitleHolder -> holder.bind(getItem(position) as Int)
+            is TitleHolder -> holder.bind(getItem(position) as Title)
             is StarHolder -> holder.bind(getItem(position) as ItemUser)
             else -> throw  IllegalArgumentException()
         }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="list_image_column">3</integer>
+    <integer name="list_star_column">5</integer>
+</resources>

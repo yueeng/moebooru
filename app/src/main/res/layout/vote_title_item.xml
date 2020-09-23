@@ -5,12 +5,11 @@
     android:layout_margin="3dp"
     android:orientation="vertical">
 
-    <RatingBar
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/rating"
-        style="@style/Widget.AppCompat.RatingBar"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:isIndicator="true"
-        android:numStars="3"
-        android:stepSize="1" />
+        android:layout_margin="5dp"
+        android:textAppearance="@android:style/TextAppearance.Material.Title"
+        android:textColor="@color/colorAccent" />
 </com.google.android.material.card.MaterialCardView>
