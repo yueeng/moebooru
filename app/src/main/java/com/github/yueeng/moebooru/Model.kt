@@ -51,15 +51,22 @@ const val github = "https://github.com/yueeng/moebooru"
 const val release = "$github/releases"
 
 enum class Resolution(val title: String, val resolution: Int) {
-    R8K("8K", 7680 * 4320),
-    R4K("4K", 4096 * 2160),
-    R2K("2K", 2560 * 1440),
-    R1K("1K", 1920 * 1080),
-    HD("HD", 1280 * 720),
+    ZERO("", 0),
     SD("SD", 720 * 480),
-    ZERO("", 0), ;
+    HD("HD", 1280 * 720),
+    R1K("1K", 1920 * 1080),
+    R2K("2K", 2560 * 1440),
+    R4K("4K", 4096 * 2160),
+    R8K("8K", 7680 * 4320),
+    R16K("16K", R8K.resolution * 4),
+    R32K("32K", R16K.resolution * 4),
+    R64K("64K", R32K.resolution * 4), ;
 
     val mpixels get() = resolution / 1000000F
+
+    companion object {
+        fun match(mpixels: Float) = values().reversed().firstOrNull { mpixels >= it.mpixels } ?: ZERO
+    }
 }
 
 @Parcelize
@@ -99,8 +106,8 @@ data class JImageItem(
     val tags: String,
     val width: Int
 ) : Parcelable {
-    val mpixels get() = width * height
-    val resolution get() = Resolution.values().firstOrNull { mpixels >= it.resolution } ?: Resolution.ZERO
+    val mpixels get() = width * height / 1000000F
+    val resolution get() = Resolution.match(mpixels)
 }
 
 @Parcelize

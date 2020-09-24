@@ -176,10 +176,12 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
 
 class MainFragment : Fragment() {
     private val adapter by lazy { PagerAdapter(this) }
+    private lateinit var binding: FragmentMainBinding
 
     @SuppressLint("RestrictedApi")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentMainBinding.inflate(inflater, container, false).also { binding ->
+            this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.pager.adapter = adapter
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
@@ -231,7 +233,6 @@ class MainFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.search -> true.also {
-            val binding = FragmentMainBinding.bind(requireView())
             val query = adapter.data[binding.pager.currentItem].second
             val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
             startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
@@ -418,29 +419,26 @@ class ImageFragment : Fragment() {
             }
     }
 
-    class HeaderHolder(parent: ViewGroup, private val retryCallback: () -> Unit) :
-        RecyclerView.ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.state_item, parent, false)) {
-
-        private val binding = StateItemBinding.bind(itemView)
-        private val progressBar = binding.progressBar
-        private val errorMsg = binding.errorMsg
-        private val retry = binding.retryButton.also { it.setOnClickListener { retryCallback() } }
+    class HeaderHolder(private val binding: StateItemBinding, private val retryCallback: () -> Unit) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.retryButton.also { it.setOnClickListener { retryCallback() } }
+        }
 
         fun bindTo(loadState: LoadState) {
-            progressBar.isVisible = loadState is LoadState.Loading
-            retry.isVisible = loadState is LoadState.Error
+            binding.progressBar.isVisible = loadState is LoadState.Loading
+            binding.retryButton.isVisible = loadState is LoadState.Error
             when (loadState) {
                 is LoadState.Error -> {
-                    errorMsg.isVisible = true
-                    errorMsg.text = loadState.error.message
+                    binding.errorMsg.isVisible = true
+                    binding.errorMsg.text = loadState.error.message
                 }
                 is LoadState.NotLoading -> {
-                    errorMsg.isVisible = loadState.endOfPaginationReached
-                    errorMsg.text = if (loadState.endOfPaginationReached) "END" else null
+                    binding.errorMsg.isVisible = loadState.endOfPaginationReached
+                    binding.errorMsg.text = if (loadState.endOfPaginationReached) "END" else null
                 }
                 else -> {
-                    errorMsg.isVisible = false
-                    errorMsg.text = null
+                    binding.errorMsg.isVisible = false
+                    binding.errorMsg.text = null
                 }
             }
         }
@@ -448,7 +446,8 @@ class ImageFragment : Fragment() {
 
     open class HeaderAdapter(private val adapter: ImageAdapter) : LoadStateAdapter<HeaderHolder>() {
         override fun onBindViewHolder(holder: HeaderHolder, loadState: LoadState) = holder.bindTo(loadState)
-        override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder = HeaderHolder(parent) { adapter.retry() }
+        override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder =
+            HeaderHolder(StateItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)) { adapter.retry() }
     }
 
     class FooterAdapter(adapter: ImageAdapter) : HeaderAdapter(adapter) {
