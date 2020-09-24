@@ -26,12 +26,15 @@ import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.github.yueeng.moebooru.databinding.*
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import java.util.*
+import kotlin.math.max
+import kotlin.math.min
 import android.transition.TransitionSet as WindowTransitionSet
 import com.google.android.material.transition.platform.MaterialSharedAxis as WindowMaterialSharedAxis
 
@@ -281,7 +284,9 @@ class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, p
         val key = params.key ?: begin
         val posts = Service.instance.post(page = key, Q(query), limit = params.loadSize)
         call?.invoke(key)
-        LoadResult.Page(posts, (key - 1).takeIf { it > 0 }, if (posts.size == params.loadSize) key + 1 else null)
+        val prev = if (posts.isNotEmpty()) (key - 1).takeIf { it > 0 } else null
+        val next = if (posts.size == params.loadSize) key + 1 else null
+        LoadResult.Page(posts, prev, next)
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
@@ -294,11 +299,15 @@ class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel
 
     val begin = handle.getLiveData("begin", 1)
     val index = handle.getLiveData<Int>("index")
-    val count = handle.getLiveData<Int>("current")
+    val min = handle.getLiveData<Int>("min")
+    val max = handle.getLiveData<Int>("max")
     val query = handle.getLiveData<Q>("query", defaultArgs?.getParcelable("query"))
     val posts = Pager(PagingConfig(pageSize, initialLoadSize = pageSize * 2)) {
+        min.postValue(begin.value)
+        max.postValue(0)
         ImageDataSource(query.value, begin.value ?: 1) {
-            count.value = it
+            min.postValue(min(it, min.value!!))
+            max.postValue(max(it, max.value!!))
         }
     }.flow.cachedIn(viewModelScope)
 }
@@ -314,10 +323,12 @@ class ImageFragment : Fragment() {
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     private val offset = MutableLiveData<Int>()
     private val sum = MutableLiveData<Int>()
+
+    @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
-            binding.recycler.adapter = adapter.withLoadStateFooter(HeaderAdapter(adapter))
+            binding.recycler.adapter = adapter.withLoadStateHeaderAndFooter(HeaderAdapter(adapter), FooterAdapter(adapter))
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
             }
@@ -330,10 +341,14 @@ class ImageFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 val flow1 = model.index.asFlow().distinctUntilChanged()
-                val flow2 = model.count.asFlow().distinctUntilChanged()
-                flow1.combine(flow2) { a, b -> a to b }.collectLatest {
+                val flow2 = model.min.asFlow().distinctUntilChanged()
+                val flow3 = model.max.asFlow().distinctUntilChanged()
+                flowOf(flow1, flow2, flow3).flattenMerge(3).collectLatest {
+                    val index = model.index.value ?: return@collectLatest
+                    val min = model.min.value ?: return@collectLatest
+                    val max = model.max.value ?: return@collectLatest
                     @SuppressLint("SetTextI18n")
-                    binding.text1.text = "${it.first / ImageViewModel.pageSize + (model.begin.value ?: 1)}/${it.second}"
+                    binding.text1.text = "${min(index + min, max)}/$max"
                 }
             }
             lifecycleScope.launchWhenCreated {
@@ -350,13 +365,25 @@ class ImageFragment : Fragment() {
             binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(view: RecyclerView, dx: Int, dy: Int) {
                     (view.layoutManager as? StaggeredGridLayoutManager)?.findFirstCompletelyVisibleItemPositions(null)?.minOrNull()?.let {
-                        model.index.postValue(it)
+                        model.index.postValue(it / ImageViewModel.pageSize)
                     }
                     (view.layoutManager as? StaggeredGridLayoutManager)?.findLastCompletelyVisibleItemPositions(null)?.maxOrNull()?.let {
                         offset.postValue(it)
                     }
                 }
             })
+            binding.button1.setOnClickListener {
+                val edit = SimpleInputBinding.inflate(layoutInflater)
+                MaterialAlertDialogBuilder(requireContext()).setView(edit.root)
+                    .setTitle(R.string.app_page_jump)
+                    .setPositiveButton(R.string.app_ok) { _, _ ->
+                        edit.edit1.text.toString().toIntOrNull()?.takeIf { it > 0 }?.let {
+                            model.begin.value = it
+                            adapter.refresh()
+                        }
+                    }
+                    .create().show()
+            }
         }.root
 
     class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -419,13 +446,15 @@ class ImageFragment : Fragment() {
         }
     }
 
-    class HeaderAdapter(private val adapter: ImageAdapter) : LoadStateAdapter<HeaderHolder>() {
+    open class HeaderAdapter(private val adapter: ImageAdapter) : LoadStateAdapter<HeaderHolder>() {
+        override fun onBindViewHolder(holder: HeaderHolder, loadState: LoadState) = holder.bindTo(loadState)
+        override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder = HeaderHolder(parent) { adapter.retry() }
+    }
+
+    class FooterAdapter(adapter: ImageAdapter) : HeaderAdapter(adapter) {
         override fun displayLoadStateAsItem(loadState: LoadState): Boolean = when (loadState) {
             is LoadState.NotLoading -> loadState.endOfPaginationReached
             else -> super.displayLoadStateAsItem(loadState)
         }
-
-        override fun onBindViewHolder(holder: HeaderHolder, loadState: LoadState) = holder.bindTo(loadState)
-        override fun onCreateViewHolder(parent: ViewGroup, loadState: LoadState): HeaderHolder = HeaderHolder(parent) { adapter.retry() }
     }
 }
