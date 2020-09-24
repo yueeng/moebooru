@@ -281,20 +281,19 @@ val random = Random(System.currentTimeMillis())
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
     Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
 
-fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBar?, placeholder: Int?) {
-    if (imageUrl.isNullOrEmpty()) return
-    view.scaleType = ImageView.ScaleType.CENTER
-    GlideApp.with(view)
-        .load(imageUrl)
+fun ImageView.glideUrl(url: String, progressBar: ProgressBar? = null, placeholder: Int? = null) {
+    scaleType = ImageView.ScaleType.CENTER
+    GlideApp.with(this)
+        .load(url)
         .transition(DrawableTransitionOptions.withCrossFade())
         .apply { if (placeholder != null) placeholder(placeholder) }
-        .apply { if (progressBar != null) progress(imageUrl, progressBar) }
+        .apply { if (progressBar != null) progress(url, progressBar) }
         .onResourceReady { _, _, _, _, _ ->
-            view.setImageDrawable(null)
-            view.scaleType = ImageView.ScaleType.CENTER_CROP
+            setImageDrawable(null)
+            scaleType = ImageView.ScaleType.CENTER_CROP
             false
         }
-        .into(view)
+        .into(this)
 }
 
 val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
