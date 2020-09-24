@@ -280,7 +280,7 @@ class UserFragment : Fragment() {
             tag = item
             val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * 0.75F
             binding.root.minimumWidth = (height * item.preview_width / item.preview_height).roundToInt()
-            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
+            binding.image1.glideUrl(item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
     }
 

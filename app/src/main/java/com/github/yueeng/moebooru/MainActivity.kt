@@ -399,7 +399,7 @@ class ImageFragment : Fragment() {
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
                 params.dimensionRatio = "${item.preview_width}:${item.preview_height}"
             }
-            bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
+            binding.image1.glideUrl(item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
     }
 
