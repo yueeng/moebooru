@@ -17,8 +17,6 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
-import androidx.core.view.isInvisible
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
@@ -32,8 +30,6 @@ import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import androidx.work.WorkInfo
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.davemorrissey.labs.subscaleview.ImageSource
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.github.yueeng.moebooru.Save.fileName
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
 import com.github.yueeng.moebooru.databinding.PreviewItemBinding
@@ -48,7 +44,10 @@ import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
@@ -302,31 +301,20 @@ class PreviewFragment : Fragment() {
 
     inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root), LifecycleOwner {
         init {
-            binding.image1.setBitmapDecoderClass(GlideDecoder::class.java)
-            binding.image1.setRegionDecoderClass(GlideRegionDecoder::class.java)
             binding.image1.setOnClickListener {
                 val pager = this@PreviewFragment.binding
                 val behavior = BottomSheetBehavior.from(pager.sliding)
                 if (behavior.isOpen) behavior.close()
                 else if (pager.pager.currentItem + 1 < adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
             }
-            binding.image1.setOnImageEventListener(object : SubsamplingScaleImageView.DefaultOnImageEventListener() {
-                override fun onImageLoaded() {
-                    binding.progress.isInvisible = true
-                }
-            })
         }
 
         @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
-            binding.progress.isVisible = true
-            lifecycleScope.launchWhenCreated {
-                ProgressBehavior.on(item.sample_url).asFlow().sample(1000).collectLatest {
-                    binding.progress.isIndeterminate = it == 0
-                    binding.progress.setProgressCompat(it)
-                }
-            }
-            binding.image1.setImage(ImageSource.uri(item.sample_url).dimensions(item.sample_width, item.sample_height), ImageSource.uri(item.preview_url))
+            GlideApp.with(binding.image1).load(item.sample_url)
+                .thumbnail(GlideApp.with(binding.image1).load(item.preview_url))
+                .progress(item.sample_url, binding.progress)
+                .into(binding.image1)
         }
 
         val lifecycle = LifecycleRegistry(this)

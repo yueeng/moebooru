@@ -61,8 +61,6 @@ import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.target.CustomViewTarget
 import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
-import com.davemorrissey.labs.subscaleview.decoder.ImageDecoder
-import com.davemorrissey.labs.subscaleview.decoder.ImageRegionDecoder
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
@@ -86,7 +84,6 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
-import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.lang.ref.WeakReference
@@ -263,37 +260,6 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
             return false
         }
     })
-}
-
-class GlideDecoder : ImageDecoder {
-    @Throws(Exception::class)
-    override fun decode(context: Context, uri: Uri): Bitmap {
-        val bytes = okHttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
-        val bitmap = GlideApp.with(context).asBitmap().load(bytes).submit().get()
-        return bitmap.copy(bitmap.config, bitmap.isMutable)
-    }
-}
-
-class GlideRegionDecoder : ImageRegionDecoder {
-    private var decoder: BitmapRegionDecoder? = null
-
-    @Throws(Exception::class)
-    override fun init(context: Context, uri: Uri): Point {
-        val bytes = okHttp.newCall(Request.Builder().url(uri.toString()).build()).execute().body!!.bytes()
-        decoder = BitmapRegionDecoder.newInstance(ByteArrayInputStream(bytes), false)
-        return Point(decoder!!.width, decoder!!.height)
-    }
-
-    override fun decodeRegion(rect: Rect, sampleSize: Int): Bitmap = synchronized(this) {
-        val options = BitmapFactory.Options()
-        options.inSampleSize = sampleSize
-        options.inPreferredConfig = Bitmap.Config.RGB_565
-        val bitmap = decoder!!.decodeRegion(rect, options)
-        return bitmap ?: throw RuntimeException("Region decoder returned null bitmap - image format may not be supported")
-    }
-
-    override fun isReady(): Boolean = decoder != null && !decoder!!.isRecycled
-    override fun recycle() = decoder!!.recycle()
 }
 
 fun <TranscodeType> GlideRequest<TranscodeType>.onResourceReady(call: (resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
