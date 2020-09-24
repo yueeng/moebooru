@@ -22,6 +22,7 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import kotlinx.android.parcel.Parcelize
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.*
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -365,6 +366,12 @@ class StarFragment : Fragment() {
                 binding.rating.rating = it.toFloat()
                 requireActivity().title = getString(R.string.query_vote_star_yours, it)
             })
+            lifecycleScope.launchWhenCreated {
+                adapter.changedFlow.collectLatest {
+                    adapter.currentList.mapIndexedNotNull { index, any -> (any as? Title)?.let { index } }
+                        .forEach { adapter.notifyItemChanged(it, "count") }
+                }
+            }
             binding.rating.setOnRatingBarChangeListener { _, rating, fromUser ->
                 if (!fromUser) return@setOnRatingBarChangeListener
                 lifecycleScope.launchWhenCreated {
@@ -405,10 +412,13 @@ class StarFragment : Fragment() {
             })
         }.root
 
-    data class Title(val star: Int, val count: Int)
-    class TitleHolder(private val binding: VoteTitleItemBinding) : DataViewHolder<Title>(binding.root) {
-        override fun bind(value: Title) {
-            super.bind(value)
+    data class Title(val star: Int, val count: Int) {
+        override fun hashCode(): Int = star.hashCode()
+        override fun equals(other: Any?): Boolean = hashCode() == other?.hashCode()
+    }
+
+    class TitleHolder(private val binding: VoteTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(value: Title) {
             val star = context.getString(
                 when (value.star) {
                     1 -> R.string.query_vote_star_1
@@ -421,16 +431,17 @@ class StarFragment : Fragment() {
         }
     }
 
-    inner class StarHolder(private val binding: VoteUserItemBinding) : DataViewHolder<ItemUser>(binding.root) {
+    inner class StarHolder(private val binding: VoteUserItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setOnClickListener {
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to value!!.id, "name" to value!!.name)), options.toBundle())
+                startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to value.id, "name" to value.name)), options.toBundle())
             }
         }
 
-        override fun bind(value: ItemUser) {
-            super.bind(value)
+        lateinit var value: ItemUser
+        fun bind(value: ItemUser) {
+            this.value = value
             GlideApp.with(binding.image1).load(value.face)
                 .error(R.mipmap.ic_launcher)
                 .progress(value.face, binding.progress)
@@ -439,6 +450,7 @@ class StarFragment : Fragment() {
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     inner class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
@@ -449,13 +461,19 @@ class StarFragment : Fragment() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder = when (viewType) {
             0 -> TitleHolder(VoteTitleItemBinding.inflate(layoutInflater, parent, false))
             1 -> StarHolder(VoteUserItemBinding.inflate(layoutInflater, parent, false))
-            else -> throw  IllegalArgumentException()
+            else -> throw IllegalArgumentException()
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) = when (holder) {
             is TitleHolder -> holder.bind(getItem(position) as Title)
             is StarHolder -> holder.bind(getItem(position) as ItemUser)
-            else -> throw  IllegalArgumentException()
+            else -> throw IllegalArgumentException()
+        }
+
+        private val changed = ConflatedBroadcastChannel<Unit>()
+        val changedFlow get() = changed.asFlow()
+        override fun onCurrentListChanged(previousList: MutableList<Any>, currentList: MutableList<Any>) {
+            changed.offer(Unit)
         }
     }
 }
