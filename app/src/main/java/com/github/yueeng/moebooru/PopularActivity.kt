@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.github.yueeng.moebooru.databinding.FragmentMainBinding
 import com.github.yueeng.moebooru.databinding.FragmentPopularBinding
 import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
 import com.google.android.material.datepicker.CalendarConstraints
@@ -47,8 +46,10 @@ class PopularFragment : Fragment() {
     private val type by lazy { arguments?.getString("type") ?: "day" }
     private val adapter by lazy { PopularAdapter(this) }
     private val tabAdapter by lazy { TabAdapter() }
+    private lateinit var binding: FragmentPopularBinding
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPopularBinding.inflate(inflater, container, false).also { binding ->
+            this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.pager.adapter = adapter
             tabAdapter.submitList((1..adapter.itemCount).mapNotNull { adapter.getPageTitle(it - 1) })
@@ -155,7 +156,6 @@ class PopularFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.search -> true.also {
-            val binding = FragmentMainBinding.bind(requireView())
             val query = adapter.getItem(binding.pager.currentItem)
             val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
             startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())

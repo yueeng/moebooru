@@ -81,13 +81,13 @@ class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaul
 class PreviewFragment : Fragment() {
     private val previewModel: PreviewViewModel by viewModels { PreviewViewModelFactory(this, arguments) }
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
-
-    //    private val index by lazy { arguments?.getInt("index") ?: -1 }
+    private lateinit var binding: FragmentPreviewBinding
     private val adapter by lazy { ImageAdapter() }
     private val tagAdapter by lazy { TagAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
+            this.binding = binding
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
             }
@@ -211,7 +211,6 @@ class PreviewFragment : Fragment() {
         }.root
 
     private fun download(id: Int, url: String, author: String) {
-        val binding = FragmentPreviewBinding.bind(requireView())
         fun download() {
             val filename = url.fileName
             val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
@@ -295,7 +294,6 @@ class PreviewFragment : Fragment() {
     }
 
     fun onBackPressed(): Boolean {
-        val binding = FragmentPreviewBinding.bind(requireView())
         val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
         val open = bottomSheetBehavior.isOpen
         if (open) bottomSheetBehavior.close()
@@ -307,7 +305,7 @@ class PreviewFragment : Fragment() {
             binding.image1.setBitmapDecoderClass(GlideDecoder::class.java)
             binding.image1.setRegionDecoderClass(GlideRegionDecoder::class.java)
             binding.image1.setOnClickListener {
-                val pager = FragmentPreviewBinding.bind(requireView())
+                val pager = this@PreviewFragment.binding
                 val behavior = BottomSheetBehavior.from(pager.sliding)
                 if (behavior.isOpen) behavior.close()
                 else if (pager.pager.currentItem + 1 < adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
