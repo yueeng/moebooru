@@ -11,6 +11,7 @@ import android.transition.Fade
 import android.transition.Slide
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.use
 import androidx.core.os.bundleOf
 import androidx.core.view.isInvisible
@@ -395,7 +396,9 @@ class ImageFragment : Fragment() {
 
         fun bind(item: JImageItem) {
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
-            bindImageRatio(binding.image1, item.preview_width, item.preview_height)
+            binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
+                params.dimensionRatio = "${item.preview_width}:${item.preview_height}"
+            }
             bindImageFromUrl(binding.image1, item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
         }
     }

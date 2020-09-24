@@ -26,7 +26,6 @@ import android.widget.ImageView
 import android.widget.MultiAutoCompleteTextView
 import android.widget.ProgressBar
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
@@ -186,22 +185,13 @@ class MoeAppGlideModule : AppGlideModule() {
     }
 
     override fun registerComponents(context: Context, glide: Glide, registry: Registry) {
-        registry.replace(
-            GlideUrl::class.java,
-            InputStream::class.java,
-            OkHttpUrlLoader.Factory(okHttp)
-        )
+        registry.replace(GlideUrl::class.java, InputStream::class.java, OkHttpUrlLoader.Factory(okHttp))
     }
 }
 
 class ActiveMutableLiveData<T>(private val call: (active: Boolean) -> Unit) : MutableLiveData<T>() {
-    override fun onActive() {
-        call(hasActiveObservers())
-    }
-
-    override fun onInactive() {
-        call(hasActiveObservers())
-    }
+    override fun onActive() = call(hasActiveObservers())
+    override fun onInactive() = call(hasActiveObservers())
 }
 
 object ProgressBehavior {
@@ -250,14 +240,12 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
         }
     }
     return addListener(object : RequestListener<T> {
-        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean {
+        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean = false.also {
             progress.get()?.visibility = View.GONE
-            return false
         }
 
-        override fun onResourceReady(resource: T, model: Any?, target: Target<T>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+        override fun onResourceReady(resource: T, model: Any?, target: Target<T>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false.also {
             progress.get()?.visibility = View.GONE
-            return false
         }
     })
 }
@@ -277,22 +265,13 @@ fun <TranscodeType> GlideRequest<TranscodeType>.onLoadFailed(call: (e: GlideExce
 
 class SimpleCustomTarget<T>(private val call: (T) -> Unit) : CustomTarget<T>() {
     override fun onResourceReady(resource: T, transition: Transition<in T>?) = call(resource)
-
     override fun onLoadCleared(placeholder: Drawable?) = Unit
 }
 
 class SimpleDrawableCustomViewTarget<T : View>(view: T, private val call: (view: T, drawable: Drawable?) -> Unit) : CustomViewTarget<T, Drawable>(view) {
-    override fun onLoadFailed(errorDrawable: Drawable?) {
-        call(view, errorDrawable)
-    }
-
-    override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) {
-        call(view, resource)
-    }
-
-    override fun onResourceCleared(placeholder: Drawable?) {
-        call(view, placeholder)
-    }
+    override fun onLoadFailed(errorDrawable: Drawable?) = call(view, errorDrawable)
+    override fun onResourceReady(resource: Drawable, transition: Transition<in Drawable>?) = call(view, resource)
+    override fun onResourceCleared(placeholder: Drawable?) = call(view, placeholder)
 }
 
 fun <T : View> GlideRequest<Drawable>.into(view: T, call: (view: T, drawable: Drawable?) -> Unit) = into(SimpleDrawableCustomViewTarget(view, call))
@@ -316,12 +295,6 @@ fun bindImageFromUrl(view: ImageView, imageUrl: String?, progressBar: ProgressBa
             false
         }
         .into(view)
-}
-
-fun bindImageRatio(view: View, width: Int, height: Int) {
-    val params: ConstraintLayout.LayoutParams = view.layoutParams as ConstraintLayout.LayoutParams
-    params.dimensionRatio = "$width:$height"
-    view.layoutParams = params
 }
 
 val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
