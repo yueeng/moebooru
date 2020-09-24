@@ -249,11 +249,7 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
     lifecycle.lifecycleScope.launchWhenCreated {
         ProgressBehavior.on(url).asFlow().sample(1000).collectLatest {
             progress.get()?.isIndeterminate = it == 0
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                progress.get()?.setProgress(it, true)
-            } else {
-                progress.get()?.progress = it
-            }
+            progress.get()?.setProgressCompat(it)
         }
     }
     return addListener(object : RequestListener<T> {
@@ -859,3 +855,6 @@ val ViewBinding.context: Context get() = root.context
 val ViewBinding.resources: Resources get() = context.resources
 val RecyclerView.ViewHolder.context: Context get() = itemView.context
 val RecyclerView.ViewHolder.resources: Resources get() = context.resources
+
+fun ProgressBar.setProgressCompat(progress: Int, animate: Boolean = true) =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) setProgress(progress, animate) else setProgress(progress)

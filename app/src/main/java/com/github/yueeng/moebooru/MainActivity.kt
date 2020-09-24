@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeTransform
 import androidx.transition.TransitionManager
@@ -29,10 +30,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.flattenMerge
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.*
 import java.util.*
 import android.transition.TransitionSet as WindowTransitionSet
 import com.google.android.material.transition.platform.MaterialSharedAxis as WindowMaterialSharedAxis
@@ -278,20 +276,31 @@ class ListFragment : Fragment() {
     }
 }
 
-class ImageDataSource(private val query: Q? = Q()) : PagingSource<Int, JImageItem>() {
+class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
-        val key = params.key ?: 1
+        val key = params.key ?: begin
         val posts = Service.instance.post(page = key, Q(query), limit = params.loadSize)
-        LoadResult.Page(posts, null, if (posts.size == params.loadSize) key + 1 else null)
+        call?.invoke(key)
+        LoadResult.Page(posts, (key - 1).takeIf { it > 0 }, if (posts.size == params.loadSize) key + 1 else null)
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
 }
 
 class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
+    companion object {
+        const val pageSize = 20
+    }
+
+    val begin = handle.getLiveData("begin", 1)
+    val index = handle.getLiveData<Int>("index")
+    val count = handle.getLiveData<Int>("current")
     val query = handle.getLiveData<Q>("query", defaultArgs?.getParcelable("query"))
-    val posts = Pager(PagingConfig(20, initialLoadSize = 20)) { ImageDataSource(query.value) }
-        .flow.cachedIn(viewModelScope)
+    val posts = Pager(PagingConfig(pageSize, initialLoadSize = pageSize * 2)) {
+        ImageDataSource(query.value, begin.value ?: 1) {
+            count.value = it
+        }
+    }.flow.cachedIn(viewModelScope)
 }
 
 class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
@@ -303,7 +312,8 @@ class ImageFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
-
+    private val offset = MutableLiveData<Int>()
+    private val sum = MutableLiveData<Int>()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
@@ -315,8 +325,38 @@ class ImageFragment : Fragment() {
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow.collectLatest {
                     binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                    sum.postValue(adapter.itemCount)
                 }
             }
+            lifecycleScope.launchWhenCreated {
+                val flow1 = model.index.asFlow().distinctUntilChanged()
+                val flow2 = model.count.asFlow().distinctUntilChanged()
+                flow1.combine(flow2) { a, b -> a to b }.collectLatest {
+                    @SuppressLint("SetTextI18n")
+                    binding.text1.text = "${it.first / ImageViewModel.pageSize + (model.begin.value ?: 1)}/${it.second}"
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                sum.asFlow().distinctUntilChanged().collectLatest {
+                    binding.progress.max = it
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                offset.asFlow().distinctUntilChanged().collectLatest {
+                    binding.progress.setProgressCompat(it)
+                }
+            }
+            binding.recycler.isVerticalScrollBarEnabled = true
+            binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(view: RecyclerView, dx: Int, dy: Int) {
+                    (view.layoutManager as? StaggeredGridLayoutManager)?.findFirstCompletelyVisibleItemPositions(null)?.minOrNull()?.let {
+                        model.index.postValue(it)
+                    }
+                    (view.layoutManager as? StaggeredGridLayoutManager)?.findLastCompletelyVisibleItemPositions(null)?.maxOrNull()?.let {
+                        offset.postValue(it)
+                    }
+                }
+            })
         }.root
 
     class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {

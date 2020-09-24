@@ -325,11 +325,7 @@ class PreviewFragment : Fragment() {
             lifecycleScope.launchWhenCreated {
                 ProgressBehavior.on(item.sample_url).asFlow().sample(1000).collectLatest {
                     binding.progress.isIndeterminate = it == 0
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        binding.progress.setProgress(it, true)
-                    } else {
-                        binding.progress.progress = it
-                    }
+                    binding.progress.setProgressCompat(it)
                 }
             }
             binding.image1.setImage(ImageSource.uri(item.sample_url).dimensions(item.sample_width, item.sample_height), ImageSource.uri(item.preview_url))
