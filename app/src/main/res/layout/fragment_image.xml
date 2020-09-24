@@ -21,10 +21,12 @@
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layout1"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
-        android:background="#6000">
+        android:background="#6000"
+        android:visibility="invisible">
 
         <ProgressBar
             android:id="@+id/progress"
@@ -55,8 +57,8 @@
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:layout_margin="2dp"
+            android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="@string/app_name"
-            android:foreground="?android:selectableItemBackgroundBorderless"
             android:src="@drawable/ic_jump"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

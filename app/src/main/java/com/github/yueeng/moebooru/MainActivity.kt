@@ -350,6 +350,7 @@ class ImageFragment : Fragment() {
                     val max = model.max.value ?: return@collectLatest
                     @SuppressLint("SetTextI18n")
                     binding.text1.text = "${min(index + min, max)}/$max"
+                    binding.layout1.isInvisible = max == 0
                 }
             }
             lifecycleScope.launchWhenCreated {
