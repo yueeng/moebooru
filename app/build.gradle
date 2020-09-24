@@ -99,7 +99,7 @@ dependencies {
     implementation "com.github.bumptech.glide:okhttp3-integration:$glide_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
     implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
-    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
+    implementation 'com.alexvasilkov:gesture-views:2.6.0'
     implementation 'gun0912.ted:tedpermission:2.2.3'
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'com.github.yueeng:uCrop:master-SNAPSHOT'
