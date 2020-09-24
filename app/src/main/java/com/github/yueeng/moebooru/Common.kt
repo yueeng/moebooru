@@ -800,13 +800,6 @@ fun <T : Any> diffCallback(call: (old: T, new: T) -> Boolean) = object : DiffUti
     override fun areContentsTheSame(old: T, new: T): Boolean = old == new
 }
 
-open class DataViewHolder<T : Any>(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    var value: T? = null
-    open fun bind(value: T) {
-        this.value = value
-    }
-}
-
 fun GridLayoutManager.spanSizeLookup(call: (position: Int) -> Int) = this.apply {
     spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
         override fun getSpanSize(position: Int): Int = call(position)
