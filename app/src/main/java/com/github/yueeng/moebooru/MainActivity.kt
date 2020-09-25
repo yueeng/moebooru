@@ -4,15 +4,10 @@ import android.annotation.SuppressLint
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.os.Bundle
-import android.transition.Explode
-import android.transition.Fade
-import android.transition.Slide
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.res.use
 import androidx.core.os.bundleOf
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -30,142 +25,14 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
-import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flattenMerge
+import kotlinx.coroutines.flow.flowOf
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
-import android.transition.TransitionSet as WindowTransitionSet
-import com.google.android.material.transition.platform.MaterialSharedAxis as WindowMaterialSharedAxis
-
-open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
-    override fun startActivity(intent: Intent?, options: Bundle?) =
-        super.startActivity(
-            intent, when (MoeSettings.animation.value) {
-                "shared" -> options
-                "scale", "explode", "fade", "slide", "axis_x", "axis_y", "axis_z" -> ActivityOptions.makeSceneTransitionAnimation(this).toBundle()
-                else -> null
-            }
-        )
-
-    private fun ensureTransform() {
-        when (MoeSettings.animation.value) {
-            "shared" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
-                setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-                setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-                val background = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground)).use {
-                    it.getColor(0, Color.WHITE)
-                }
-                window.sharedElementEnterTransition = MaterialContainerTransform().apply {
-                    addTarget(android.R.id.content)
-                    pathMotion = MaterialArcMotion()
-                    endContainerColor = background
-                    duration = 400L
-                }
-                window.sharedElementReturnTransition = MaterialContainerTransform().apply {
-                    addTarget(android.R.id.content)
-                    pathMotion = MaterialArcMotion()
-                    startContainerColor = background
-                    duration = 300L
-                }
-                window.allowEnterTransitionOverlap = true
-            }
-            "scale" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val growingUp = MaterialElevationScale(true)
-                val growingDown = MaterialElevationScale(false)
-                window.enterTransition = growingUp
-                window.exitTransition = growingDown
-                window.reenterTransition = growingUp
-                window.returnTransition = growingDown
-            }
-            "fade" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val fade = MaterialFadeThrough()
-                window.enterTransition = fade
-                window.exitTransition = fade
-                window.reenterTransition = fade
-                window.returnTransition = fade
-            }
-            "axis_x" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val forward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, true)
-                val backward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.X, false)
-                window.reenterTransition = backward
-                window.exitTransition = forward
-                window.enterTransition = forward
-                window.returnTransition = backward
-            }
-            "axis_y" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val forward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, true)
-                val backward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Y, false)
-                window.reenterTransition = backward
-                window.exitTransition = forward
-                window.enterTransition = forward
-                window.returnTransition = backward
-            }
-            "axis_z" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val forward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, true)
-                val backward = WindowMaterialSharedAxis(WindowMaterialSharedAxis.Z, false)
-                window.reenterTransition = backward
-                window.exitTransition = forward
-                window.enterTransition = forward
-                window.returnTransition = backward
-            }
-            "explode" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val explodeFade = WindowTransitionSet().addTransition(Explode()).addTransition(Fade())
-                window.enterTransition = explodeFade
-                window.exitTransition = explodeFade
-                window.returnTransition = explodeFade
-                window.reenterTransition = explodeFade
-            }
-            "slide" -> {
-                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-                val start = WindowTransitionSet().addTransition(Slide(Gravity.START)).addTransition(Fade())
-                val end = WindowTransitionSet().addTransition(Slide(Gravity.END)).addTransition(Fade())
-                window.enterTransition = end
-                window.exitTransition = start
-                window.returnTransition = end
-                window.reenterTransition = start
-            }
-            else -> Unit
-        }
-//        window.allowEnterTransitionOverlap = false
-//        window.allowReturnTransitionOverlap = false
-    }
-
-    @OptIn(FlowPreview::class)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        ensureTransform()
-        super.onCreate(savedInstanceState)
-        lifecycleScope.launchWhenCreated {
-            val flow1 = MoeSettings.daynight.asFlow().drop(1)
-            val flow2 = MoeSettings.animation.asFlow().drop(1)
-            flowOf(flow1, flow2).flattenMerge(2).collectLatest {
-                recreate()
-            }
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.app, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.settings -> true.also {
-            val options = ActivityOptions.makeSceneTransitionAnimation(this, findViewById(item.itemId), "shared_element_container")
-            startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
-        }
-        else -> super.onOptionsItemSelected(item)
-    }
-}
 
 class MainActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
