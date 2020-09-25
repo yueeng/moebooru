@@ -3,7 +3,6 @@ package com.github.yueeng.moebooru
 import android.app.ActivityOptions
 import android.app.Application
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.transition.Explode
 import android.transition.Fade
@@ -12,7 +11,6 @@ import android.transition.TransitionSet
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.res.use
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
@@ -63,20 +61,17 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
                 setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
                 setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-                val background = theme.obtainStyledAttributes(intArrayOf(android.R.attr.colorBackground)).use {
-                    it.getColor(0, Color.WHITE)
-                }
                 window.sharedElementEnterTransition = MaterialContainerTransform().apply {
                     addTarget(android.R.id.content)
                     pathMotion = MaterialArcMotion()
-                    endContainerColor = background
                     duration = 400L
+                    isElevationShadowEnabled = true
                 }
                 window.sharedElementReturnTransition = MaterialContainerTransform().apply {
                     addTarget(android.R.id.content)
                     pathMotion = MaterialArcMotion()
-                    startContainerColor = background
                     duration = 300L
+                    isElevationShadowEnabled = true
                 }
                 window.allowEnterTransitionOverlap = true
             }
