@@ -33,25 +33,13 @@
             android:layout_margin="5dp"
             android:background="?selectableItemBackgroundBorderless"
             android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_edit"
+            android:src="@drawable/ic_add"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/button2"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/button2"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:layout_margin="5dp"
-            android:background="?selectableItemBackgroundBorderless"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_add"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/button3"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageView
-            android:id="@+id/button3"
             android:layout_width="18dp"
             android:layout_height="18dp"
             android:layout_margin="5dp"
