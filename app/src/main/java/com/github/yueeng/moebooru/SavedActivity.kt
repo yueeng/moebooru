@@ -85,13 +85,12 @@ class SavedFragment : Fragment() {
         fun bind(tag: DbTag) {
             this.tag = tag
             binding.text1.text = tag.name
-            binding.button2.setImageResource(if (tag.pin) R.drawable.ic_remove else R.drawable.ic_add)
+            binding.button1.setImageResource(if (tag.pin) R.drawable.ic_remove else R.drawable.ic_add)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 binding.root.tooltipText = tag.tag
             }
             binding.button1.isVisible = viewModel.edit.value == true
             binding.button2.isVisible = viewModel.edit.value == true
-            binding.button3.isVisible = viewModel.edit.value == true
         }
     }
 
@@ -125,17 +124,13 @@ class SavedFragment : Fragment() {
                     binding.root.setOnClickListener {
                         val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
                         val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)), options.toBundle())
-                    }
-                    binding.button1.setOnClickListener {
-                        val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
-                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                         startActivity(
-                            Intent(requireContext(), QueryActivity::class.java).putExtra("query", Q(item.tag)).putExtra("id", item.id),
+                            if (viewModel.edit.value == true) Intent(requireContext(), QueryActivity::class.java).putExtra("query", Q(item.tag)).putExtra("id", item.id)
+                            else Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(item.tag)),
                             options.toBundle()
                         )
                     }
-                    binding.button2.setOnClickListener {
+                    binding.button1.setOnClickListener {
                         val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
                         lifecycleScope.launchWhenCreated {
                             item.pin = !item.pin
@@ -144,7 +139,7 @@ class SavedFragment : Fragment() {
                         }
 
                     }
-                    binding.button3.setOnClickListener {
+                    binding.button2.setOnClickListener {
                         val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
                         lifecycleScope.launchWhenCreated {
                             Db.tags.deleteTag(item)
