@@ -29,10 +29,11 @@ import kotlin.math.min
 
 
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
+    val context get() = MainApplication.instance()
     val pinned = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTagsWithIndex(true) }.flow
-        .map { it.insertHeaderItem(DbTag(0, MainApplication.instance().getString(R.string.saved_pin), "")) }.cachedIn(viewModelScope)
+        .map { it.insertHeaderItem(DbTag(0, context.getString(R.string.saved_pin), context.getString(R.string.saved_pin_move))) }.cachedIn(viewModelScope)
     val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags(false) }.flow
-        .map { it.insertHeaderItem(DbTag(0, MainApplication.instance().getString(R.string.saved_tags), "")) }.cachedIn(viewModelScope)
+        .map { it.insertHeaderItem(DbTag(0, context.getString(R.string.saved_tags), context.getString(R.string.saved_tags_swipe))) }.cachedIn(viewModelScope)
     val edit = handle.getLiveData<Boolean>("edit")
 }
 
@@ -86,9 +87,12 @@ class SavedFragment : Fragment() {
                 viewModel.saved.collectLatest { adapter.submitData(it) }
             }
             ItemTouchHelper(object : ItemTouchHelper.Callback() {
-                override fun getMovementFlags(view: RecyclerView, holder: RecyclerView.ViewHolder): Int =
-                    if (viewModel.edit.value == true && (holder as? SavedHolder)?.tag?.pin == true) makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN or ItemTouchHelper.START or ItemTouchHelper.END, 0)
-                    else 0
+                override fun getMovementFlags(view: RecyclerView, holder: RecyclerView.ViewHolder): Int {
+                    val tag = (holder as? SavedHolder)?.tag
+                    val move = if (viewModel.edit.value == true && tag?.pin == true) ItemTouchHelper.UP or ItemTouchHelper.DOWN or ItemTouchHelper.START or ItemTouchHelper.END else 0
+                    val swipe = if (viewModel.edit.value == true && tag?.id ?: 0 != 0L) ItemTouchHelper.START or ItemTouchHelper.END else 0
+                    return makeMovementFlags(move, swipe)
+                }
 
                 override fun onMove(view: RecyclerView, holder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean =
                     (holder as? SavedHolder)?.tag?.takeIf { it.pin }?.let {
@@ -107,8 +111,18 @@ class SavedFragment : Fragment() {
                         true
                     } ?: false
 
-                override fun onSwiped(holder: RecyclerView.ViewHolder, direction: Int) = Unit
-
+                override fun onSwiped(holder: RecyclerView.ViewHolder, direction: Int) {
+                    (holder as? SavedHolder)?.tag?.takeIf { it.id != 0L }?.let {
+                        lifecycleScope.launchWhenCreated {
+                            withContext(Dispatchers.IO) {
+                                Db.db.withTransaction {
+                                    Db.tags.deleteTag(it)
+                                    Db.tags.deleteOrder(it.tag)
+                                }
+                            }
+                        }
+                    }
+                }
             }).attachToRecyclerView(binding.recycler)
             binding.button1.setOnClickListener {
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
@@ -137,14 +151,6 @@ class SavedFragment : Fragment() {
                     }
                 }
             }
-            binding.button2.setOnClickListener {
-                lifecycleScope.launchWhenCreated {
-                    Db.db.withTransaction {
-                        Db.tags.deleteTag(tag)
-                        Db.tags.deleteOrder(tag.tag)
-                    }
-                }
-            }
         }
 
         lateinit var tag: DbTag
@@ -156,13 +162,14 @@ class SavedFragment : Fragment() {
                 binding.root.tooltipText = tag.tag
             }
             binding.button1.isVisible = viewModel.edit.value == true
-            binding.button2.isVisible = viewModel.edit.value == true
         }
     }
 
     inner class HeaderHolder(private val binding: ListStringItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(tag: DbTag) {
             binding.text1.text = tag.tag
+            binding.text2.text = tag.name
+            binding.text2.isVisible = viewModel.edit.value == true
         }
     }
 

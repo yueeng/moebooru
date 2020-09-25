@@ -87,7 +87,9 @@
     <string name="saved_empty">Can\'t save empty tag</string>
     <string name="saved_pin">Pin</string>
     <string name="saved_pin_desc">Pin to main page</string>
+    <string name="saved_pin_move">Order by long press</string>
     <string name="saved_tags">Tags</string>
+    <string name="saved_tags_swipe">Delete by swipe left</string>
     <string name="saved_title">Save tag</string>
 
     <string name="settings_animation">Switch page animation</string>
