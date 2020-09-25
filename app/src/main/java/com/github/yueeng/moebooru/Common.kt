@@ -128,7 +128,7 @@ fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
         }
         response.newBuilder().body(body).build()
     }
-    .apply { debug { addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }) } }
+    .apply { debug { addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }) } }
     .build()
 
 suspend fun <T> Call.await(action: (Call, Response) -> T): T = suspendCancellableCoroutine { continuation ->
