@@ -87,7 +87,9 @@
     <string name="saved_empty">不能保存空白标签</string>
     <string name="saved_pin">固定</string>
     <string name="saved_pin_desc">添加到主页</string>
+    <string name="saved_pin_move">长按排序</string>
     <string name="saved_tags">标签</string>
+    <string name="saved_tags_swipe">左滑删除</string>
     <string name="saved_title">保存标签</string>
 
     <string name="settings_animation">动画页面跳转</string>
