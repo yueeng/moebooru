@@ -98,7 +98,7 @@ abstract class Db : RoomDatabase() {
             .build()
 
         val db: Db by lazy { create(MainApplication.instance()) }
-        val tags: DbDao by lazy { db.tags() }
+        val tags: DbDao get() = db.tags()
     }
 
     abstract fun tags(): DbDao
