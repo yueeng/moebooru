@@ -3,6 +3,7 @@ package com.github.yueeng.moebooru
 import android.content.Context
 import androidx.paging.PagingSource
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 @Entity(
@@ -39,7 +40,7 @@ interface DbDao {
     suspend fun tags(pin: Boolean): List<DbTag>
 
     @Query("SELECT tags.* FROM tags LEFT JOIN `order` ON tags.tag = `order`.tag WHERE pin = :pin ORDER BY `order`.`index`, `create` DESC")
-    suspend fun tagsWithIndex(pin: Boolean): List<DbTag>
+    fun tagsWithIndex(pin: Boolean): Flow<List<DbTag>>
 
     @Query("SELECT * FROM tags ORDER BY `pin` DESC, `create` DESC")
     suspend fun tags(): List<DbTag>
