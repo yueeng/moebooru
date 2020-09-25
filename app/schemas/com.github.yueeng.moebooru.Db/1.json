@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "03af03fcc85b8e526d830ab23686c6a7",
+    "identityHash": "84941ee73d8453ec36b7f1b065fe099b",
     "entities": [
       {
         "tableName": "tags",
@@ -56,12 +56,55 @@
           }
         ],
         "foreignKeys": []
+      },
+      {
+        "tableName": "order",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tag` TEXT NOT NULL, `index` INTEGER NOT NULL, PRIMARY KEY(`tag`))",
+        "fields": [
+          {
+            "fieldPath": "tag",
+            "columnName": "tag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "index",
+            "columnName": "index",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "tag"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_order_tag",
+            "unique": true,
+            "columnNames": [
+              "tag"
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_order_tag` ON `${TABLE_NAME}` (`tag`)"
+          },
+          {
+            "name": "index_order_index",
+            "unique": false,
+            "columnNames": [
+              "index"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_order_index` ON `${TABLE_NAME}` (`index`)"
+          }
+        ],
+        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '03af03fcc85b8e526d830ab23686c6a7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '84941ee73d8453ec36b7f1b065fe099b')"
     ]
   }
 }

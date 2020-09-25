@@ -24,13 +24,28 @@ data class DbTag(
     }
 }
 
+@Entity(
+    tableName = "order",
+    indices = [Index("tag", unique = true), Index("index")]
+)
+data class DbTagOrder(
+    @PrimaryKey @ColumnInfo(name = "tag") var tag: String,
+    @ColumnInfo(name = "index") var index: Int
+)
+
 @Dao
 interface DbDao {
     @Query("SELECT * FROM tags WHERE pin = :pin ORDER BY `create` DESC")
     suspend fun tags(pin: Boolean): List<DbTag>
 
+    @Query("SELECT tags.* FROM tags LEFT JOIN `order` ON tags.tag = `order`.tag WHERE pin = :pin ORDER BY `order`.`index`, `create` DESC")
+    suspend fun tagsWithIndex(pin: Boolean): List<DbTag>
+
     @Query("SELECT * FROM tags ORDER BY `pin` DESC, `create` DESC")
     suspend fun tags(): List<DbTag>
+
+    @Query("SELECT tags.* FROM tags LEFT JOIN `order` ON tags.tag = `order`.tag WHERE pin = :pin ORDER BY `order`.`index`, `create` DESC")
+    fun pagingTagsWithIndex(pin: Boolean): PagingSource<Int, DbTag>
 
     @Query("SELECT * FROM tags WHERE pin = :pin ORDER BY `create` DESC")
     fun pagingTags(pin: Boolean): PagingSource<Int, DbTag>
@@ -52,6 +67,12 @@ interface DbDao {
 
     @Delete
     suspend fun deleteTag(tag: DbTag)
+
+    @Query("DELETE FROM `order` WHERE `order`.tag = :tag")
+    suspend fun deleteOrder(tag: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrder(order: DbTagOrder): Long
 }
 
 class DaoConverter {
@@ -64,7 +85,7 @@ class DaoConverter {
 }
 
 @Database(
-    entities = [DbTag::class],
+    entities = [DbTag::class, DbTagOrder::class],
     version = 1,
     exportSchema = true
 )
