@@ -54,8 +54,8 @@ class MainFragment : Fragment() {
             binding.pager.adapter = adapter
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
             lifecycleScope.launchWhenCreated {
-                Db.db.invalidationTracker.createLiveData(arrayOf("tags"), true) { true }.asFlow().collectLatest {
-                    val tags = Db.tags.tags(true)
+                Db.db.invalidationTracker.createLiveData(arrayOf("tags", "order"), true) { true }.asFlow().collectLatest {
+                    val tags = Db.tags.tagsWithIndex(true)
                     adapter.data.removeAll(adapter.data.drop(1))
                     adapter.data.addAll(tags.map { it.name to Q(it.tag) })
                     adapter.notifyDataSetChanged()
