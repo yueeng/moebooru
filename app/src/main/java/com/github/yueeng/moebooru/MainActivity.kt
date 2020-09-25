@@ -54,7 +54,7 @@ class MainFragment : Fragment() {
             binding.pager.adapter = adapter
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
             lifecycleScope.launchWhenCreated {
-                Db.db.invalidationTracker.createLiveData(arrayOf("tags"), true) { }.asFlow().collectLatest {
+                Db.db.invalidationTracker.createLiveData(arrayOf("tags"), true) { true }.asFlow().collectLatest {
                     val tags = Db.tags.tags(true)
                     adapter.data.removeAll(adapter.data.drop(1))
                     adapter.data.addAll(tags.map { it.name to Q(it.tag) })
@@ -166,15 +166,13 @@ class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel
         const val pageSize = 20
     }
 
-    val begin = handle.getLiveData("begin", 1)
     val index = handle.getLiveData<Int>("index")
-    val min = handle.getLiveData<Int>("min")
+    val min = handle.getLiveData("min", 1)
     val max = handle.getLiveData<Int>("max")
     val query = handle.getLiveData<Q>("query", defaultArgs?.getParcelable("query"))
     val posts = Pager(PagingConfig(pageSize, initialLoadSize = pageSize * 2)) {
-        min.postValue(begin.value)
         max.postValue(0)
-        ImageDataSource(query.value, begin.value ?: 1) {
+        ImageDataSource(query.value, min.value ?: 1) {
             min.postValue(min(it, min.value!!))
             max.postValue(max(it, max.value!!))
         }
@@ -248,7 +246,7 @@ class ImageFragment : Fragment() {
                     .setTitle(R.string.app_page_jump)
                     .setPositiveButton(R.string.app_ok) { _, _ ->
                         edit.edit1.text.toString().toIntOrNull()?.takeIf { it > 0 }?.let {
-                            model.begin.value = it
+                            model.min.value = it
                             adapter.refresh()
                         }
                     }
