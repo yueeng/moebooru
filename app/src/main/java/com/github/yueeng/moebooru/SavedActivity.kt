@@ -10,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.paging.*
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.FragmentSavedBinding
@@ -23,14 +24,10 @@ import java.util.*
 
 
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
-    val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags() }.flow
-        .map {
-            it.insertHeaderItem(DbTag(0, MainApplication.instance().getString(R.string.saved_pin), "")).insertSeparators { dbTag, dbTag2 ->
-                if (dbTag?.pin == true && dbTag2?.pin == false)
-                    DbTag(0, MainApplication.instance().getString(R.string.saved_tags), "")
-                else null
-            }
-        }.cachedIn(viewModelScope)
+    val pinned = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags(true) }.flow
+        .map { it.insertHeaderItem(DbTag(0, MainApplication.instance().getString(R.string.saved_pin), "")) }.cachedIn(viewModelScope)
+    val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags(false) }.flow
+        .map { it.insertHeaderItem(DbTag(0, MainApplication.instance().getString(R.string.saved_tags), "")) }.cachedIn(viewModelScope)
     val edit = handle.getLiveData<Boolean>("edit")
 }
 
@@ -41,6 +38,7 @@ class SavedViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?
 
 class SavedFragment : Fragment() {
     private val viewModel: SavedViewModel by sharedViewModels({ "saved" }) { SavedViewModelFactory(this, null) }
+    private val pinAdapter by lazy { SavedAdapter() }
     private val adapter by lazy { SavedAdapter() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
@@ -56,17 +54,29 @@ class SavedFragment : Fragment() {
             lifecycleScope.launchWhenCreated {
                 viewModel.edit.asFlow().collectLatest {
                     binding.toolbar.menu.findItem(R.id.edit).setIcon(if (it) R.drawable.ic_done else R.drawable.ic_edit)
+                    pinAdapter.notifyItemRangeChanged(0, pinAdapter.itemCount)
                     adapter.notifyItemRangeChanged(0, adapter.itemCount)
                 }
             }
-            binding.swipe.setOnRefreshListener { adapter.refresh() }
+            binding.swipe.setOnRefreshListener {
+                pinAdapter.refresh()
+                adapter.refresh()
+            }
+            lifecycleScope.launchWhenCreated {
+                pinAdapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                }
+            }
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow.collectLatest {
                     binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
-            binding.recycler.adapter = adapter
+            binding.recycler.adapter = ConcatAdapter(pinAdapter, adapter)
+            lifecycleScope.launchWhenCreated {
+                viewModel.pinned.collectLatest { pinAdapter.submitData(it) }
+            }
             lifecycleScope.launchWhenCreated {
                 viewModel.saved.collectLatest { adapter.submitData(it) }
             }
