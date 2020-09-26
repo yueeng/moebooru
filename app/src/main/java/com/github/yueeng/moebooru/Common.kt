@@ -30,6 +30,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import androidx.core.view.children
+import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
@@ -66,6 +68,7 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.progressindicator.ProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
@@ -198,7 +201,7 @@ object ProgressBehavior {
     private val map = mutableMapOf<String, ActiveMutableLiveData<Int>>()
     fun update(url: String, bytesRead: Long, contentLength: Long) {
         val data = synchronized(map) { map[url] } ?: return
-        val progress = if (contentLength == 0L) 0 else (bytesRead * 100 / contentLength)
+        val progress = if (contentLength == 0L) -1 else (bytesRead * 100 / contentLength)
         data.postValue(progress.toInt())
     }
 
@@ -789,3 +792,14 @@ val RecyclerView.ViewHolder.resources: Resources get() = context.resources
 
 fun ProgressBar.setProgressCompat(progress: Int, animate: Boolean = true) =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) setProgress(progress, animate) else setProgress(progress)
+
+fun ProgressIndicator.setIndeterminateSafe(indeterminate: Boolean) {
+    if (isIndeterminate == indeterminate) return
+    if (indeterminate && isVisible) {
+        isInvisible = true
+        isIndeterminate = indeterminate
+        isInvisible = false
+    } else {
+        isIndeterminate = indeterminate
+    }
+}
