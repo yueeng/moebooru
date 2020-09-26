@@ -73,14 +73,12 @@ import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -192,25 +190,23 @@ class MoeAppGlideModule : AppGlideModule() {
     }
 }
 
-class ActiveMutableLiveData<T>(private val call: (active: Boolean) -> Unit) : MutableLiveData<T>() {
-    override fun onActive() = call(hasActiveObservers())
-    override fun onInactive() = call(hasActiveObservers())
-}
-
 object ProgressBehavior {
-    private val map = mutableMapOf<String, ActiveMutableLiveData<Int>>()
+    private val map = mutableMapOf<String, MutableLiveData<Int>>()
+    private val sum = mutableMapOf<String, Int>()
     fun update(url: String, bytesRead: Long, contentLength: Long) {
         val data = synchronized(map) { map[url] } ?: return
         val progress = if (contentLength == 0L) -1 else (bytesRead * 100 / contentLength)
         data.postValue(progress.toInt())
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun on(url: String) = synchronized(map) {
-        map.getOrPut(url) {
-            ActiveMutableLiveData {
-                if (it) return@ActiveMutableLiveData
-                synchronized(map) { map.remove(url) }
-            }
+        sum[url] = (sum[url] ?: 0) + 1
+        map.getOrPut(url) { MutableLiveData() }
+    }.asFlow().onCompletion {
+        synchronized(map) {
+            sum[url] = sum[url]!! - 1
+            if (sum[url] ?: 0 == 0) map.remove(url)
         }
     }
 }
@@ -237,8 +233,8 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
     })
     val progress = WeakReference(progressBar)
     lifecycle.lifecycleScope.launchWhenCreated {
-        ProgressBehavior.on(url).asFlow().sample(1000).collectLatest {
-            progress.get()?.isIndeterminate = it == 0
+        ProgressBehavior.on(url).sample(1000).collectLatest {
+            progress.get()?.isIndeterminate = it == -1
             progress.get()?.setProgressCompat(it)
         }
     }
