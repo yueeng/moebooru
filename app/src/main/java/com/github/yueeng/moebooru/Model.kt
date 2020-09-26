@@ -677,20 +677,20 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
             /* Allow basic word prefix matches.  "tag" matches at the beginning of any word
              * in a tag, eg. both "tagme" and "dont_tagme". */
             /* Add the regex for ordinary prefix matches. */
-            regex_parts.add("(([^`]*_)?${Regex.escape(tag)})")
+            regex_parts.add("(([^`]*_)?${escape(tag)})")
 
             /* Allow "fir_las" to match both "first_last" and "last_first". */
             if (tag.indexOf("_") != -1) {
                 val tags = tag.split('_', limit = 2)
-                val first = Regex.escape(tags[0])
-                val last = Regex.escape(tags[1])
+                val first = escape(tags[0])
+                val last = escape(tags[1])
                 regex_parts.add("(($first[^`]*_$last)|($last[^`]*_$first))")
             }
 
             /* Allow "tgm" to match "tagme".  If top_results_only is set, we only want primary results,
              * so omit this match. */
             if (!top_results_only) {
-                regex_parts.add(tag.toCharArray().joinToString("", "(", ")") { "${Regex.escape("$it")}[^`]*" })
+                regex_parts.add(tag.toCharArray().joinToString("", "(", ")") { "${escape("$it")}[^`]*" })
             }
 
             /* The space is included in the result, so the result tags can be matched with the
@@ -707,10 +707,12 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
             return Regex(regex_string, RegexOption.IGNORE_CASE)
         }
 
-        val test = Regex("""(\d+)`([^`]*)`(([^ ]*)`)? ?""")
+        private val escapeRegex = """([.*+?^=!$:{}()|\[\]/\\])""".toRegex()
+        private fun escape(s: String) = s.replace(escapeRegex, """\\$1""")
+        private val test = Regex("""(\d+)`([^`]*)`(([^ ]*)`)? ?""")
         fun suggest(word: String, top: Boolean = false): Sequence<Triple<Int, String, String>> = word.takeIf { it.isNotBlank() }?.let { _ ->
             tag(word, true).findAll(summary)
-                .apply { if (!top) plus(tag(word).findAll(summary)) }
+                .let { if (top) it else it + tag(word).findAll(summary) }
                 .distinctBy { m -> m.value }
                 .mapNotNull { m -> test.find(m.value)?.groups }
                 .map { Triple(it[1]!!.value.toInt(), it[2]!!.value, it[3]?.value ?: "") }
