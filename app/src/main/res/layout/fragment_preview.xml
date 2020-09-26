@@ -39,6 +39,24 @@
             app:layout_constraintStart_toEndOf="@id/button2"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <com.google.android.material.progressindicator.ProgressIndicator
+            android:id="@+id/progress1"
+            style="@style/Widget.MaterialComponents.ProgressIndicator.Circular.Indeterminate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="0dp"
+            android:elevation="6dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:padding="0dp"
+            android:scaleX="1.65"
+            android:scaleY="1.65"
+            app:indicatorWidth="2dp"
+            app:layout_constraintBottom_toBottomOf="@id/button1"
+            app:layout_constraintEnd_toEndOf="@id/button1"
+            app:layout_constraintStart_toStartOf="@id/button1"
+            app:layout_constraintTop_toTopOf="@id/button1" />
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/button2"
             android:layout_width="wrap_content"

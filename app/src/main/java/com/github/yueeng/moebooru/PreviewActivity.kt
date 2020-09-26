@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
+import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
@@ -41,16 +42,11 @@ import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.io.File
 import java.util.*
+import kotlin.math.max
 
 
 class PreviewActivity : MoeActivity(R.layout.activity_main) {
@@ -84,6 +80,8 @@ class PreviewFragment : Fragment() {
     private val adapter by lazy { ImageAdapter() }
     private val tagAdapter by lazy { TagAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
+
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
             this.binding = binding
@@ -105,8 +103,21 @@ class PreviewFragment : Fragment() {
                     }
             }
             lifecycleScope.launchWhenCreated {
-                previewModel.index.asFlow().filter { it < adapter.itemCount }.collectLatest { position ->
-                    val item = adapter.peek(position) ?: return@collectLatest
+                previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
+                    ProgressBehavior.on(item.sample_url).asFlow().sample(500).onCompletion {
+                        binding.progress1.isInvisible = true
+                        binding.progress1.progress = 0
+                        binding.progress1.isIndeterminate = true
+                    }.collectLatest {
+                        binding.progress1.setIndeterminateSafe(it == -1)
+                        binding.progress1.setProgressCompat(max(0, it))
+                        if (it == 100) delay(2000)
+                        binding.progress1.isInvisible = it == 100
+                    }
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher)
                         .transition(DrawableTransitionOptions.withCrossFade())
