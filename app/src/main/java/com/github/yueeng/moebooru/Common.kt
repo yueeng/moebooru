@@ -705,7 +705,7 @@ fun Context.notifyImageComplete(uri: Uri, id: Int, title: String, content: Strin
 
 fun Context.openWeb(uri: String) = startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 
-class AlphaBlackBitmapTransformation : BitmapTransformation() {
+class AlphaBlackBitmapTransformation(val alpha: Int = 0x7F, val color: Int = Color.BLACK) : BitmapTransformation() {
     companion object {
         private const val VERSION = 1
         private const val ID = "com.bumptech.glide.load.resource.bitmap.AlphaBlack.$VERSION"
@@ -723,8 +723,8 @@ class AlphaBlackBitmapTransformation : BitmapTransformation() {
         val dest = Bitmap.createBitmap(rect.width(), rect.height(), src.config)
         val canvas = Canvas(dest)
         canvas.save()
-        canvas.drawColor(Color.BLACK)
-        canvas.drawBitmap(src, rect, rect, Paint().apply { alpha = 0x50 })
+        canvas.drawColor(color)
+        canvas.drawBitmap(src, rect, rect, Paint().also { it.alpha = alpha })
         canvas.restore()
         return dest
     }
