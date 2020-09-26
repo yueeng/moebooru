@@ -245,8 +245,12 @@ class ImageFragment : Fragment() {
                     .setTitle(R.string.app_page_jump)
                     .setPositiveButton(R.string.app_ok) { _, _ ->
                         edit.edit1.text.toString().toIntOrNull()?.takeIf { it > 0 }?.let {
-                            model.min.value = it
-                            adapter.refresh()
+                            if (model.min.value!! > it || model.max.value!! < it) {
+                                model.min.value = it
+                                adapter.refresh()
+                            } else {
+                                binding.recycler.scrollToPosition((it - model.min.value!!) * ImageViewModel.pageSize)
+                            }
                         }
                     }
                     .create().show()
