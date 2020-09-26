@@ -104,7 +104,7 @@ class PreviewFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
-                    ProgressBehavior.on(item.sample_url).asFlow().sample(500).onCompletion {
+                    ProgressBehavior.on(item.sample_url).sample(500).onCompletion {
                         binding.progress1.isInvisible = true
                         binding.progress1.progress = 0
                         binding.progress1.isIndeterminate = true
