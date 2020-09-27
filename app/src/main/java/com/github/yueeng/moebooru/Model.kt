@@ -26,7 +26,7 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
-import com.google.gson.annotations.SerializedName
+import com.google.gson.annotations.SerializedName as SN
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -71,40 +71,40 @@ enum class Resolution(val title: String, val resolution: Int) {
 
 @Parcelize
 data class JImageItem(
-    val actual_preview_height: Int,
-    val actual_preview_width: Int,
-    val author: String,
-    val change: Int,
-    val created_at: Int,
-    val creator_id: Int,
-    val file_size: Int,
-    val file_url: String,
-    val frames_pending_string: String,
-    val frames_string: String,
-    val has_children: Boolean,
-    var parent_id: Int,
-    val height: Int,
-    val id: Int,
-    val is_held: Boolean,
-    val is_shown_in_index: Boolean,
-    val jpeg_file_size: Int,
-    val jpeg_height: Int,
-    val jpeg_url: String,
-    val jpeg_width: Int,
-    val md5: String,
-    val preview_height: Int,
-    val preview_url: String,
-    val preview_width: Int,
-    val rating: String,
-    val sample_file_size: Int,
-    val sample_height: Int,
-    val sample_url: String,
-    val sample_width: Int,
-    val score: Int,
-    val source: String,
-    val status: String,
-    val tags: String,
-    val width: Int
+    @SN("actual_preview_height") val actual_preview_height: Int,
+    @SN("actual_preview_width") val actual_preview_width: Int,
+    @SN("author") val author: String,
+    @SN("change") val change: Int,
+    @SN("created_at") val created_at: Int,
+    @SN("creator_id") val creator_id: Int,
+    @SN("file_size") val file_size: Int,
+    @SN("file_url") val file_url: String,
+    @SN("frames_pending_string") val frames_pending_string: String,
+    @SN("frames_string") val frames_string: String,
+    @SN("has_children") val has_children: Boolean,
+    @SN("parent_id") val parent_id: Int,
+    @SN("height") val height: Int,
+    @SN("id") val id: Int,
+    @SN("is_held") val is_held: Boolean,
+    @SN("is_shown_in_index") val is_shown_in_index: Boolean,
+    @SN("jpeg_file_size") val jpeg_file_size: Int,
+    @SN("jpeg_height") val jpeg_height: Int,
+    @SN("jpeg_url") val jpeg_url: String,
+    @SN("jpeg_width") val jpeg_width: Int,
+    @SN("md5") val md5: String,
+    @SN("preview_height") val preview_height: Int,
+    @SN("preview_url") val preview_url: String,
+    @SN("preview_width") val preview_width: Int,
+    @SN("rating") val rating: String,
+    @SN("sample_file_size") val sample_file_size: Int,
+    @SN("sample_height") val sample_height: Int,
+    @SN("sample_url") val sample_url: String,
+    @SN("sample_width") val sample_width: Int,
+    @SN("score") val score: Int,
+    @SN("source") val source: String,
+    @SN("status") val status: String,
+    @SN("tags") val tags: String,
+    @SN("width") val width: Int,
 ) : Parcelable {
     val mpixels get() = width * height / 1000000F
     val resolution get() = Resolution.match(mpixels)
@@ -112,57 +112,57 @@ data class JImageItem(
 
 @Parcelize
 open class JResult(
-    val success: Boolean? = null,
-    val reason: String? = null
+    @SN("success") val success: Boolean? = null,
+    @SN("reason") val reason: String? = null,
 ) : Parcelable
 
 @Parcelize
 open class JRegResult(
-    val response: String? = null,
-    val exists: Boolean? = null,
-    val name: String? = null,
-    val id: Int? = null,
-    val pass_hash: String? = null,
-    val user_info: String? = null,
-    val errors: List<String>? = null
+    @SN("response") val response: String?,
+    @SN("exists") val exists: Boolean?,
+    @SN("name") val name: String?,
+    @SN("id") val id: Int?,
+    @SN("pass_hash") val pass_hash: String?,
+    @SN("user_info") val user_info: String?,
+    @SN("errors") val errors: List<String>?,
 ) : JResult(), Parcelable
 
 @Parcelize
 data class ItemUser(
-    var name: String? = null,
-    var id: Int? = null
+    @SN("name") val name: String?,
+    @SN("id") val id: Int?,
 ) : Parcelable {
     val face: String get() = "$moeUrl/data/avatars/$id.jpg"
 }
 
 @Parcelize
 data class ItemPool(
-    var id: Int? = null,
-    var name: String? = null,
-    var created_at: String? = null,
-    var updated_at: String? = null,
-    var user_id: Int? = null,
-    var is_public: Boolean? = null,
-    var post_count: Int? = null,
-    var description: String? = null
+    @SN("id") var id: Int?,
+    @SN("name") var name: String?,
+    @SN("created_at") var created_at: String?,
+    @SN("updated_at") var updated_at: String?,
+    @SN("user_id") var user_id: Int?,
+    @SN("is_public") var is_public: Boolean?,
+    @SN("post_count") var post_count: Int?,
+    @SN("description") var description: String?,
 ) : Parcelable
 
 @Parcelize
 data class ItemPoolPost(
-    var id: Int? = null,
-    var pool_id: Int? = null,
-    var post_id: Int? = null,
-    var active: Boolean? = null,
-    var sequence: String? = null,
-    var next_post_id: Int? = null,
-    var prev_post_id: Int? = null
+    @SN("id") val id: Int?,
+    @SN("pool_id") val pool_id: Int?,
+    @SN("post_id") val post_id: Int?,
+    @SN("active") val active: Boolean?,
+    @SN("sequence") val sequence: String?,
+    @SN("next_post_id") val next_post_id: Int?,
+    @SN("prev_post_id") val prev_post_id: Int?,
 ) : Parcelable
 
 @Parcelize
 data class ItemVoteBy(
-    @SerializedName("1") var v1: List<ItemUser>? = null,
-    @SerializedName("2") var v2: List<ItemUser>? = null,
-    @SerializedName("3") var v3: List<ItemUser>? = null
+    @SN("1") var v1: List<ItemUser>? = null,
+    @SN("2") var v2: List<ItemUser>? = null,
+    @SN("3") var v3: List<ItemUser>? = null
 ) : Parcelable {
     val v
         get() = listOf(3 to v3, 2 to v2, 1 to v1)
@@ -173,13 +173,13 @@ data class ItemVoteBy(
 
 @Parcelize
 data class ItemScore(
-    var posts: List<JImageItem>? = null,
-    var pools: List<ItemPool>? = null,
-    var pool_posts: List<ItemPoolPost>? = null,
-    var tags: Map<String, String>? = null,
-    var votes: Map<String, Int>? = null,
-    var voted_by: ItemVoteBy? = null,
-    var vote: Int? = null
+    @SN("posts") val posts: List<JImageItem>?,
+    @SN("pools") val pools: List<ItemPool>?,
+    @SN("pool_posts") val pool_posts: List<ItemPoolPost>?,
+    @SN("tags") val tags: Map<String, String>?,
+    @SN("votes") val votes: Map<String, Int>?,
+    @SN("voted_by") val voted_by: ItemVoteBy?,
+    @SN("vote") val vote: Int?,
 ) : JResult()
 
 @Parcelize
