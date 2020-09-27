@@ -1,6 +1,7 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
+import android.animation.ObjectAnimator
 import android.app.ActivityOptions
 import android.app.WallpaperManager
 import android.content.ContentValues
@@ -14,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.core.animation.doOnEnd
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
@@ -107,12 +109,20 @@ class PreviewFragment : Fragment() {
                     ProgressBehavior.on(item.sample_url).sample(500).onCompletion {
                         binding.progress1.isInvisible = true
                         binding.progress1.progress = 0
+                        binding.progress1.alpha = 1F
                         binding.progress1.isIndeterminate = true
+                        (binding.progress1.tag as? ObjectAnimator)?.cancel()
                     }.collectLatest {
                         binding.progress1.setIndeterminateSafe(it == -1)
                         binding.progress1.setProgressCompat(max(0, it))
-                        if (it == 100) delay(2000)
-                        binding.progress1.isInvisible = it == 100
+                        if (it != 100) binding.progress1.isInvisible = false else {
+                            binding.progress1.tag = ObjectAnimator.ofFloat(binding.progress1, "alpha", 1F, 0F)
+                                .setDuration(2000)
+                                .apply {
+                                    doOnEnd { binding.progress1.isInvisible = true }
+                                    start()
+                                }
+                        }
                     }
                 }
             }
