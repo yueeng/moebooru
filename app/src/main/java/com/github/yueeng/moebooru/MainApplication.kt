@@ -20,17 +20,15 @@ import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import okhttp3.OkHttpClient
-import java.lang.ref.WeakReference
 
 class MainApplication : Application() {
     companion object {
-        private var app: WeakReference<MainApplication>? = null
-
-        fun instance() = app!!.get()!!
+        private lateinit var app: MainApplication
+        fun instance() = app
     }
 
     init {
-        app = WeakReference(this)
+        app = this
     }
 
     lateinit var okHttp: OkHttpClient
@@ -39,7 +37,7 @@ class MainApplication : Application() {
         super.onCreate()
         okHttp = createOkHttpClient()
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            MoeSettings.cache.asFlow().drop(1).collect {
+            MoeSettings.cache.asFlow().drop(1).collectLatest {
                 okHttp = createOkHttpClient()
             }
         }
