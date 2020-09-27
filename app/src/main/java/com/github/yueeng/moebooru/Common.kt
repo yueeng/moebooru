@@ -86,7 +86,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import java.io.IOException
 import java.io.InputStream
-import java.lang.ref.WeakReference
 import java.security.MessageDigest
 import java.text.DateFormat
 import java.util.*
@@ -211,40 +210,26 @@ object ProgressBehavior {
     }
 }
 
-@OptIn(FlowPreview::class)
-@SuppressLint("CheckResult")
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRequest<T> {
     progressBar.progress = 0
     progressBar.max = 100
     progressBar.visibility = View.VISIBLE
-    val lifecycle = object : LifecycleOwner {
-        val life = LifecycleRegistry(this)
-        override fun getLifecycle(): Lifecycle = life
-    }
-    progressBar.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-        override fun onViewAttachedToWindow(v: View?) {
-            lifecycle.life.currentState = Lifecycle.State.CREATED
-        }
-
-        override fun onViewDetachedFromWindow(v: View?) {
-            lifecycle.life.currentState = Lifecycle.State.DESTROYED
-            progressBar.removeOnAttachStateChangeListener(this)
-        }
-    })
-    val progress = WeakReference(progressBar)
-    lifecycle.lifecycleScope.launchWhenCreated {
-        ProgressBehavior.on(url).sample(1000).collectLatest {
-            progress.get()?.isIndeterminate = it == -1
-            progress.get()?.setProgressCompat(it)
+    val job = MainScope().launch {
+        ProgressBehavior.on(url).sample(1000).onCompletion {
+            progressBar.visibility = View.GONE
+        }.collectLatest {
+            progressBar.isIndeterminate = it == -1
+            progressBar.setProgressCompat(it)
         }
     }
     return addListener(object : RequestListener<T> {
         override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean = false.also {
-            progress.get()?.visibility = View.GONE
+            job.cancel()
         }
 
         override fun onResourceReady(resource: T, model: Any?, target: Target<T>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false.also {
-            progress.get()?.visibility = View.GONE
+            job.cancel()
         }
     })
 }
