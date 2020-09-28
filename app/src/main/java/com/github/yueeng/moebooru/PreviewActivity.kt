@@ -106,13 +106,13 @@ class PreviewFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
-                    ProgressBehavior.on(item.sample_url).sample(500).onCompletion {
+                    ProgressBehavior.on(item.sample_url).onCompletion {
                         binding.progress1.isInvisible = true
                         binding.progress1.progress = 0
                         binding.progress1.alpha = 1F
                         binding.progress1.isIndeterminate = true
                         (binding.progress1.tag as? ObjectAnimator)?.cancel()
-                    }.collectLatest {
+                    }.sample(500).collectLatest {
                         binding.progress1.setIndeterminateSafe(it == -1)
                         binding.progress1.setProgressCompat(max(0, it))
                         if (it != 100) binding.progress1.isInvisible = false else {
@@ -238,12 +238,12 @@ class PreviewFragment : Fragment() {
             val values = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                 put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                put(MediaStore.MediaColumns.ARTIST, author.toTitleCase())
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     put(MediaStore.MediaColumns.IS_PENDING, true)
                     put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    put(MediaStore.MediaColumns.ARTIST, author.toTitleCase())
                     put(MediaStore.MediaColumns.ALBUM, moeHost)
                 }
             }
@@ -271,9 +271,7 @@ class PreviewFragment : Fragment() {
                     WorkInfo.State.SUCCEEDED -> {
                         Snackbar.make(binding.button1, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
                             .setAnchorView(binding.button1)
-                            .setAction(R.string.app_ok) {
-                                download()
-                            }
+                            .setAction(R.string.app_ok) { download() }
                             .show()
                         return@launchWhenCreated
                     }

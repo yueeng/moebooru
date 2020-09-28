@@ -26,7 +26,6 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
-import com.google.gson.annotations.SerializedName as SN
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -38,6 +37,7 @@ import retrofit2.http.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import com.google.gson.annotations.SerializedName as SN
 
 @SuppressLint("SimpleDateFormat")
 val moeCreateTime: Calendar = Calendar.getInstance().apply {
