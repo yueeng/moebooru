@@ -400,7 +400,7 @@ class StarFragment : Fragment() {
             }
             binding.recycler.adapter = adapter
             model.data.observe(viewLifecycleOwner, Observer { score ->
-                adapter.submitList(score.voted_by?.v?.flatMap { listOf(Title(it.key, it.value.size)) + it.value })
+                adapter.submitList(score.voted_by.v.flatMap { listOf(Title(it.key, it.value.size)) + it.value })
             })
             binding.swipe.setOnRefreshListener {
                 lifecycleScope.launchWhenCreated {

@@ -112,74 +112,74 @@ data class JImageItem(
 
 @Parcelize
 open class JResult(
-    @SN("success") val success: Boolean? = null,
+    @SN("success") val success: Boolean = false,
     @SN("reason") val reason: String? = null,
 ) : Parcelable
 
 @Parcelize
 open class JRegResult(
-    @SN("response") val response: String?,
-    @SN("exists") val exists: Boolean?,
-    @SN("name") val name: String?,
-    @SN("id") val id: Int?,
-    @SN("pass_hash") val pass_hash: String?,
-    @SN("user_info") val user_info: String?,
-    @SN("errors") val errors: List<String>?,
+    @SN("response") val response: String,
+    @SN("exists") val exists: Boolean,
+    @SN("name") val name: String,
+    @SN("id") val id: Int,
+    @SN("pass_hash") val pass_hash: String,
+    @SN("user_info") val user_info: String,
+    @SN("errors") val errors: List<String>,
 ) : JResult(), Parcelable
 
 @Parcelize
 data class ItemUser(
-    @SN("name") val name: String?,
-    @SN("id") val id: Int?,
+    @SN("name") val name: String,
+    @SN("id") val id: Int,
 ) : Parcelable {
     val face: String get() = "$moeUrl/data/avatars/$id.jpg"
 }
 
 @Parcelize
 data class ItemPool(
-    @SN("id") var id: Int?,
-    @SN("name") var name: String?,
-    @SN("created_at") var created_at: String?,
-    @SN("updated_at") var updated_at: String?,
-    @SN("user_id") var user_id: Int?,
-    @SN("is_public") var is_public: Boolean?,
-    @SN("post_count") var post_count: Int?,
-    @SN("description") var description: String?,
+    @SN("id") var id: Int,
+    @SN("name") var name: String,
+    @SN("created_at") var created_at: String,
+    @SN("updated_at") var updated_at: String,
+    @SN("user_id") var user_id: Int,
+    @SN("is_public") var is_public: Boolean,
+    @SN("post_count") var post_count: Int,
+    @SN("description") var description: String,
 ) : Parcelable
 
 @Parcelize
 data class ItemPoolPost(
-    @SN("id") val id: Int?,
-    @SN("pool_id") val pool_id: Int?,
-    @SN("post_id") val post_id: Int?,
-    @SN("active") val active: Boolean?,
-    @SN("sequence") val sequence: String?,
-    @SN("next_post_id") val next_post_id: Int?,
-    @SN("prev_post_id") val prev_post_id: Int?,
+    @SN("id") val id: Int,
+    @SN("pool_id") val pool_id: Int,
+    @SN("post_id") val post_id: Int,
+    @SN("active") val active: Boolean,
+    @SN("sequence") val sequence: String,
+    @SN("next_post_id") val next_post_id: Int,
+    @SN("prev_post_id") val prev_post_id: Int,
 ) : Parcelable
 
 @Parcelize
 data class ItemVoteBy(
-    @SN("1") var v1: List<ItemUser>? = null,
-    @SN("2") var v2: List<ItemUser>? = null,
-    @SN("3") var v3: List<ItemUser>? = null
+    @SN("1") var v1: List<ItemUser>,
+    @SN("2") var v2: List<ItemUser>,
+    @SN("3") var v3: List<ItemUser>,
 ) : Parcelable {
     val v
         get() = listOf(3 to v3, 2 to v2, 1 to v1)
-            .filter { it.second?.isNotEmpty() == true }
-            .map { it.first to it.second!! }
+            .filter { it.second.isNotEmpty() }
+            .map { it.first to it.second }
             .toMap()
 }
 
 @Parcelize
 data class ItemScore(
-    @SN("posts") val posts: List<JImageItem>?,
-    @SN("pools") val pools: List<ItemPool>?,
-    @SN("pool_posts") val pool_posts: List<ItemPoolPost>?,
-    @SN("tags") val tags: Map<String, String>?,
-    @SN("votes") val votes: Map<String, Int>?,
-    @SN("voted_by") val voted_by: ItemVoteBy?,
-    @SN("vote") val vote: Int?,
+    @SN("posts") val posts: List<JImageItem>,
+    @SN("pools") val pools: List<ItemPool>,
+    @SN("pool_posts") val pool_posts: List<ItemPoolPost>,
+    @SN("tags") val tags: Map<String, String>,
+    @SN("votes") val votes: Map<String, Int>,
+    @SN("voted_by") val voted_by: ItemVoteBy,
+    @SN("vote") val vote: Int,
 ) : JResult()
 
 @Parcelize
