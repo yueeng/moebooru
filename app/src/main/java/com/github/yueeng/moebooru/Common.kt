@@ -76,7 +76,10 @@ import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.sample
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -212,14 +215,10 @@ object ProgressBehavior {
 fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRequest<T> {
     progressBar.progress = 0
     progressBar.max = 100
-    progressBar.isInvisible = true
+    progressBar.isIndeterminate = true
+    progressBar.isVisible = true
     val job = MainScope().launch {
-        ProgressBehavior.on(url).onStart {
-            progressBar.isVisible = true
-            progressBar.isIndeterminate = true
-        }.onCompletion {
-            progressBar.isGone = true
-        }.sample(500).collectLatest {
+        ProgressBehavior.on(url).sample(500).collectLatest {
             if (it >= 0) progressBar.isIndeterminate = false
             progressBar.setProgressCompat(it)
         }
@@ -227,10 +226,12 @@ fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRe
     return addListener(object : RequestListener<T> {
         override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean = false.also {
             job.cancel()
+            progressBar.isGone = true
         }
 
         override fun onResourceReady(resource: T, model: Any?, target: Target<T>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false.also {
             job.cancel()
+            progressBar.isGone = true
         }
     })
 }
