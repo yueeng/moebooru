@@ -30,6 +30,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import androidx.core.view.children
+import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -75,10 +76,7 @@ import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.sample
+import kotlinx.coroutines.flow.*
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -214,12 +212,15 @@ object ProgressBehavior {
 fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRequest<T> {
     progressBar.progress = 0
     progressBar.max = 100
-    progressBar.visibility = View.VISIBLE
+    progressBar.isInvisible = true
     val job = MainScope().launch {
-        ProgressBehavior.on(url).sample(1000).onCompletion {
-            progressBar.visibility = View.GONE
-        }.collectLatest {
-            progressBar.isIndeterminate = it == -1
+        ProgressBehavior.on(url).onStart {
+            progressBar.isVisible = true
+            progressBar.isIndeterminate = true
+        }.onCompletion {
+            progressBar.isGone = true
+        }.sample(500).collectLatest {
+            if (it >= 0) progressBar.isIndeterminate = false
             progressBar.setProgressCompat(it)
         }
     }
@@ -515,7 +516,7 @@ object Save {
                 setForeground(ForegroundInfo(id, notification.build()))
                 val channel = Channel<Pair<Long, Long>>(Channel.CONFLATED)
                 launch {
-                    channel.consumeAsFlow().sample(1000).collectLatest {
+                    channel.consumeAsFlow().sample(500).collectLatest {
                         notification.setProgress(it.second.toInt(), it.first.toInt(), false)
                             .setContentText("${it.first.sizeString()}/${it.second.sizeString()}")
                         setForeground(ForegroundInfo(id, notification.build()))
