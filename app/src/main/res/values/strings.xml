@@ -84,7 +84,6 @@
     <string name="query_width_desc">Query posts with a width of ….</string>
 
     <string name="saved_edit">Edit</string>
-    <string name="saved_empty">Can\'t save empty tag</string>
     <string name="saved_pin">Pin</string>
     <string name="saved_pin_desc">Pin to main page</string>
     <string name="saved_pin_move">Order by long press</string>
