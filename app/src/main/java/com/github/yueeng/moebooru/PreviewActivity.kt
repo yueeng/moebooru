@@ -328,11 +328,13 @@ class PreviewFragment : Fragment() {
             }
         }
 
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
+
         @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
+            progress.postValue(item.sample_url)
             GlideApp.with(binding.image1).load(item.sample_url)
                 .thumbnail(GlideApp.with(binding.image1).load(item.preview_url))
-                .progress(item.sample_url, binding.progress)
                 .into(binding.image1)
         }
 

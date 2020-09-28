@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardCornerRadius="2dp"
-    android:layout_margin="1dp">
+    android:layout_margin="1dp"
+    app:cardCornerRadius="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -31,6 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:layout_margin="5dp"
+            android:max="100"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
@@ -44,8 +45,8 @@
             android:foreground="?selectableItemBackgroundBorderless"
             android:textAppearance="@android:style/TextAppearance.Material.Small"
             android:theme="@style/ThemeOverlay.MaterialComponents.Dark"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             tools:text="@string/app_name" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
