@@ -84,7 +84,6 @@
     <string name="query_width_desc">按图片宽搜索.</string>
 
     <string name="saved_edit">编辑</string>
-    <string name="saved_empty">不能保存空白标签</string>
     <string name="saved_pin">固定</string>
     <string name="saved_pin_desc">添加到主页</string>
     <string name="saved_pin_move">长按排序</string>

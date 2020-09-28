@@ -101,10 +101,10 @@ class QueryFragment : Fragment() {
         }.root
 
     private fun save() = lifecycleScope.launchWhenCreated {
-        model.query.value?.toString()?.takeIf { it.isNotBlank() }?.let { tag ->
+        model.query.value?.toString()?.let { tag ->
             val view = QuerySavedBinding.inflate(layoutInflater)
             val saved = model.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
-            view.input1.hint = tag
+            view.input1.hint = tag.takeIf { it.isNotEmpty() } ?: "Newest"
             view.edit1.setText(saved?.name)
             view.switch1.isChecked = saved?.pin ?: false
             MaterialAlertDialogBuilder(requireContext())
@@ -113,7 +113,9 @@ class QueryFragment : Fragment() {
                 .setPositiveButton(R.string.app_ok) { _, _ ->
                     ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
                         Db.db.withTransaction {
-                            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() } ?: tag.toTitleCase()
+                            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() }
+                                ?: tag.takeIf { it.isNotBlank() }?.toTitleCase()
+                                ?: "Newest"
                             val pin = view.switch1.isChecked
                             if (saved != null) {
                                 Db.tags.updateTag(saved.update(tag, name, pin))
@@ -126,10 +128,7 @@ class QueryFragment : Fragment() {
                 }
                 .setNegativeButton(R.string.app_cancel, null)
                 .create().show()
-        } ?: Snackbar.make(requireView(), R.string.saved_empty, Snackbar.LENGTH_SHORT)
-            .setAnchorView(R.id.button1)
-            .setAction(R.string.app_ok) {}
-            .show()
+        }
     }
 
     fun edit(key: String?) {
