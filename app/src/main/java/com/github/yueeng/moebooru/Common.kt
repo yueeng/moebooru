@@ -739,7 +739,7 @@ val View.childrenRecursively: Sequence<View>
         }
     }
 
-class CropImageResult(
+data class CropImageResult(
     val output: Uri,
     val aspectRatio: Float,
     val imageWidth: Int,
