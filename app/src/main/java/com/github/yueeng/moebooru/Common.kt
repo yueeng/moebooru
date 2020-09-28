@@ -206,34 +206,27 @@ object ProgressBehavior {
     }.asFlow().onCompletion {
         synchronized(map) {
             sum[url] = sum[url]!! - 1
-            if (sum[url] ?: 0 == 0) map.remove(url)
+            if (sum[url] ?: 0 != 0) return@synchronized
+            sum.remove(url)
+            map.remove(url)
         }
     }
-}
 
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-fun <T> GlideRequest<T>.progress(url: String, progressBar: ProgressBar): GlideRequest<T> {
-    progressBar.progress = 0
-    progressBar.max = 100
-    progressBar.isIndeterminate = true
-    progressBar.isVisible = true
-    val job = MainScope().launch {
-        ProgressBehavior.on(url).sample(500).collectLatest {
-            if (it >= 0) progressBar.isIndeterminate = false
-            progressBar.setProgressCompat(it)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    fun progress(lifecycleOwner: LifecycleOwner, progressBar: ProgressBar) = MutableLiveData<String>().apply {
+        lifecycleOwner.lifecycleScope.launchWhenCreated {
+            asFlow().collectLatest { image ->
+                progressBar.isVisible = false
+                progressBar.progress = 0
+                progressBar.isIndeterminate = true
+                on(image).sample(500).collectLatest {
+                    progressBar.isGone = it == 100
+                    progressBar.isIndeterminate = it == -1
+                    progressBar.setProgressCompat(it)
+                }
+            }
         }
     }
-    return addListener(object : RequestListener<T> {
-        override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<T>?, isFirstResource: Boolean): Boolean = false.also {
-            job.cancel()
-            progressBar.isGone = true
-        }
-
-        override fun onResourceReady(resource: T, model: Any?, target: Target<T>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false.also {
-            job.cancel()
-            progressBar.isGone = true
-        }
-    })
 }
 
 fun <TranscodeType> GlideRequest<TranscodeType>.onResourceReady(call: (resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
@@ -267,13 +260,12 @@ val random = Random(System.currentTimeMillis())
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
     Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
 
-fun ImageView.glideUrl(url: String, progressBar: ProgressBar? = null, placeholder: Int? = null) {
+fun ImageView.glideUrl(url: String, placeholder: Int? = null) {
     scaleType = ImageView.ScaleType.CENTER
     GlideApp.with(this)
         .load(url)
         .transition(DrawableTransitionOptions.withCrossFade())
         .apply { if (placeholder != null) placeholder(placeholder) }
-        .apply { if (progressBar != null) progress(url, progressBar) }
         .onResourceReady { _, _, _, _, _ ->
             setImageDrawable(null)
             scaleType = ImageView.ScaleType.CENTER_CROP

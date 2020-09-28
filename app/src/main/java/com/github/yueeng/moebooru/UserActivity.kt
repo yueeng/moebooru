@@ -275,12 +275,13 @@ class UserFragment : Fragment() {
         }
 
         var tag: JImageItem? = null
-
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(item: JImageItem) {
+            progress.postValue(item.preview_url)
             tag = item
             val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * 0.75F
             binding.root.minimumWidth = (height * item.preview_width / item.preview_height).roundToInt()
-            binding.image1.glideUrl(item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
+            binding.image1.glideUrl(item.preview_url, R.mipmap.ic_launcher_foreground)
         }
     }
 
@@ -440,11 +441,12 @@ class StarFragment : Fragment() {
         }
 
         lateinit var value: ItemUser
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(value: ItemUser) {
+            progress.postValue(value.face)
             this.value = value
             GlideApp.with(binding.image1).load(value.face)
                 .error(R.mipmap.ic_launcher)
-                .progress(value.face, binding.progress)
                 .into(binding.image1)
             binding.text1.text = value.name
         }

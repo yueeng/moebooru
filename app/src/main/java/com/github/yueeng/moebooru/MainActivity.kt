@@ -257,17 +257,19 @@ class ImageFragment : Fragment() {
             }
         }.root
 
-    class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
         }
 
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(item: JImageItem) {
+            progress.postValue(item.preview_url)
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
                 params.dimensionRatio = "${item.preview_width}:${item.preview_height}"
             }
-            binding.image1.glideUrl(item.preview_url, binding.progress, R.mipmap.ic_launcher_foreground)
+            binding.image1.glideUrl(item.preview_url, R.mipmap.ic_launcher_foreground)
         }
     }
 
