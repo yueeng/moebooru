@@ -37,8 +37,15 @@ import kotlin.math.min
 class MainActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
-        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+        supportFragmentManager.run {
+            val fragment = findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
+            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
+            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
+            beginTransaction().replace(R.id.container, fragment)
+                .replace(R.id.mine, mine)
+                .replace(R.id.saved, saved)
+                .commit()
+        }
     }
 }
 
@@ -111,9 +118,16 @@ class MainFragment : Fragment() {
 class ListActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val fragment = supportFragmentManager.findFragmentById(R.id.container) as? ListFragment
-            ?: ListFragment().apply { arguments = intent.extras }
-        supportFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+        supportFragmentManager.run {
+            val fragment = findFragmentById(R.id.container) as? ListFragment
+                ?: ListFragment().apply { arguments = intent.extras }
+            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
+            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
+            beginTransaction().replace(R.id.container, fragment)
+                .replace(R.id.mine, mine)
+                .replace(R.id.saved, saved)
+                .commit()
+        }
     }
 }
 
