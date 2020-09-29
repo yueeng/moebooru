@@ -270,6 +270,8 @@ class ImageFragment : Fragment() {
                 params.dimensionRatio = "${item.preview_width}:${item.preview_height}"
             }
             binding.image1.glideUrl(item.preview_url, R.mipmap.ic_launcher_foreground)
+                .onComplete { _, _, _, _ -> progress.postValue(""); false }
+                .into(binding.image1)
         }
     }
 

@@ -209,6 +209,7 @@ object ProgressBehavior {
             if (sum[url] ?: 0 != 0) return@synchronized
             sum.remove(url)
             map.remove(url)
+//            Log.i("PBMAPS", "${map.size}")
         }
     }
 
@@ -219,7 +220,7 @@ object ProgressBehavior {
                 progressBar.isVisible = false
                 progressBar.progress = 0
                 progressBar.isIndeterminate = true
-                on(image).sample(500).collectLatest {
+                if (image.isNotEmpty()) on(image).sample(500).collectLatest {
                     progressBar.isGone = it == 100
                     progressBar.isIndeterminate = it == -1
                     progressBar.setProgressCompat(it)
@@ -242,6 +243,14 @@ fun <TranscodeType> GlideRequest<TranscodeType>.onLoadFailed(call: (e: GlideExce
     override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false
 })
 
+fun <TranscodeType> GlideRequest<TranscodeType>.onComplete(call: (model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean, succeeded: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
+    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean =
+        call(model, target, isFirstResource, false)
+
+    override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean =
+        call(model, target, isFirstResource, true)
+})
+
 class SimpleCustomTarget<T>(private val call: (T) -> Unit) : CustomTarget<T>() {
     override fun onResourceReady(resource: T, transition: Transition<in T>?) = call(resource)
     override fun onLoadCleared(placeholder: Drawable?) = Unit
@@ -260,9 +269,9 @@ val random = Random(System.currentTimeMillis())
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
     Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
 
-fun ImageView.glideUrl(url: String, placeholder: Int? = null) {
+fun ImageView.glideUrl(url: String, placeholder: Int? = null): GlideRequest<Drawable> {
     scaleType = ImageView.ScaleType.CENTER
-    GlideApp.with(this)
+    return GlideApp.with(this)
         .load(url)
         .transition(DrawableTransitionOptions.withCrossFade())
         .apply { if (placeholder != null) placeholder(placeholder) }
@@ -271,7 +280,6 @@ fun ImageView.glideUrl(url: String, placeholder: Int? = null) {
             scaleType = ImageView.ScaleType.CENTER_CROP
             false
         }
-        .into(this)
 }
 
 val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
