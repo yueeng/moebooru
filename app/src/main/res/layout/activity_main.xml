@@ -13,7 +13,6 @@
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/mine"
-        android:name="com.github.yueeng.moebooru.UserFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="start"
@@ -22,7 +21,6 @@
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/saved"
-        android:name="com.github.yueeng.moebooru.SavedFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="end"
