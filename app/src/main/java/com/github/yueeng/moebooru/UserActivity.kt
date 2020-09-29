@@ -282,6 +282,8 @@ class UserFragment : Fragment() {
             val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * 0.75F
             binding.root.minimumWidth = (height * item.preview_width / item.preview_height).roundToInt()
             binding.image1.glideUrl(item.preview_url, R.mipmap.ic_launcher_foreground)
+                .onComplete { _, _, _, _ -> progress.postValue(""); false }
+                .into(binding.image1)
         }
     }
 
@@ -447,6 +449,7 @@ class StarFragment : Fragment() {
             this.value = value
             GlideApp.with(binding.image1).load(value.face)
                 .error(R.mipmap.ic_launcher)
+                .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
             binding.text1.text = value.name
         }

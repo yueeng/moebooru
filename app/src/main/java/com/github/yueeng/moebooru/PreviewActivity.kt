@@ -335,6 +335,7 @@ class PreviewFragment : Fragment() {
             progress.postValue(item.sample_url)
             GlideApp.with(binding.image1).load(item.sample_url)
                 .thumbnail(GlideApp.with(binding.image1).load(item.preview_url))
+                .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
         }
 
