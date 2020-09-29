@@ -190,9 +190,19 @@ class ImageFragment : Fragment() {
     private val offset = MutableLiveData<Int>()
     private val sum = MutableLiveData<Int>()
 
+    companion object {
+        val pool = RecyclerView.RecycledViewPool()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        FragmentImageBinding.bind(requireView()).recycler.setRecycledViewPool(null)
+    }
+
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->
+            binding.recycler.setRecycledViewPool(pool)
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateHeaderAndFooter(HeaderAdapter(adapter), FooterAdapter(adapter))
             lifecycleScope.launchWhenCreated {
