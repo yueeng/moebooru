@@ -81,9 +81,19 @@ class UserFragment : Fragment() {
         else -> super.onOptionsItemSelected(item)
     }
 
+    companion object {
+        val pool = RecyclerView.RecycledViewPool()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        FragmentImageBinding.bind(requireView()).recycler.setRecycledViewPool(null)
+    }
+
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
+            binding.recycler.setRecycledViewPool(ImageFragment.pool)
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
                 binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
             }
