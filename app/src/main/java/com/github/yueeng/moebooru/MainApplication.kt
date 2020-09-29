@@ -20,8 +20,6 @@ import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.flattenMerge
-import kotlinx.coroutines.flow.flowOf
 import okhttp3.OkHttpClient
 
 class MainApplication : Application() {
@@ -155,9 +153,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
         ensureTransform()
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenCreated {
-            val flow1 = MoeSettings.daynight.asFlow().drop(1)
-            val flow2 = MoeSettings.animation.asFlow().drop(1)
-            flowOf(flow1, flow2).flattenMerge(2).collectLatest {
+            MoeSettings.recreate.asFlow().drop(1).collectLatest {
                 recreate()
             }
         }

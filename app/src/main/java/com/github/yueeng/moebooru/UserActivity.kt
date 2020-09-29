@@ -94,7 +94,7 @@ class UserFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        FragmentImageBinding.bind(requireView()).recycler.setRecycledViewPool(null)
+        FragmentUserBinding.bind(requireView()).recycler.setRecycledViewPool(null)
     }
 
     @OptIn(FlowPreview::class)
