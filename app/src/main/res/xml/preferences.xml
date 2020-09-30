@@ -42,6 +42,22 @@
             app:showSeekBarValue="true" />
     </PreferenceCategory>
     <PreferenceCategory>
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_list_info"
+            android:key="app.list_info"
+            android:summaryOff="@string/settings_list_info_off"
+            android:summaryOn="@string/settings_list_info_on"
+            android:title="@string/settings_list_info" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_list_page"
+            android:key="app.list_page"
+            android:summaryOff="@string/settings_list_page_off"
+            android:summaryOn="@string/settings_list_page_on"
+            android:title="@string/settings_list_page" />
+    </PreferenceCategory>
+    <PreferenceCategory>
         <Preference
             android:icon="@drawable/ic_github"
             android:key="github"
