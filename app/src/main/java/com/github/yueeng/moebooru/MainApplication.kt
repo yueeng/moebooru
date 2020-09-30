@@ -159,8 +159,9 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
         }
     }
 
+    open fun enableSettingsMenu() = true
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.app, menu)
+        if (enableSettingsMenu()) menuInflater.inflate(R.menu.app, menu)
         return super.onCreateOptionsMenu(menu)
     }
 

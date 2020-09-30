@@ -112,9 +112,9 @@
         <item>夜晚模式</item>
         <item>跟随电量</item>
     </string-array>
-    <string name="settings_high_quality">下载高质量图片</string>
-    <string name="settings_high_quality_off">相同大小的Jpeg</string>
-    <string name="settings_high_quality_on">Png 或 Jpeg原图</string>
+    <string name="settings_high_quality">下载时自动选择高质量图片</string>
+    <string name="settings_high_quality_off">相同宽高的Jpeg (占用空间少)</string>
+    <string name="settings_high_quality_on">高质量 Png/Jpeg</string>
     <string name="settings_safe_mode">安全模式</string>
     <string name="settings_safe_turn_off">安全</string>
     <string name="settings_safe_turn_on">安全 + 疑似 + 确认</string>

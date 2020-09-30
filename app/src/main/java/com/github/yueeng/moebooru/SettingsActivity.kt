@@ -24,6 +24,8 @@ class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
         val fragment = supportFragmentManager.findFragmentById(R.id.container) as? SettingsFragment ?: SettingsFragment()
         supportFragmentManager.beginTransaction().replace(R.id.preferences, fragment).commit()
     }
+
+    override fun enableSettingsMenu(): Boolean = false
 }
 
 class SettingsFragment : PreferenceFragmentCompat() {
@@ -90,8 +92,10 @@ object MoeSettings {
             putInt(KEY_LIST_COLUMN, if (column.value!! >= max) 1 else (column.value!! + 1))
         }
     }
+
     val info = preferences.booleanLiveData(KEY_LIST_INFO, false)
     val page = preferences.booleanLiveData(KEY_LIST_PAGE, false)
+
     init {
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
             animation.asFlow().distinctUntilChanged().drop(1).collectLatest {
