@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.GridLayoutManager
@@ -58,11 +59,16 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = UserViewModel(handle, args) as T
 }
 
+class UserPoolViewModel : ViewModel() {
+    val pool = RecyclerView.RecycledViewPool()
+}
+
 class UserFragment : Fragment() {
     private val busy = MutableLiveData(false)
     private val mine by lazy { arguments?.containsKey("name") != true }
     private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
+    private val pool: UserPoolViewModel by activityViewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(!mine)
@@ -88,19 +94,10 @@ class UserFragment : Fragment() {
         else -> super.onOptionsItemSelected(item)
     }
 
-    companion object {
-        val pool = RecyclerView.RecycledViewPool()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        FragmentUserBinding.bind(requireView()).recycler.setRecycledViewPool(null)
-    }
-
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            binding.recycler.setRecycledViewPool(pool)
+            binding.recycler.setRecycledViewPool(pool.pool)
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
                 binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
             }
