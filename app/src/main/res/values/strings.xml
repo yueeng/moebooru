@@ -115,15 +115,18 @@
     <string name="settings_high_quality">Auto choose high quality image when download</string>
     <string name="settings_high_quality_off">The same width &amp; height Jpeg (small size)</string>
     <string name="settings_high_quality_on">High quality Png/Jpeg (large size)</string>
-    <string name="settings_safe_mode">Safe mode</string>
-    <string name="settings_safe_turn_off">Safe</string>
-    <string name="settings_safe_turn_on">Safe &amp; Questionable &amp; Explicit</string>
     <string name="settings_list_info">Disable info in picture list</string>
     <string name="settings_list_info_off">Show info</string>
     <string name="settings_list_info_on">Disable info</string>
     <string name="settings_list_page">Disable page navigation</string>
     <string name="settings_list_page_off">Show navigation</string>
     <string name="settings_list_page_on">Disable navigation</string>
+    <string name="settings_list_quality">Auto choose clearer image in image list</string>
+    <string name="settings_list_quality_off">Preview image (small &amp; fast)</string>
+    <string name="settings_list_quality_on">Clearer image (clear &amp; slow)</string>
+    <string name="settings_safe_mode">Safe mode</string>
+    <string name="settings_safe_turn_off">Safe</string>
+    <string name="settings_safe_turn_on">Safe &amp; Questionable &amp; Explicit</string>
 
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>
