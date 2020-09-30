@@ -2,6 +2,7 @@
 <resources>
     <string name="app_about">About</string>
     <string name="app_cancel">Cancel</string>
+    <string name="app_column">Column</string>
     <string name="app_complete">Complete</string>
     <string name="app_download">%1$s download</string>
     <string name="app_failed">Failed</string>

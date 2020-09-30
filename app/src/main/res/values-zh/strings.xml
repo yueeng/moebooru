@@ -2,6 +2,7 @@
 <resources>
     <string name="app_about">关于</string>
     <string name="app_cancel">取消</string>
+    <string name="app_column">列</string>
     <string name="app_complete">成功</string>
     <string name="app_download">%1$s 下载</string>
     <string name="app_failed">失败</string>
