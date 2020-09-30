@@ -64,6 +64,8 @@ object MoeSettings {
     private const val KEY_HIGH_QUALITY = "app.high_quality"
     private const val KEY_ANIMATION = "app.animation"
     private const val KEY_LIST_COLUMN = "app.list_column"
+    private const val KEY_LIST_INFO = "app.list_info"
+    private const val KEY_LIST_PAGE = "app.list_page"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -88,7 +90,8 @@ object MoeSettings {
             putInt(KEY_LIST_COLUMN, if (column.value!! >= max) 1 else (column.value!! + 1))
         }
     }
-
+    val info = preferences.booleanLiveData(KEY_LIST_INFO, false)
+    val page = preferences.booleanLiveData(KEY_LIST_PAGE, false)
     init {
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
             animation.asFlow().distinctUntilChanged().drop(1).collectLatest {

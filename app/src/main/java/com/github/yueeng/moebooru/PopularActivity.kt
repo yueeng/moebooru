@@ -166,6 +166,9 @@ class PopularFragment : Fragment() {
             val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
             startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
+        R.id.column -> true.also {
+            MoeSettings.column()
+        }
         else -> super.onOptionsItemSelected(item)
     }
 }

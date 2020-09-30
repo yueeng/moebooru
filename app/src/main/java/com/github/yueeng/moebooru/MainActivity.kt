@@ -9,6 +9,7 @@ import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
+import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -239,7 +240,7 @@ class ImageFragment : Fragment() {
                     val max = model.max.value ?: return@collectLatest
                     @SuppressLint("SetTextI18n")
                     binding.text1.text = "${min(index + min, max)}/$max"
-                    binding.layout1.isInvisible = max == 0
+                    binding.layout1.isInvisible = max == 0 || MoeSettings.page.value!!
                 }
             }
             lifecycleScope.launchWhenCreated {
@@ -256,6 +257,17 @@ class ImageFragment : Fragment() {
                 MoeSettings.column.asFlow().drop(1).distinctUntilChanged().collectLatest {
                     TransitionManager.beginDelayedTransition(binding.swipe)
                     (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = it
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                MoeSettings.info.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount, "info")
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                MoeSettings.page.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    val max = model.max.value ?: 0
+                    binding.layout1.isInvisible = max == 0 || it
                 }
             }
             (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = MoeSettings.column.value!!
@@ -294,7 +306,9 @@ class ImageFragment : Fragment() {
         }
 
         private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
-        fun bind(item: JImageItem) {
+        fun bind(item: JImageItem, info: Boolean) {
+            binding.text1.isGone = MoeSettings.info.value ?: false
+            if (info) return
             progress.postValue(item.preview_url)
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
@@ -307,8 +321,8 @@ class ImageFragment : Fragment() {
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
-        override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
-
+        override fun onBindViewHolder(holder: ImageHolder, position: Int) = Unit
+        override fun onBindViewHolder(holder: ImageHolder, position: Int, payloads: MutableList<Any>) = holder.bind(getItem(position)!!, payloads.contains("info"))
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
                 binding.root.setOnClickListener {
