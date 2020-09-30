@@ -112,9 +112,9 @@
         <item>Night Mode</item>
         <item>Follow Battery Saver Mode</item>
     </string-array>
-    <string name="settings_high_quality">Download high quality image</string>
-    <string name="settings_high_quality_off">The same size Jpeg</string>
-    <string name="settings_high_quality_on">Png or Original Jpeg</string>
+    <string name="settings_high_quality">Auto choose high quality image when download</string>
+    <string name="settings_high_quality_off">The same width &amp; height Jpeg (small size)</string>
+    <string name="settings_high_quality_on">High quality Png/Jpeg (large size)</string>
     <string name="settings_safe_mode">Safe mode</string>
     <string name="settings_safe_turn_off">Safe</string>
     <string name="settings_safe_turn_on">Safe &amp; Questionable &amp; Explicit</string>
