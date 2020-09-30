@@ -786,3 +786,7 @@ fun ProgressIndicator.setIndeterminateSafe(indeterminate: Boolean) {
         isIndeterminate = indeterminate
     }
 }
+
+suspend fun <A, B> Iterable<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
+    map { async { f(it) } }.awaitAll()
+}

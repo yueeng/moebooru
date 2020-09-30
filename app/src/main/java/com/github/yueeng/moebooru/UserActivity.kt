@@ -202,7 +202,7 @@ class UserFragment : Fragment() {
                 launch {
                     val url = "$moeUrl/user/show/$user"
                     val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
-                    val jsoup = withContext(Dispatchers.IO) { Jsoup.parse(html, url) }
+                    val jsoup = withContext(Dispatchers.Default) { Jsoup.parse(html, url) }
                     launch {
                         val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
                         model.avatar.postValue(id)

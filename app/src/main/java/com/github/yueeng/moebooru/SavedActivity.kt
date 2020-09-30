@@ -20,10 +20,8 @@ import com.github.yueeng.moebooru.databinding.ListStringItemBinding
 import com.github.yueeng.moebooru.databinding.QueryTagItemBinding
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.math.min
 
@@ -97,14 +95,12 @@ class SavedFragment : Fragment() {
                 override fun onMove(view: RecyclerView, holder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean =
                     (holder as? SavedHolder)?.tag?.takeIf { it.pin }?.let {
                         lifecycleScope.launchWhenCreated {
-                            withContext(Dispatchers.IO) {
-                                Db.db.withTransaction {
-                                    pinAdapter.snapshot().toMutableList().apply {
-                                        removeAt(holder.bindingAdapterPosition)
-                                        add(min(size, target.bindingAdapterPosition), holder.tag)
-                                    }.filter { it?.id != 0L }.mapIndexed { index, tag -> DbTagOrder(tag!!.tag, index + 1) }.sortedBy { it.index }.forEach {
-                                        Db.tags.insertOrder(it)
-                                    }
+                            Db.db.withTransaction {
+                                pinAdapter.snapshot().toMutableList().apply {
+                                    removeAt(holder.bindingAdapterPosition)
+                                    add(min(size, target.bindingAdapterPosition), holder.tag)
+                                }.filter { it?.id != 0L }.mapIndexed { index, tag -> DbTagOrder(tag!!.tag, index + 1) }.sortedBy { it.index }.forEach {
+                                    Db.tags.insertOrder(it)
                                 }
                             }
                         }
@@ -114,11 +110,9 @@ class SavedFragment : Fragment() {
                 override fun onSwiped(holder: RecyclerView.ViewHolder, direction: Int) {
                     (holder as? SavedHolder)?.tag?.takeIf { it.id != 0L }?.let {
                         lifecycleScope.launchWhenCreated {
-                            withContext(Dispatchers.IO) {
-                                Db.db.withTransaction {
-                                    Db.tags.deleteTag(it)
-                                    Db.tags.deleteOrder(it.tag)
-                                }
+                            Db.db.withTransaction {
+                                Db.tags.deleteTag(it)
+                                Db.tags.deleteOrder(it.tag)
                             }
                         }
                     }
