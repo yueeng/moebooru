@@ -100,7 +100,7 @@ class UserFragment : Fragment() {
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            binding.recycler.setRecycledViewPool(ImageFragment.pool)
+            binding.recycler.setRecycledViewPool(pool)
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
                 binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
             }
