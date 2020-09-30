@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.edit
 import androidx.lifecycle.*
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -62,6 +63,7 @@ object MoeSettings {
     private const val KEY_CACHE_SIZE = "app.cache_size"
     private const val KEY_HIGH_QUALITY = "app.high_quality"
     private const val KEY_ANIMATION = "app.animation"
+    private const val KEY_LIST_COLUMN = "app.list_column"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -77,6 +79,13 @@ object MoeSettings {
                 AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY -> v
                 else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
             }
+        }
+    }
+    val column = preferences.intLiveData(KEY_LIST_COLUMN, context.resources.getInteger(R.integer.list_image_column))
+    fun column() {
+        preferences.edit {
+            val max = context.resources.getInteger(R.integer.list_image_column) + 1
+            putInt(KEY_LIST_COLUMN, if (column.value!! >= max) 1 else (column.value!! + 1))
         }
     }
 

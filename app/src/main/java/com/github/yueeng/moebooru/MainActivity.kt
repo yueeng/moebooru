@@ -27,10 +27,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flattenMerge
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.*
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -112,6 +109,9 @@ class MainFragment : Fragment() {
             val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
             startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
+        R.id.column -> true.also {
+            MoeSettings.column()
+        }
         else -> super.onOptionsItemSelected(item)
     }
 }
@@ -157,6 +157,9 @@ class ListFragment : Fragment() {
         R.id.search -> true.also {
             val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
             startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
+        }
+        R.id.column -> true.also {
+            MoeSettings.column()
         }
         else -> super.onOptionsItemSelected(item)
     }
@@ -249,6 +252,13 @@ class ImageFragment : Fragment() {
                     binding.progress.setProgressCompat(it)
                 }
             }
+            lifecycleScope.launchWhenCreated {
+                MoeSettings.column.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    TransitionManager.beginDelayedTransition(binding.swipe)
+                    (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = it
+                }
+            }
+            (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = MoeSettings.column.value!!
             binding.recycler.isVerticalScrollBarEnabled = true
             binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(view: RecyclerView, dx: Int, dy: Int) {
