@@ -44,8 +44,11 @@ import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.*
 import kotlin.math.max
@@ -400,30 +403,32 @@ class PreviewFragment : Fragment() {
         var item: JImageItem? = null
         suspend fun submit(item: JImageItem) {
             this.item = item
-
-            val common = listOf(
-                Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
-                Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
-                Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
-            ).toMutableList()
-            if (item.has_children) {
-                common.add(Tag(Tag.TYPE_CHILDREN, "Children", "parent:${item.id}"))
+            val tags = withContext(Dispatchers.Default) {
+                val common = listOf(
+                    Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
+                    Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
+                    Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
+                ).toMutableList()
+                if (item.has_children) {
+                    common.add(Tag(Tag.TYPE_CHILDREN, "Children", "parent:${item.id}"))
+                }
+                if (item.parent_id != 0) {
+                    common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
+                }
+                if (item.source.isNotEmpty()) {
+                    common.add(Tag(Tag.TYPE_URL, "Source", item.source))
+                }
+                listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size).filter { it.first.isNotEmpty() }.forEach { i ->
+                    val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
+                    val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
+                    common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
+                }
+                val tags = item.tags.split(' ').pmap {
+                    Q.suggest(it, true).firstOrNull { i -> i.second == it }
+                }.mapNotNull { it }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
+                (common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
             }
-            if (item.parent_id != 0) {
-                common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
-            }
-            if (item.source.isNotEmpty()) {
-                common.add(Tag(Tag.TYPE_URL, "Source", item.source))
-            }
-            listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size).filter { it.first.isNotEmpty() }.forEach { i ->
-                val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
-                val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
-                common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
-            }
-            val tags = item.tags.split(' ').map {
-                withContext(Dispatchers.IO) { async { Q.suggest(it, true).firstOrNull { i -> i.second == it } } }
-            }.mapNotNull { it.await() }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
-            tagAdapter.submitList((common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag)))
+            tagAdapter.submitList(tags)
         }
     }
 }
