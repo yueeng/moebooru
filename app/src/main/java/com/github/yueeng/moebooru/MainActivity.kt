@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
@@ -23,6 +24,7 @@ import androidx.transition.ChangeTransform
 import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
@@ -265,6 +267,11 @@ class ImageFragment : Fragment() {
                 }
             }
             lifecycleScope.launchWhenCreated {
+                MoeSettings.preview.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount, "preview")
+                }
+            }
+            lifecycleScope.launchWhenCreated {
                 MoeSettings.page.asFlow().drop(1).distinctUntilChanged().collectLatest {
                     val max = model.max.value ?: 0
                     binding.layout1.isInvisible = max == 0 || it
@@ -306,23 +313,39 @@ class ImageFragment : Fragment() {
         }
 
         private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
-        fun bind(item: JImageItem, info: Boolean) {
-            binding.text1.isGone = MoeSettings.info.value ?: false
-            if (info) return
-            progress.postValue(item.preview_url)
+        fun bind(item: JImageItem, payloads: MutableList<Any>) {
+            if (payloads.isEmpty() || payloads.contains("info")) {
+                binding.text1.isGone = MoeSettings.info.value ?: false
+            }
+            if (payloads.isEmpty() || payloads.contains("preview")) {
+                val sample = MoeSettings.preview.value == true
+                val url = if (sample) item.sample_url else item.preview_url
+                progress.postValue(url)
+                binding.image1.scaleType = ImageView.ScaleType.CENTER
+                GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
+                    .apply {
+                        val target = if (sample) GlideApp.with(binding.image1).load(item.preview_url).also { thumbnail(it) } else this
+                        target.transition(DrawableTransitionOptions.withCrossFade())
+                            .onResourceReady { _, _, _, _, _ ->
+                                binding.image1.setImageDrawable(null)
+                                binding.image1.scaleType = ImageView.ScaleType.CENTER_CROP
+                                false
+                            }
+                    }
+                    .onComplete { _, _, _, _ -> progress.postValue(""); false }
+                    .into(binding.image1)
+            }
+            if (payloads.isNotEmpty()) return
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
                 params.dimensionRatio = "${item.preview_width}:${item.preview_height}"
             }
-            binding.image1.glideUrl(item.preview_url, R.mipmap.ic_launcher_foreground)
-                .onComplete { _, _, _, _ -> progress.postValue(""); false }
-                .into(binding.image1)
         }
     }
 
     inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = Unit
-        override fun onBindViewHolder(holder: ImageHolder, position: Int, payloads: MutableList<Any>) = holder.bind(getItem(position)!!, payloads.contains("info"))
+        override fun onBindViewHolder(holder: ImageHolder, position: Int, payloads: MutableList<Any>) = holder.bind(getItem(position)!!, payloads)
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
                 binding.root.setOnClickListener {

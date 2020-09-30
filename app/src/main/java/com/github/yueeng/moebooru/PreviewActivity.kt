@@ -344,7 +344,11 @@ class PreviewFragment : Fragment() {
         fun bind(item: JImageItem) {
             progress.postValue(item.sample_url)
             GlideApp.with(binding.image1).load(item.sample_url)
-                .thumbnail(GlideApp.with(binding.image1).load(item.preview_url))
+                .placeholder(R.mipmap.ic_launcher_foreground)
+                .thumbnail(GlideApp.with(binding.image1).load(item.preview_url).transition(DrawableTransitionOptions.withCrossFade()).onResourceReady { _, _, _, _, _ ->
+                    binding.image1.setImageDrawable(null)
+                    false
+                })
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
         }

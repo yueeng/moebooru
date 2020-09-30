@@ -115,15 +115,18 @@
     <string name="settings_high_quality">下载时自动选择高质量图片</string>
     <string name="settings_high_quality_off">相同宽高的Jpeg (占用空间少)</string>
     <string name="settings_high_quality_on">高质量 Png/Jpeg</string>
-    <string name="settings_safe_mode">安全模式</string>
-    <string name="settings_safe_turn_off">安全</string>
-    <string name="settings_safe_turn_on">安全 + 疑似 + 确认</string>
     <string name="settings_list_info">禁用列表信息显示</string>
     <string name="settings_list_info_off">显示信息</string>
     <string name="settings_list_info_on">禁用信息</string>
     <string name="settings_list_page">禁用页面跳转</string>
     <string name="settings_list_page_off">显示</string>
     <string name="settings_list_page_on">禁用</string>
+    <string name="settings_list_quality">列表加载时选择更清晰的图片</string>
+    <string name="settings_list_quality_off">预览图 (小、快)</string>
+    <string name="settings_list_quality_on">清晰图 (清晰、慢)</string>
+    <string name="settings_safe_mode">安全模式</string>
+    <string name="settings_safe_turn_off">安全</string>
+    <string name="settings_safe_turn_on">安全 + 疑似 + 确认</string>
 
     <string name="user_change_email">变更邮箱</string>
     <string name="user_change_pwd">变更密码</string>

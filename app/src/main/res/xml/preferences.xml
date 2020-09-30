@@ -17,13 +17,6 @@
             android:summaryOff="@string/settings_safe_turn_off"
             android:summaryOn="@string/settings_safe_turn_on"
             android:title="@string/settings_safe_mode" />
-        <SwitchPreference
-            android:defaultValue="false"
-            android:icon="@drawable/ic_high_quality"
-            android:key="app.high_quality"
-            android:summaryOff="@string/settings_high_quality_off"
-            android:summaryOn="@string/settings_high_quality_on"
-            android:title="@string/settings_high_quality" />
         <ListPreference
             android:defaultValue="default"
             android:entries="@array/settings_animation_names"
@@ -42,6 +35,20 @@
             app:showSeekBarValue="true" />
     </PreferenceCategory>
     <PreferenceCategory>
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_high_quality"
+            android:key="app.high_quality"
+            android:summaryOff="@string/settings_high_quality_off"
+            android:summaryOn="@string/settings_high_quality_on"
+            android:title="@string/settings_high_quality" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_list_quality"
+            android:key="app.list_quality"
+            android:summaryOff="@string/settings_list_quality_off"
+            android:summaryOn="@string/settings_list_quality_on"
+            android:title="@string/settings_list_quality" />
         <SwitchPreference
             android:defaultValue="false"
             android:icon="@drawable/ic_list_info"
