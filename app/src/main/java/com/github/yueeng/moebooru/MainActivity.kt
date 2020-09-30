@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.*
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
@@ -321,16 +320,11 @@ class ImageFragment : Fragment() {
                 val sample = MoeSettings.preview.value == true
                 val url = if (sample) item.sample_url else item.preview_url
                 progress.postValue(url)
-                binding.image1.scaleType = ImageView.ScaleType.CENTER
                 GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                     .apply {
                         val target = if (sample) GlideApp.with(binding.image1).load(item.preview_url).also { thumbnail(it) } else this
                         target.transition(DrawableTransitionOptions.withCrossFade())
-                            .onResourceReady { _, _, _, _, _ ->
-                                binding.image1.setImageDrawable(null)
-                                binding.image1.scaleType = ImageView.ScaleType.CENTER_CROP
-                                false
-                            }
+                            .onResourceReady { _, _, _, _, _ -> binding.image1.setImageDrawable(null); false }
                     }
                     .onComplete { _, _, _, _ -> progress.postValue(""); false }
                     .into(binding.image1)
