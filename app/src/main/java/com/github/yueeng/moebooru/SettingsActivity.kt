@@ -113,28 +113,29 @@ object MoeSettings {
     }
 }
 
-abstract class SharedPreferenceLiveData<T>(val sharedPrefs: SharedPreferences, val key: String, private val defValue: T) : LiveData<T>() {
-    init {
-        value = this.getValueFromPreferences(key, defValue)
+abstract class SharedPreferenceLiveData<T>(val sharedPrefs: SharedPreferences, val key: String, private val defValue: T, private val always: Boolean = true) : LiveData<T>() {
+    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == this.key) value = getValueFromPreferences(key, defValue)
     }
 
-    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == this.key) {
-            value = getValueFromPreferences(key, defValue)
-        }
+    init {
+        value = this.getValueFromPreferences(key, defValue)
+        if (always) sharedPrefs.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
     }
 
     abstract fun getValueFromPreferences(key: String, defValue: T): T
 
     override fun onActive() {
         super.onActive()
+        if (always) return
         value = getValueFromPreferences(key, defValue)
         sharedPrefs.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
     }
 
     override fun onInactive() {
-        sharedPrefs.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
         super.onInactive()
+        if (always) return
+        sharedPrefs.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
     }
 }
 
