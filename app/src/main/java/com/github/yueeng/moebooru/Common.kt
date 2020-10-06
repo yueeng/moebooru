@@ -500,16 +500,16 @@ object Save {
 
     val String.fileName get() = encode(toHttpUrl().pathSegments.last())
 
-    class SaveWorker(private val context: Context, private val params: WorkerParameters) : CoroutineWorker(context, params) {
+    class SaveWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
         @OptIn(FlowPreview::class)
         @ExperimentalTime
         override suspend fun doWork(): Result = try {
-            val url = params.inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
-            val target = params.inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
-            val id = params.inputData.getInt("id", 0)
+            val url = inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
+            val target = inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
+            val id = inputData.getInt("id", 0)
             coroutineScope {
-                val notification = NotificationCompat.Builder(MainApplication.instance(), moeHost)
-                    .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
+                val notification = NotificationCompat.Builder(applicationContext, moeHost)
+                    .setContentTitle(applicationContext.getString(R.string.app_download, applicationContext.getString(R.string.app_name)))
                     .setProgress(0, 0, true)
                     .setSmallIcon(R.drawable.ic_stat_name)
                     .setOngoing(true)
@@ -530,7 +530,7 @@ object Save {
                             }
                             channel.offer(0L to body.contentLength())
                             body.byteStream().use { input ->
-                                context.contentResolver.openOutputStream(target)?.use { output ->
+                                applicationContext.contentResolver.openOutputStream(target)?.use { output ->
                                     input.copyTo(output)
                                 }
                             }
@@ -556,6 +556,7 @@ object Save {
     }
 
     fun save(id: Int, url: String, target: Uri, so: SO, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
+        val context = MainApplication.instance()
         val params = Data.Builder().putString("url", url)
             .putString("target", target.toString())
             .putInt("id", id).build()
@@ -571,8 +572,8 @@ object Save {
             }
         }
         val fileName = url.fileName
-        val notification = NotificationCompat.Builder(MainApplication.instance(), moeHost)
-            .setContentTitle(MainApplication.instance().getString(R.string.app_download, MainApplication.instance().getString(R.string.app_name)))
+        val notification = NotificationCompat.Builder(context, moeHost)
+            .setContentTitle(context.getString(R.string.app_download, context.getString(R.string.app_name)))
             .setContentText(fileName)
             .setSmallIcon(R.drawable.ic_stat_name)
             .setOngoing(true)
@@ -580,7 +581,7 @@ object Save {
             when (it.state) {
                 WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
                     notification.setProgress(0, 0, true)
-                        .setContentText(MainApplication.instance().getString(R.string.download_ready))
+                        .setContentText(context.getString(R.string.download_ready))
                     NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
                 }
                 WorkInfo.State.RUNNING -> Unit
@@ -594,7 +595,7 @@ object Save {
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
-                        val padding = PendingIntent.getActivity(MainApplication.instance(), id, Intent.createChooser(intent, MainApplication.instance().getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
+                        val padding = PendingIntent.getActivity(context, id, Intent.createChooser(intent, context.getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
                         notification.apply {
                             setContentText(fileName)
                             setProgress(0, 0, false)
@@ -620,10 +621,10 @@ object Save {
                         NotificationManagerCompat.from(MainApplication.instance()).cancel(id)
                     }
                     when (so) {
-                        SO.SAVE -> MainApplication.instance().contentResolver.update(target, ContentValues().apply {
+                        SO.SAVE -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) context.contentResolver.update(target, ContentValues().apply {
                             put(MediaStore.MediaColumns.IS_PENDING, false)
                         }, null, null)
-                        SO.WALLPAPER -> MainApplication.instance().contentResolver.openInputStream(target)?.use { stream ->
+                        SO.WALLPAPER -> context.contentResolver.openInputStream(target)?.use { stream ->
                             WallpaperManager.getInstance(MainApplication.instance()).setStream(stream)
                         }
                         else -> Unit
@@ -632,7 +633,7 @@ object Save {
                 WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
                     if (tip && it.state == WorkInfo.State.FAILED) {
                         notification.apply {
-                            setContentText(MainApplication.instance().getText(R.string.app_failed))
+                            setContentText(context.getText(R.string.app_failed))
                             setProgress(0, 0, false)
                             setOngoing(false)
                             setAutoCancel(true)
@@ -678,7 +679,7 @@ fun Context.notifyImageComplete(uri: Uri, id: Int, title: String, content: Strin
             manager.createNotificationChannel(channel)
         }
     }
-    val builder = NotificationCompat.Builder(MainApplication.instance(), moeHost)
+    val builder = NotificationCompat.Builder(this, moeHost)
         .setContentTitle(title)
         .setContentText(content)
         .setAutoCancel(true)

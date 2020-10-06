@@ -355,7 +355,7 @@ interface MoebooruService {
 }
 
 class Service(private val service: MoebooruService) : MoebooruService by service {
-    override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, if (MoeSettings.safe.value != true) Q(tags).rating(Q.Rating.safe) else tags, limit)
+    override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, Q.safe(tags), limit)
 
     companion object {
         private val retrofit: Retrofit = Retrofit.Builder()
@@ -626,6 +626,8 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
             (Rating._questionable to R.string.query_rating__questionable),
             (Rating._explicit to R.string.query_rating__explicit)
         )
+
+        fun safe(query: Q?) = Q(query).apply { if (MoeSettings.safe.value != true) rating(Rating.safe) }
 
         class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
             override fun doWork(): Result = try {
