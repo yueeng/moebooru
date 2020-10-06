@@ -3,7 +3,6 @@ package com.github.yueeng.moebooru
 import android.Manifest
 import android.animation.ObjectAnimator
 import android.app.ActivityOptions
-import android.app.WallpaperManager
 import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
@@ -205,21 +204,15 @@ class PreviewFragment : Fragment() {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
                     val file = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                     val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
-                    Save.save(item.id, item.jpeg_url, uri) {
-                        it?.let { uri ->
-                            requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                                WallpaperManager.getInstance(requireContext()).setStream(stream)
-                            }
-                        }
-                    }
+                    Save.save(item.id, item.jpeg_url, uri, Save.SO.WALLPAPER)
                 }.check()
             }
             binding.button6.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_url.fileName)
-                Save.save(item.id, item.jpeg_url, Uri.fromFile(file), tip = false) {
-                    it?.let { source ->
-                        lifecycleScope.launchWhenCreated {
+                Save.save(item.id, item.jpeg_url, Uri.fromFile(file), Save.SO.OTHER, tip = false) {
+                    lifecycleScope.launchWhenCreated {
+                        it?.let { source ->
                             val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                             previewModel.crop.value = item
                             cropShare.launch(UCrop.of(source, Uri.fromFile(dest)))
@@ -258,15 +251,7 @@ class PreviewFragment : Fragment() {
                 }
             }
             val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
-            Save.save(id, url, target, "save-${id}") {
-                it?.let {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        values.clear()
-                        values.put(MediaStore.MediaColumns.IS_PENDING, false)
-                        requireContext().contentResolver.update(target, values, null, null)
-                    }
-                }
-            }
+            Save.save(id, url, target, Save.SO.SAVE)
         }
 
         fun check() {
