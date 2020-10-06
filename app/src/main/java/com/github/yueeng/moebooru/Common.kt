@@ -3,10 +3,8 @@
 package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.app.*
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -14,6 +12,7 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
+import android.provider.MediaStore
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
@@ -552,13 +551,17 @@ object Save {
         return work.firstOrNull()?.state
     }
 
-    fun save(id: Int, url: String, target: Uri, key: String? = null, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
+    enum class SO {
+        SAVE, WALLPAPER, OTHER
+    }
+
+    fun save(id: Int, url: String, target: Uri, so: SO, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
         val params = Data.Builder().putString("url", url)
             .putString("target", target.toString())
             .putInt("id", id).build()
         val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
         val manager = WorkManager.getInstance(MainApplication.instance()).apply {
-            if (key == null) enqueue(request) else enqueueUniqueWork(key, ExistingWorkPolicy.KEEP, request)
+            if (so != SO.SAVE) enqueue(request) else enqueueUniqueWork("save-$id", ExistingWorkPolicy.KEEP, request)
         }
         val info = manager.getWorkInfoByIdLiveData(request.id)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -615,6 +618,15 @@ object Save {
                             })
                     } else {
                         NotificationManagerCompat.from(MainApplication.instance()).cancel(id)
+                    }
+                    when (so) {
+                        SO.SAVE -> MainApplication.instance().contentResolver.update(target, ContentValues().apply {
+                            put(MediaStore.MediaColumns.IS_PENDING, false)
+                        }, null, null)
+                        SO.WALLPAPER -> MainApplication.instance().contentResolver.openInputStream(target)?.use { stream ->
+                            WallpaperManager.getInstance(MainApplication.instance()).setStream(stream)
+                        }
+                        else -> Unit
                     }
                 }
                 WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
