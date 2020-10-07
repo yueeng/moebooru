@@ -13,6 +13,6 @@
         android:id="@+id/column"
         android:icon="@drawable/ic_column"
         android:orderInCategory="0"
-        android:title="@string/app_search"
+        android:title="@string/app_column"
         app:showAsAction="ifRoom" />
 </menu>
