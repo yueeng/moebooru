@@ -188,21 +188,23 @@ class PreviewFragment : Fragment() {
                 }
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
-                    val dest = File(MainApplication.instance().cacheDir, UUID.randomUUID().toString())
-                    val option = UCrop.Options().apply {
-                        setAllowedGestures(UCropActivity.SCALE, UCropActivity.NONE, UCropActivity.SCALE)
-                        setHideBottomControls(true)
+                    lifecycleScope.launchWhenCreated {
+                        val dest = File(requireContext().cacheDir, UUID.randomUUID().toString())
+                        val option = UCrop.Options().apply {
+                            setAllowedGestures(UCropActivity.SCALE, UCropActivity.NONE, UCropActivity.SCALE)
+                            setHideBottomControls(true)
+                        }
+                        val crop = UCrop.of(Uri.fromFile(file), Uri.fromFile(dest))
+                            .withAspectRatio(1F, 1F).withOptions(option)
+                        previewModel.crop.value = item
+                        cropAvatar.launch(crop)
                     }
-                    val crop = UCrop.of(Uri.fromFile(file), Uri.fromFile(dest))
-                        .withAspectRatio(1F, 1F).withOptions(option)
-                    previewModel.crop.value = item
-                    cropAvatar.launch(crop)
                 })
             }
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
                     val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
-                    val file = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
+                    val file = File(File(requireContext().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                     val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
                     Save.save(item.id, item.jpeg_url, uri, Save.SO.WALLPAPER)
                 }.check()
@@ -213,7 +215,7 @@ class PreviewFragment : Fragment() {
                 Save.save(item.id, item.jpeg_url, Uri.fromFile(file), Save.SO.OTHER, tip = false) {
                     lifecycleScope.launchWhenCreated {
                         it?.let { source ->
-                            val dest = File(File(MainApplication.instance().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
+                            val dest = File(File(requireContext().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                             previewModel.crop.value = item
                             cropShare.launch(UCrop.of(source, Uri.fromFile(dest)))
                         }
