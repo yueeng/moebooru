@@ -631,14 +631,14 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
         class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
             override fun doWork(): Result = try {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.instance())
+                val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 val etag = preferences.getString("summary-etag", moeSummaryEtag)
                 val request = Request.Builder().url(moeSummaryUrl).build()
                 val response = okHttp.newCall(request).execute()
                 val online = response.header("ETag")
                 if (online != null && online != etag) {
                     response.body?.byteStream()?.use { input ->
-                        File(MainApplication.instance().filesDir, "summary.json").outputStream().use {
+                        File(applicationContext.filesDir, "summary.json").outputStream().use {
                             input.copyTo(it)
                         }
                         preferences.edit().putString("summary-etag", online).apply()
