@@ -239,8 +239,7 @@ class ImageFragment : Fragment() {
                     val index = model.index.value ?: return@collectLatest
                     val min = model.min.value ?: return@collectLatest
                     val max = model.max.value ?: return@collectLatest
-                    @SuppressLint("SetTextI18n")
-                    binding.text1.text = "${min(index + min, max)}/$max"
+                    binding.text1.text = getString(R.string.app_page_number, min(index + min, max), max)
                     binding.layout1.isInvisible = max == 0 || MoeSettings.page.value!!
                 }
             }

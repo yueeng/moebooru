@@ -42,6 +42,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="3dp"
             android:background="@drawable/image_tag_background"
+            android:foreground="?selectableItemBackgroundBorderless"
             android:textAppearance="@android:style/TextAppearance.Material.Small"
             android:theme="@style/ThemeOverlay.MaterialComponents.Dark"
             app:layout_constraintBottom_toBottomOf="parent"
