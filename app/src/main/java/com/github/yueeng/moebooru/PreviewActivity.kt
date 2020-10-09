@@ -86,7 +86,7 @@ class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaul
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PreviewViewModel(handle, defaultArgs) as T
 }
 
-class PreviewFragment : Fragment() {
+class PreviewFragment : Fragment(), SavedFragment.Queryable {
     private val previewModel: PreviewViewModel by viewModels { PreviewViewModelFactory(this, arguments) }
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val binding by lazy { FragmentPreviewBinding.bind(requireView()) }
@@ -418,4 +418,6 @@ class PreviewFragment : Fragment() {
             submitList(tags)
         }
     }
+
+    override fun query(): Q? = query
 }

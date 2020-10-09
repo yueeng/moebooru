@@ -1,7 +1,5 @@
 package com.github.yueeng.moebooru
 
-import android.app.ActivityOptions
-import android.content.Intent
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
@@ -47,7 +45,7 @@ class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundl
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PopularViewModel(handle) as T
 }
 
-class PopularFragment : Fragment() {
+class PopularFragment : Fragment(), SavedFragment.Queryable {
     private val model: PopularViewModel by viewModels { PopularViewModelFactory(this, arguments) }
     private val type by lazy { arguments?.getString("type") ?: "day" }
     private val adapter by lazy { PopularAdapter(this) }
@@ -161,14 +159,11 @@ class PopularFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.search -> true.also {
-            val query = adapter.getItem(binding.pager.currentItem)
-            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
-        }
         R.id.column -> true.also {
             MoeSettings.column()
         }
         else -> super.onOptionsItemSelected(item)
     }
+
+    override fun query(): Q? = adapter.getItem(binding.pager.currentItem)
 }

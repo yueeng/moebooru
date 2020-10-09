@@ -170,6 +170,10 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             val options = ActivityOptions.makeSceneTransitionAnimation(this, findViewById(item.itemId), "shared_element_container")
             startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
         }
+        R.id.search -> true.also {
+            val options = ActivityOptions.makeSceneTransitionAnimation(this, findViewById(item.itemId), "shared_element_container")
+            startActivity(Intent(this, QueryActivity::class.java), options.toBundle())
+        }
         else -> super.onOptionsItemSelected(item)
     }
 }
