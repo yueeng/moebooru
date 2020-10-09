@@ -132,7 +132,7 @@ data class ItemUser(
     @SN("name") val name: String,
     @SN("id") val id: Int,
 ) : Parcelable {
-    val face: String get() = "$moeUrl/data/avatars/$id.jpg"
+    val face: String get() = (if (OAuth.user.value == id) OAuth.face(id) else null) ?: "$moeUrl/data/avatars/$id.jpg"
 }
 
 @Parcelize

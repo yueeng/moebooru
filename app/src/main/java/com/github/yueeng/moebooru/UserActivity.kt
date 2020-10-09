@@ -454,16 +454,18 @@ class StarFragment : Fragment() {
         }
     }
 
-    inner class StarHolder(private val binding: VoteUserItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class StarHolder(private val binding: VoteUserItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
+
         init {
             binding.root.setOnClickListener {
-                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to value.id, "name" to value.name)), options.toBundle())
+                val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
+                activity.startActivity(Intent(activity, UserActivity::class.java).putExtras(bundleOf("user" to value.id, "name" to value.name)), options.toBundle())
             }
         }
 
         lateinit var value: ItemUser
-        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
+        private val progress = ProgressBehavior.progress(activity, binding.progress)
         fun bind(value: ItemUser) {
             progress.postValue(value.face)
             this.value = value
@@ -476,7 +478,7 @@ class StarFragment : Fragment() {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    inner class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+    class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
             is ItemUser -> 1
@@ -484,8 +486,8 @@ class StarFragment : Fragment() {
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder = when (viewType) {
-            0 -> TitleHolder(VoteTitleItemBinding.inflate(layoutInflater, parent, false))
-            1 -> StarHolder(VoteUserItemBinding.inflate(layoutInflater, parent, false))
+            0 -> TitleHolder(VoteTitleItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+            1 -> StarHolder(VoteUserItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
             else -> throw IllegalArgumentException()
         }
 
