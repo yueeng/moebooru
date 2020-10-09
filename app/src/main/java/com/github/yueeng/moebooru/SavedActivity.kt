@@ -119,10 +119,15 @@ class SavedFragment : Fragment() {
                 }
             }).attachToRecyclerView(binding.recycler)
             binding.button1.setOnClickListener {
+                val query = (activity?.supportFragmentManager?.findFragmentById(R.id.container) as? Queryable)?.query() ?: Q()
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                startActivity(Intent(requireContext(), QueryActivity::class.java), options.toBundle())
+                startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
             }
         }.root
+
+    interface Queryable {
+        fun query(): Q?
+    }
 
     inner class SavedHolder(private val binding: QueryTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {

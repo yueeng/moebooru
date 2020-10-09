@@ -50,7 +50,7 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
     }
 }
 
-class MainFragment : Fragment() {
+class MainFragment : Fragment(), SavedFragment.Queryable {
     private val adapter by lazy { PagerAdapter(this) }
     private lateinit var binding: FragmentMainBinding
 
@@ -107,16 +107,13 @@ class MainFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.search -> true.also {
-            val query = adapter.data[binding.pager.currentItem].second
-            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
-        }
         R.id.column -> true.also {
             MoeSettings.column()
         }
         else -> super.onOptionsItemSelected(item)
     }
+
+    override fun query(): Q? = adapter.data[binding.pager.currentItem].second
 }
 
 class ListActivity : MoeActivity(R.layout.activity_main) {
@@ -135,7 +132,7 @@ class ListActivity : MoeActivity(R.layout.activity_main) {
     }
 }
 
-class ListFragment : Fragment() {
+class ListFragment : Fragment(), SavedFragment.Queryable {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
@@ -157,15 +154,13 @@ class ListFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.search -> true.also {
-            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
-            startActivity(Intent(requireContext(), QueryActivity::class.java).putExtra("query", query), options.toBundle())
-        }
         R.id.column -> true.also {
             MoeSettings.column()
         }
         else -> super.onOptionsItemSelected(item)
     }
+
+    override fun query(): Q? = query
 }
 
 class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {
