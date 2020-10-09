@@ -341,19 +341,22 @@ class ImageFragment : Fragment() {
         override fun onBindViewHolder(holder: ImageHolder, position: Int, payloads: MutableList<Any>) = holder.bind(getItem(position)!!, payloads)
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
-                binding.root.setOnClickListener {
-                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), binding.root, "shared_element_container")
-                    startActivity(
-                        Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", bindingAdapterPosition),
-                        options.toBundle()
-                    )
-                }
                 binding.text1.setOnClickListener {
                     val item = getItem(bindingAdapterPosition)!!
                     val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                     startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
                 }
             }
+
+        override fun onViewAttachedToWindow(holder: ImageHolder) {
+            holder.binding.root.setOnClickListener {
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), holder.binding.root, "shared_element_container")
+                startActivity(
+                    Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", holder.bindingAdapterPosition),
+                    options.toBundle()
+                )
+            }
+        }
     }
 
     class HeaderHolder(private val binding: StateItemBinding, private val retryCallback: () -> Unit) : RecyclerView.ViewHolder(binding.root) {

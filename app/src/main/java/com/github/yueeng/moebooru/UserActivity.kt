@@ -258,12 +258,12 @@ class UserFragment : Fragment() {
 
     @Parcelize
     data class Tag(val name: String, val query: String) : Parcelable
-    inner class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setCardBackgroundColor(randomColor())
             binding.root.setOnClickListener {
-                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), binding.root, "shared_element_container")
-                startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
+                val options = ActivityOptions.makeSceneTransitionAnimation(binding.root.context as Activity, binding.root, "shared_element_container")
+                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -278,10 +278,11 @@ class UserFragment : Fragment() {
         init {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
             binding.root.setOnClickListener {
+                val adapter = bindingAdapter as ImageAdapter
                 val title = adapter.currentList.reversed().dropWhile { it != tag }.mapNotNull { it as? Title }.firstOrNull()!!
                 val images = adapter.currentList.dropWhile { it != title }.takeWhile { it != tag }
-                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), binding.root, "shared_element_container")
-                startActivity(
+                val options = ActivityOptions.makeSceneTransitionAnimation(binding.root.context as Activity, binding.root, "shared_element_container")
+                binding.root.context.startActivity(
                     Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("index", images.size - 1),
                     options.toBundle()
                 )
