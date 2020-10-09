@@ -1,6 +1,5 @@
 package com.github.yueeng.moebooru
 
-import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
@@ -241,10 +240,12 @@ class UserFragment : Fragment() {
     @Parcelize
     data class Title(val name: String, val query: String? = null) : Parcelable
     class TitleHolder(private val binding: UserTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
+
         init {
             binding.button1.setOnClickListener {
-                val options = ActivityOptions.makeSceneTransitionAnimation(binding.root.context as Activity, binding.root, "shared_element_container")
-                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
+                val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
+                activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -259,11 +260,13 @@ class UserFragment : Fragment() {
     @Parcelize
     data class Tag(val name: String, val query: String) : Parcelable
     class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
+
         init {
             binding.root.setCardBackgroundColor(randomColor())
             binding.root.setOnClickListener {
-                val options = ActivityOptions.makeSceneTransitionAnimation(binding.root.context as Activity, binding.root, "shared_element_container")
-                binding.root.context.startActivity(Intent(binding.root.context, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
+                val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
+                activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -274,15 +277,17 @@ class UserFragment : Fragment() {
         }
     }
 
-    inner class ImageHolder(private val binding: UserImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ImageHolder(private val binding: UserImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
+
         init {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
             binding.root.setOnClickListener {
                 val adapter = bindingAdapter as ImageAdapter
                 val title = adapter.currentList.reversed().dropWhile { it != tag }.mapNotNull { it as? Title }.firstOrNull()!!
                 val images = adapter.currentList.dropWhile { it != title }.takeWhile { it != tag }
-                val options = ActivityOptions.makeSceneTransitionAnimation(binding.root.context as Activity, binding.root, "shared_element_container")
-                binding.root.context.startActivity(
+                val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
+                activity.startActivity(
                     Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("index", images.size - 1),
                     options.toBundle()
                 )
@@ -290,7 +295,7 @@ class UserFragment : Fragment() {
         }
 
         var tag: JImageItem? = null
-        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
+        private val progress = ProgressBehavior.progress(activity, binding.progress)
         fun bind(item: JImageItem) {
             progress.postValue(item.preview_url)
             tag = item
@@ -302,7 +307,7 @@ class UserFragment : Fragment() {
         }
     }
 
-    inner class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+    class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
             is Tag -> 1

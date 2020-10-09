@@ -6,6 +6,7 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.ContentValues
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
@@ -803,3 +804,11 @@ fun ProgressIndicator.setIndeterminateSafe(indeterminate: Boolean) {
 suspend fun <A, B> Iterable<A>.pmap(f: suspend (A) -> B): List<B> = coroutineScope {
     map { async { f(it) } }.awaitAll()
 }
+
+fun Context.wrappers(): Sequence<ContextWrapper> = sequence {
+    val wrapper = this@wrappers as? ContextWrapper ?: return@sequence
+    yield(wrapper)
+    yieldAll(wrapper.baseContext.wrappers())
+}
+
+inline fun <reified T : Activity> View.findActivity(): T? = context.wrappers().mapNotNull { it as? T }.firstOrNull()

@@ -14,6 +14,7 @@ import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.findFragment
 import androidx.lifecycle.*
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
@@ -305,12 +306,28 @@ class ImageFragment : Fragment() {
             }
         }.root
 
-    inner class ImageHolder(val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
+
         init {
             binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
+            binding.root.setOnClickListener {
+                val query = binding.root.findFragment<Fragment>().arguments?.getParcelable<Q>("query") ?: return@setOnClickListener
+                val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
+                activity.startActivity(
+                    Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", bindingAdapterPosition),
+                    options.toBundle()
+                )
+            }
+            binding.text1.setOnClickListener {
+                val adapter = bindingAdapter as? ImageAdapter ?: return@setOnClickListener
+                val item = adapter.peek(bindingAdapterPosition) ?: return@setOnClickListener
+                val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
+                activity.startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
+            }
         }
 
-        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
+        private val progress = ProgressBehavior.progress(activity, binding.progress)
         fun bind(item: JImageItem, payloads: MutableList<Any>) {
             if (payloads.isEmpty() || payloads.contains("info")) {
                 binding.text1.isGone = MoeSettings.info.value ?: false
@@ -336,27 +353,11 @@ class ImageFragment : Fragment() {
         }
     }
 
-    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
+    class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = Unit
         override fun onBindViewHolder(holder: ImageHolder, position: Int, payloads: MutableList<Any>) = holder.bind(getItem(position)!!, payloads)
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
-            ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
-                binding.text1.setOnClickListener {
-                    val item = getItem(bindingAdapterPosition)!!
-                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                    startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
-                }
-            }
-
-        override fun onViewAttachedToWindow(holder: ImageHolder) {
-            holder.binding.root.setOnClickListener {
-                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), holder.binding.root, "shared_element_container")
-                startActivity(
-                    Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", holder.bindingAdapterPosition),
-                    options.toBundle()
-                )
-            }
-        }
+            ImageHolder(ImageItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
     }
 
     class HeaderHolder(private val binding: StateItemBinding, private val retryCallback: () -> Unit) : RecyclerView.ViewHolder(binding.root) {
