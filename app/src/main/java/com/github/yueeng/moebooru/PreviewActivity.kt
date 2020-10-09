@@ -14,12 +14,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnEnd
 import androidx.core.content.FileProvider
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.findFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.LoadState
@@ -87,7 +89,7 @@ class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaul
 class PreviewFragment : Fragment() {
     private val previewModel: PreviewViewModel by viewModels { PreviewViewModelFactory(this, arguments) }
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
-    private lateinit var binding: FragmentPreviewBinding
+    private val binding by lazy { FragmentPreviewBinding.bind(requireView()) }
     private val adapter by lazy { ImageAdapter() }
     private val tagAdapter by lazy { TagAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
@@ -95,7 +97,6 @@ class PreviewFragment : Fragment() {
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
-            this.binding = binding
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
             }
@@ -315,17 +316,20 @@ class PreviewFragment : Fragment() {
         return open
     }
 
-    inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root), LifecycleOwner {
+    class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
+
         init {
             binding.image1.setOnClickListener {
-                val pager = this@PreviewFragment.binding
+                val fragment = binding.root.findFragment<PreviewFragment>()
+                val pager = fragment.binding
                 val behavior = BottomSheetBehavior.from(pager.sliding)
                 if (behavior.isOpen) behavior.close()
-                else if (pager.pager.currentItem + 1 < adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
+                else if (pager.pager.currentItem + 1 < fragment.adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
             }
         }
 
-        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
+        private val progress = ProgressBehavior.progress(activity, binding.progress)
 
         @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
@@ -339,24 +343,13 @@ class PreviewFragment : Fragment() {
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
         }
-
-        val lifecycle = LifecycleRegistry(this)
-        override fun getLifecycle(): Lifecycle = lifecycle
     }
 
-    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
+    class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
             ImageHolder(PreviewItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-
-        override fun onViewAttachedToWindow(holder: ImageHolder) {
-            holder.lifecycle.currentState = Lifecycle.State.CREATED
-        }
-
-        override fun onViewDetachedFromWindow(holder: ImageHolder) {
-            holder.lifecycle.currentState = Lifecycle.State.DESTROYED
-        }
     }
 
     class TagHolder(val binding: PreviewTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -373,25 +366,28 @@ class PreviewFragment : Fragment() {
         }
     }
 
-    inner class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
+    class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
         private val data get() = currentList
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder = TagHolder(PreviewTagItemBinding.inflate(layoutInflater, parent, false)).apply {
-            binding.root.setOnClickListener {
-                val tag = data[bindingAdapterPosition]
-                when (tag.type) {
-                    Tag.TYPE_URL -> requireContext().openWeb(tag.tag)
-                    Tag.TYPE_DOWNLOAD -> download(item!!.id, tag.tag, item!!.author)
-                    else -> {
-                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder =
+            TagHolder(PreviewTagItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
+                binding.root.setOnClickListener {
+                    val activity = binding.root.findActivity<AppCompatActivity>() ?: return@setOnClickListener
+                    val fragment = binding.root.findFragment<PreviewFragment>()
+                    val tag = data[bindingAdapterPosition]
+                    when (tag.type) {
+                        Tag.TYPE_URL -> activity.openWeb(tag.tag)
+                        Tag.TYPE_DOWNLOAD -> fragment.download(item.id, tag.tag, item.author)
+                        else -> {
+                            val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
+                            activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
+                        }
                     }
                 }
             }
-        }
 
         override fun onBindViewHolder(holder: TagHolder, position: Int) = holder.bind(data[position])
 
-        var item: JImageItem? = null
+        private lateinit var item: JImageItem
         suspend fun submit(item: JImageItem) {
             this.item = item
             val tags = withContext(Dispatchers.Default) {
@@ -419,7 +415,7 @@ class PreviewFragment : Fragment() {
                 }.mapNotNull { it }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
                 (common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
             }
-            tagAdapter.submitList(tags)
+            submitList(tags)
         }
     }
 }
