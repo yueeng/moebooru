@@ -9,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.GridLayoutManager
@@ -58,16 +57,11 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = UserViewModel(handle, args) as T
 }
 
-class UserPoolViewModel : ViewModel() {
-    val pool = RecyclerView.RecycledViewPool()
-}
-
 class UserFragment : Fragment() {
     private val busy = MutableLiveData(false)
     private val mine by lazy { arguments?.containsKey("name") != true }
     private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
     private val adapter by lazy { ImageAdapter() }
-    private val pool: UserPoolViewModel by activityViewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(!mine)
@@ -96,7 +90,6 @@ class UserFragment : Fragment() {
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            binding.recycler.setRecycledViewPool(pool.pool)
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
                 binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
             }
@@ -239,13 +232,11 @@ class UserFragment : Fragment() {
 
     @Parcelize
     data class Title(val name: String, val query: String? = null) : Parcelable
-    class TitleHolder(private val binding: UserTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
-
+    inner class TitleHolder(private val binding: UserTitleItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.button1.setOnClickListener {
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
-                activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
+                requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -259,14 +250,12 @@ class UserFragment : Fragment() {
 
     @Parcelize
     data class Tag(val name: String, val query: String) : Parcelable
-    class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
-
+    inner class TagHolder(private val binding: UserTagItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setCardBackgroundColor(randomColor())
             binding.root.setOnClickListener {
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
-                activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
+                requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
         }
 
@@ -277,9 +266,7 @@ class UserFragment : Fragment() {
         }
     }
 
-    class ImageHolder(private val binding: UserImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
-
+    inner class ImageHolder(private val binding: UserImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
             binding.root.setOnClickListener {
@@ -287,7 +274,7 @@ class UserFragment : Fragment() {
                 val title = adapter.currentList.reversed().dropWhile { it != tag }.mapNotNull { it as? Title }.firstOrNull()!!
                 val images = adapter.currentList.dropWhile { it != title }.takeWhile { it != tag }
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
-                activity.startActivity(
+                requireActivity().startActivity(
                     Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("index", images.size - 1),
                     options.toBundle()
                 )
@@ -295,7 +282,7 @@ class UserFragment : Fragment() {
         }
 
         var tag: JImageItem? = null
-        private val progress = ProgressBehavior.progress(activity, binding.progress)
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(item: JImageItem) {
             progress.postValue(item.preview_url)
             tag = item
@@ -307,7 +294,7 @@ class UserFragment : Fragment() {
         }
     }
 
-    class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+    inner class ImageAdapter : ListAdapter<Parcelable, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
             is Tag -> 1
@@ -454,18 +441,16 @@ class StarFragment : Fragment() {
         }
     }
 
-    class StarHolder(private val binding: VoteUserItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
-
+    inner class StarHolder(private val binding: VoteUserItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.root.setOnClickListener {
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                activity.startActivity(Intent(activity, UserActivity::class.java).putExtras(bundleOf("user" to value.id, "name" to value.name)), options.toBundle())
+                requireActivity().startActivity(Intent(activity, UserActivity::class.java).putExtras(bundleOf("user" to value.id, "name" to value.name)), options.toBundle())
             }
         }
 
         lateinit var value: ItemUser
-        private val progress = ProgressBehavior.progress(activity, binding.progress)
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(value: ItemUser) {
             progress.postValue(value.face)
             this.value = value
@@ -478,7 +463,7 @@ class StarFragment : Fragment() {
     }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
+    inner class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0
             is ItemUser -> 1

@@ -7,6 +7,7 @@ import android.app.ActivityOptions
 import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
@@ -20,17 +21,17 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnEnd
 import androidx.core.content.FileProvider
+import androidx.core.content.res.use
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.findFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
 import androidx.palette.graphics.Palette
-import androidx.palette.graphics.Target
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
@@ -102,6 +103,8 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
+            (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            activity?.title = query.toString().toTitleCase()
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
             }
@@ -146,7 +149,10 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 var anim: ObjectAnimator? = null
                 fun trans(to: Int) {
                     val from = (binding.root.background as? ColorDrawable)?.color ?: 0
-                    anim = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), from, to).apply {
+                    val target = if (to != 0) to else requireActivity().theme.obtainStyledAttributes(intArrayOf(R.attr.colorSurface)).use {
+                        it.getColor(0, Color.WHITE)
+                    }
+                    anim = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), from, target).apply {
                         duration = 300
                         start()
                     }
@@ -155,9 +161,9 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     if (!it) trans(0) else background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
                         if (bitmap == null) return@collect
                         val palette = withContext(Dispatchers.Default) {
-                            Palette.from(bitmap).clearTargets().addTarget(Target.VIBRANT).addTarget(Target.MUTED).generate()
+                            Palette.from(bitmap).clearTargets()/*.addTarget(Target.VIBRANT).addTarget(Target.MUTED)*/.generate()
                         }
-                        val swatch = palette.dominantSwatch ?: palette.vibrantSwatch ?: palette.mutedSwatch
+                        val swatch = palette.dominantSwatch// ?: palette.vibrantSwatch ?: palette.mutedSwatch
                         trans(swatch?.rgb ?: 0)
                     }
                 }
@@ -178,10 +184,9 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             binding.recycler.adapter = tagAdapter
             lifecycleScope.launchWhenCreated {
                 adapter.loadStateFlow.collectLatest {
-                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                    binding.busy.isVisible = it.refresh is LoadState.Loading
                 }
             }
-            binding.swipe.setOnRefreshListener { adapter.refresh() }
             binding.button1.setOnClickListener {
                 val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
                 download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author)
@@ -344,12 +349,10 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         return open
     }
 
-    class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
-
+    inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.image1.setOnClickListener {
-                val fragment = binding.root.findFragment<PreviewFragment>()
+                val fragment = this@PreviewFragment
                 val pager = fragment.binding
                 val behavior = BottomSheetBehavior.from(pager.sliding)
                 if (behavior.isOpen) behavior.close()
@@ -357,7 +360,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
         }
 
-        private val progress = ProgressBehavior.progress(activity, binding.progress)
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
 
         @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
@@ -373,7 +376,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         }
     }
 
-    class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
+    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = holder.bind(getItem(position)!!)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
@@ -394,20 +397,18 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         }
     }
 
-    class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
+    inner class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
         private val data get() = currentList
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder =
             TagHolder(PreviewTagItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
                 binding.root.setOnClickListener {
-                    val activity = binding.root.findActivity<AppCompatActivity>() ?: return@setOnClickListener
-                    val fragment = binding.root.findFragment<PreviewFragment>()
                     val tag = data[bindingAdapterPosition]
                     when (tag.type) {
-                        Tag.TYPE_URL -> activity.openWeb(tag.tag)
-                        Tag.TYPE_DOWNLOAD -> fragment.download(item.id, tag.tag, item.author)
+                        Tag.TYPE_URL -> requireActivity().openWeb(tag.tag)
+                        Tag.TYPE_DOWNLOAD -> download(item.id, tag.tag, item.author)
                         else -> {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                            activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
+                            requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
                         }
                     }
                 }
