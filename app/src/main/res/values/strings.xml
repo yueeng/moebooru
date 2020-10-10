@@ -124,9 +124,12 @@
     <string name="settings_list_quality">Auto choose clearer image in image list</string>
     <string name="settings_list_quality_off">Preview image (small &amp; fast)</string>
     <string name="settings_list_quality_on">Clearer image (clear &amp; slow)</string>
+    <string name="settings_preview_color">Dynamic preview background color</string>
+    <string name="settings_preview_color_off">Default</string>
+    <string name="settings_preview_color_on">With image tint</string>
     <string name="settings_safe_mode">Safe mode</string>
     <string name="settings_safe_turn_off">Safe</string>
-    <string name="settings_safe_turn_on">Safe &amp; Questionable &amp; Explicit</string>
+    <string name="settings_safe_turn_on">All</string>
 
     <string name="user_change_email">Change Email</string>
     <string name="user_change_pwd">Change Password</string>

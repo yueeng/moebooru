@@ -124,9 +124,12 @@
     <string name="settings_list_quality">列表加载时选择更清晰的图片</string>
     <string name="settings_list_quality_off">预览图 (小、快)</string>
     <string name="settings_list_quality_on">清晰图 (清晰、慢)</string>
+    <string name="settings_preview_color">动态预览页背景颜色</string>
+    <string name="settings_preview_color_off">默认</string>
+    <string name="settings_preview_color_on">跟随图片色调</string>
     <string name="settings_safe_mode">安全模式</string>
     <string name="settings_safe_turn_off">安全</string>
-    <string name="settings_safe_turn_on">安全 + 疑似 + 确认</string>
+    <string name="settings_safe_turn_on">全部</string>
 
     <string name="user_change_email">变更邮箱</string>
     <string name="user_change_pwd">变更密码</string>

@@ -69,6 +69,7 @@ object MoeSettings {
     private const val KEY_LIST_INFO = "app.list_info"
     private const val KEY_LIST_PAGE = "app.list_page"
     private const val KEY_LIST_QUALITY = "app.list_quality"
+    private const val KEY_PREVIEW_COLOR = "app.preview_color"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -97,6 +98,7 @@ object MoeSettings {
     val info = preferences.booleanLiveData(KEY_LIST_INFO, false)
     val page = preferences.booleanLiveData(KEY_LIST_PAGE, false)
     val preview = preferences.booleanLiveData(KEY_LIST_QUALITY, false)
+    val previewColor = preferences.booleanLiveData(KEY_PREVIEW_COLOR, false)
 
     init {
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
