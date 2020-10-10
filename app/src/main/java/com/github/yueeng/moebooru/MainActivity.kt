@@ -13,7 +13,6 @@ import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.findFragment
 import androidx.lifecycle.*
 import androidx.paging.*
@@ -199,22 +198,16 @@ class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultA
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = ImageViewModel(handle, defaultArgs) as T
 }
 
-class ImagePoolViewModel : ViewModel() {
-    val pool = RecyclerView.RecycledViewPool()
-}
-
 class ImageFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
     private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     private val offset = MutableLiveData<Int>()
     private val sum = MutableLiveData<Int>()
-    private val pool: ImagePoolViewModel by activityViewModels()
 
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->
-            binding.recycler.setRecycledViewPool(pool.pool)
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateHeaderAndFooter(HeaderAdapter(adapter), FooterAdapter(adapter))
             lifecycleScope.launchWhenCreated {
@@ -301,15 +294,13 @@ class ImageFragment : Fragment() {
             }
         }.root
 
-    class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val activity get() = binding.root.findActivity<AppCompatActivity>()!!
-
+    inner class ImageHolder(private val binding: ImageItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
             binding.root.setOnClickListener {
                 val query = binding.root.findFragment<Fragment>().arguments?.getParcelable<Q>("query") ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
-                activity.startActivity(
+                requireActivity().startActivity(
                     Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", bindingAdapterPosition),
                     options.toBundle()
                 )
@@ -318,11 +309,11 @@ class ImageFragment : Fragment() {
                 val adapter = bindingAdapter as? ImageAdapter ?: return@setOnClickListener
                 val item = adapter.peek(bindingAdapterPosition) ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                activity.startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
+                requireActivity().startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
             }
         }
 
-        private val progress = ProgressBehavior.progress(activity, binding.progress)
+        private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(item: JImageItem, payloads: MutableList<Any>) {
             if (payloads.isEmpty() || payloads.contains("info")) {
                 binding.text1.isGone = MoeSettings.info.value ?: false
@@ -348,7 +339,7 @@ class ImageFragment : Fragment() {
         }
     }
 
-    class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
+    inner class ImageAdapter : PagingDataAdapter<JImageItem, ImageHolder>(diffCallback { old, new -> old.id == new.id }) {
         override fun onBindViewHolder(holder: ImageHolder, position: Int) = Unit
         override fun onBindViewHolder(holder: ImageHolder, position: Int, payloads: MutableList<Any>) = holder.bind(getItem(position)!!, payloads)
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageHolder =
