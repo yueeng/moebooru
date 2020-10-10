@@ -25,6 +25,13 @@
             android:key="app.animation"
             android:title="@string/settings_animation"
             app:useSimpleSummaryProvider="true" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_preview_color"
+            android:key="app.preview_color"
+            android:summaryOff="@string/settings_preview_color_off"
+            android:summaryOn="@string/settings_preview_color_on"
+            android:title="@string/settings_preview_color" />
         <SeekBarPreference
             android:defaultValue="256"
             android:icon="@drawable/ic_storage"

@@ -1,10 +1,13 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
+import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.app.ActivityOptions
 import android.content.ContentValues
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -26,6 +29,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.LoadState
 import androidx.paging.PagingDataAdapter
+import androidx.palette.graphics.Palette
+import androidx.palette.graphics.Target
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
@@ -136,12 +141,35 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
                 }
             }
+            val background = MutableLiveData<Bitmap?>()
+            lifecycleScope.launchWhenCreated {
+                var anim: ObjectAnimator? = null
+                fun trans(to: Int) {
+                    val from = (binding.root.background as? ColorDrawable)?.color ?: 0
+                    anim = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), from, to).apply {
+                        duration = 300
+                        start()
+                    }
+                }
+                MoeSettings.previewColor.asFlow().distinctUntilChanged().collectLatest {
+                    if (!it) trans(0) else background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
+                        if (bitmap == null) return@collect
+                        val palette = withContext(Dispatchers.Default) {
+                            Palette.from(bitmap).clearTargets().addTarget(Target.VIBRANT).addTarget(Target.MUTED).generate()
+                        }
+                        val swatch = palette.dominantSwatch ?: palette.vibrantSwatch ?: palette.mutedSwatch
+                        trans(swatch?.rgb ?: 0)
+                    }
+                }
+            }
             lifecycleScope.launchWhenCreated {
                 previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher)
                         .transition(DrawableTransitionOptions.withCrossFade())
                         .into(binding.button7)
+                    GlideApp.with(this@PreviewFragment).asBitmap().load(item.preview_url)
+                        .into(SimpleCustomTarget<Bitmap> { background.postValue(it) })
                     tagAdapter.submit(item)
                     TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
                 }
@@ -410,7 +438,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
                     common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
                 }
-                val tags = item.tags.split(' ').pmap {
+                val tags = item.tags.split(' ').map {
                     Q.suggest(it, true).firstOrNull { i -> i.second == it }
                 }.mapNotNull { it }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
                 (common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
