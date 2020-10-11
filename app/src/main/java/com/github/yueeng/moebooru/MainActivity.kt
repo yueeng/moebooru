@@ -67,20 +67,21 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
                     adapter.notifyDataSetChanged()
                 }
             }
+            val buttons = listOf(binding.button2, binding.button3, binding.button4, binding.button5).onEach { fab ->
+                fab.setOnClickListener {
+                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), fab, "shared_element_container")
+                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"), options.toBundle())
+                }
+            }
             binding.button1.setOnClickListener {
                 val ex = binding.button1.rotation == 45F
                 val axis = MaterialSharedAxis(MaterialSharedAxis.Y, !ex)
                 val set = TransitionSet().addTransition(axis).addTransition(ChangeTransform())
-                TransitionManager.beginDelayedTransition(binding.root, set)
+                TransitionManager.beginDelayedTransition(binding.button1.parent as ViewGroup, set)
                 binding.button1.rotation = if (ex) 0F else 45F
-                binding.button2.isInvisible = ex
-                binding.button3.isInvisible = ex
-                binding.button4.isInvisible = ex
-            }
-            listOf(binding.button2, binding.button3, binding.button4).forEach { fab ->
-                fab.setOnClickListener {
-                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), fab, "shared_element_container")
-                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"), options.toBundle())
+                buttons.forEach {
+                    it.isInvisible = ex
+                    it.alpha = if (ex) 0F else 1F
                 }
             }
         }.root

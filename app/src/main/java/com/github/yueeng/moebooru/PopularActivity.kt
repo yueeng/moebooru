@@ -55,6 +55,14 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         FragmentPopularBinding.inflate(inflater, container, false).also { binding ->
             this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+            requireActivity().setTitle(
+                when (type) {
+                    "day" -> R.string.popular_by_day
+                    "week" -> R.string.popular_by_week
+                    "month" -> R.string.popular_by_month
+                    else -> R.string.popular_by_year
+                }
+            )
             binding.pager.adapter = adapter
             tabAdapter.submitList((1..adapter.itemCount).mapNotNull { adapter.getPageTitle(it - 1) })
             binding.tab.adapter = tabAdapter
@@ -92,6 +100,7 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         "day" -> Calendar.getInstance().minus(target).daysGreedy - 1
         "week" -> Calendar.getInstance().minus(target).weeksGreedy - 1
         "month" -> Calendar.getInstance().minus(target).months - 1
+        "year" -> Calendar.getInstance().minus(target).year - 1
         else -> throw  IllegalArgumentException()
     }
 
@@ -99,6 +108,7 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         "day" -> Calendar.getInstance().day(-position, true)
         "week" -> Calendar.getInstance().weekOfYear(-position, true)
         "month" -> Calendar.getInstance().month(-position, true)
+        "year" -> Calendar.getInstance().year(-position, true)
         else -> throw  IllegalArgumentException()
     }
 
@@ -111,15 +121,16 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
 
         fun getItem(position: Int) = Q().popular(type, pos2date(position).time)
         private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        private val weekFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+        private val yearFormatter get() = SimpleDateFormat("yyyy", Locale.getDefault())
         fun getTime(position: Int) = pos2date(position)
         fun getPageTitle(position: Int): CharSequence? = when (type) {
             "day" -> pos2date(position).format(dayFormatter)
             "week" -> pos2date(position).let {
-                "${it.lastDayOfWeekWithLocale.format(weekFormatter)} W${it.lastDayOfWeekWithLocale.get(Calendar.WEEK_OF_MONTH)}"
+                "${it.lastDayOfWeekWithLocale.format(monthFormatter)} W${it.lastDayOfWeekWithLocale.get(Calendar.WEEK_OF_MONTH)}"
             }
             "month" -> pos2date(position).firstDayOfMonth.format(monthFormatter)
+            "year" -> pos2date(position).format(yearFormatter)
             else -> throw IllegalArgumentException()
         }
     }

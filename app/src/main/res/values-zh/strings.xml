@@ -23,6 +23,11 @@
     <string name="download_ready">准备中</string>
     <string name="download_running">已经在下载队列中，请等待</string>
 
+    <string name="popular_by_day">按天排行</string>
+    <string name="popular_by_month">按月排行</string>
+    <string name="popular_by_week">按周排行</string>
+    <string name="popular_by_year">按年排行</string>
+
     <string name="query_date">时间</string>
     <string name="query_date_desc">按创建日期搜索.</string>
     <string name="query_empty">无效输入</string>

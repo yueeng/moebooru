@@ -23,6 +23,11 @@
     <string name="download_ready">Ready</string>
     <string name="download_running">The file already downloading, wait please.</string>
 
+    <string name="popular_by_day">Popular by day</string>
+    <string name="popular_by_month">Popular by month</string>
+    <string name="popular_by_week">Popular by week</string>
+    <string name="popular_by_year">Popular by year</string>
+
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>
     <string name="query_empty">"Invalid input "</string>

@@ -508,10 +508,13 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
     fun popular_by_month(date: Date) = order(Order.score).date(Value(Value.Op.bt, date.firstDayOfMonth(), date.lastDayOfMonth()))
 
+    fun popular_by_year(date: Date) = order(Order.score).date(Value(Value.Op.bt, date.firstDayOfYear(), date.lastDayOfYear()))
+
     fun popular(type: String, date: Date) = when (type) {
         "day" -> popular_by_day(date)
         "week" -> popular_by_week(date)
         "month" -> popular_by_month(date)
+        "year" -> popular_by_year(date)
         else -> throw IllegalArgumentException()
     }
 
