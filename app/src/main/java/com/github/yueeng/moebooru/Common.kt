@@ -356,6 +356,22 @@ fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { calendar ->
     calendar.time
 }
 
+fun Date.firstDayOfYear(): Date = Calendar.getInstance().let { calendar ->
+    calendar.time = this
+    calendar.set(Calendar.MONTH, 0)
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    calendar.time
+}
+
+fun Date.lastDayOfYear(): Date = Calendar.getInstance().let { calendar ->
+    calendar.time = this
+    calendar.set(Calendar.MONTH, 0)
+    calendar.roll(Calendar.MONTH, -1)
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    calendar.roll(Calendar.DAY_OF_MONTH, -1)
+    calendar.time
+}
+
 class TimeSpan(val end: Calendar, val begin: Calendar) {
     val milliseconds get() = end.timeInMillis - begin.timeInMillis
     val seconds get() = milliseconds / 1000
@@ -364,6 +380,7 @@ class TimeSpan(val end: Calendar, val begin: Calendar) {
     val days: Int get() = (hours / 24).toInt()
     val weeks: Int get() = days / 7
     val months: Int get() = (end.year - begin.year) * 12 + (end.month - begin.month) + 1
+    val year: Int get() = end.year - begin.year + 1
     val daysGreedy: Int
         get() = days + when {
             end.timeInMillis < begin.timeInMillis -> when {
