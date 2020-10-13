@@ -10,13 +10,6 @@
             android:key="app.day_night_mode"
             android:title="@string/settings_daynight_mode"
             app:useSimpleSummaryProvider="true" />
-        <SwitchPreference
-            android:defaultValue="false"
-            android:icon="@drawable/ic_safe"
-            android:key="app.safe_mode"
-            android:summaryOff="@string/settings_safe_turn_off"
-            android:summaryOn="@string/settings_safe_turn_on"
-            android:title="@string/settings_safe_mode" />
         <ListPreference
             android:defaultValue="default"
             android:entries="@array/settings_animation_names"
@@ -25,6 +18,15 @@
             android:key="app.animation"
             android:title="@string/settings_animation"
             app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+    <PreferenceCategory>
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_safe"
+            android:key="app.safe_mode"
+            android:summaryOff="@string/settings_safe_turn_off"
+            android:summaryOn="@string/settings_safe_turn_on"
+            android:title="@string/settings_safe_mode" />
         <SwitchPreference
             android:defaultValue="false"
             android:icon="@drawable/ic_preview_color"
@@ -32,6 +34,13 @@
             android:summaryOff="@string/settings_preview_color_off"
             android:summaryOn="@string/settings_preview_color_on"
             android:title="@string/settings_preview_color" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:icon="@drawable/ic_host"
+            android:key="app.host_ip"
+            android:summaryOff="@string/settings_host_ip_off"
+            android:summaryOn="@string/settings_host_ip_on"
+            android:title="@string/settings_host_ip" />
         <SeekBarPreference
             android:defaultValue="256"
             android:icon="@drawable/ic_storage"

@@ -87,6 +87,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import java.io.IOException
 import java.io.InputStream
+import java.net.InetAddress
 import java.security.MessageDigest
 import java.text.DateFormat
 import java.util.*
@@ -111,13 +112,19 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
     }
 }
 val okHttp get() = MainApplication.instance().okHttp
+val okDns = object : Dns {
+    override fun lookup(hostname: String): List<InetAddress> =
+        if (MoeSettings.host.value == true && hostname.endsWith(moeHost)) listOf(InetAddress.getByName(moeIp)) else Dns.SYSTEM.lookup(hostname)
+}
 
 fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
     .writeTimeout(30, TimeUnit.SECONDS)
     .readTimeout(60, TimeUnit.SECONDS)
+    .hostnameVerifier { _, _ -> true }
     .cache(Cache(MainApplication.instance().cacheDir, (1L shl 20) * (MoeSettings.cache.value ?: 256)))
     .cookieJar(okCookie)
+    .dns(okDns)
     .addNetworkInterceptor { chain ->
         val request = chain.request()
         val url = request.url.toString()
