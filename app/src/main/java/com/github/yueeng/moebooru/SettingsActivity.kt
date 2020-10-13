@@ -70,12 +70,14 @@ object MoeSettings {
     private const val KEY_LIST_PAGE = "app.list_page"
     private const val KEY_LIST_QUALITY = "app.list_quality"
     private const val KEY_PREVIEW_COLOR = "app.preview_color"
+    private const val KEY_HOST_IP = "app.host_ip"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
     val quality = preferences.booleanLiveData(KEY_HIGH_QUALITY, false)
     val safe = preferences.booleanLiveData(KEY_SAFE_MODE, false)
     val cache = preferences.intLiveData(KEY_CACHE_SIZE, 256)
+    val host = preferences.booleanLiveData(KEY_HOST_IP, false)
     private val daynight_ = preferences.stringLiveData(KEY_DAY_NIGHT_MODE, "${AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM}")
     val daynight = MediatorLiveData<Int>().apply {
         addSource(daynight_) {

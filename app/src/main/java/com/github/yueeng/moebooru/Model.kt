@@ -44,6 +44,7 @@ val moeCreateTime: Calendar = Calendar.getInstance().apply {
     time = SimpleDateFormat("yyyy-MM-dd").parse(MainApplication.instance().getString(R.string.app_create_time))!!
 }
 val moeHost = MainApplication.instance().getString(R.string.app_host)
+val moeIp = MainApplication.instance().getString(R.string.app_ip)
 val moeUrl = "https://$moeHost"
 val moeSummaryUrl = "$moeUrl/tag/summary.json"
 val moeSummaryEtag = MainApplication.instance().getString(R.string.app_summary_etag)
