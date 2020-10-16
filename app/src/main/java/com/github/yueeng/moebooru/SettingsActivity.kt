@@ -8,10 +8,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.lifecycle.*
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
-import androidx.preference.SeekBarPreference
+import androidx.preference.*
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -37,6 +35,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     seek.summary = (it * (1L shl 20)).sizeString()
                 }
             }
+        }
+        val address = findPreference<EditTextPreference>("app.host_ip_address")
+        lifecycleScope.launchWhenCreated {
+            MoeSettings.host.asFlow().collectLatest {
+                address?.isVisible = it
+            }
+        }
+        address?.setOnBindEditTextListener {
+            it.findParent<TextInputLayout>()?.hint = getString(R.string.settings_host_ip_address_default, getString(R.string.app_ip))
         }
         findPreference<Preference>("github")?.let {
             it.setOnPreferenceClickListener {
@@ -71,6 +78,7 @@ object MoeSettings {
     private const val KEY_LIST_QUALITY = "app.list_quality"
     private const val KEY_PREVIEW_COLOR = "app.preview_color"
     private const val KEY_HOST_IP = "app.host_ip"
+    private const val KEY_HOST_IP_ADDRESS = "app.host_ip_address"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -78,6 +86,7 @@ object MoeSettings {
     val safe = preferences.booleanLiveData(KEY_SAFE_MODE, false)
     val cache = preferences.intLiveData(KEY_CACHE_SIZE, 256)
     val host = preferences.booleanLiveData(KEY_HOST_IP, false)
+    val ip = preferences.stringLiveData(KEY_HOST_IP_ADDRESS, context.getString(R.string.app_ip))
     private val daynight_ = preferences.stringLiveData(KEY_DAY_NIGHT_MODE, "${AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM}")
     val daynight = MediatorLiveData<Int>().apply {
         addSource(daynight_) {

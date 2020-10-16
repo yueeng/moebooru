@@ -113,8 +113,11 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
 }
 val okHttp get() = MainApplication.instance().okHttp
 val okDns = object : Dns {
-    override fun lookup(hostname: String): List<InetAddress> =
-        if (MoeSettings.host.value == true && hostname.endsWith(moeHost)) listOf(InetAddress.getByName(moeIp)) else Dns.SYSTEM.lookup(hostname)
+    override fun lookup(hostname: String): List<InetAddress> = when {
+        MoeSettings.host.value == true && hostname.endsWith(moeHost) ->
+            runCatching { listOf(InetAddress.getByName(MoeSettings.ip.value)) }.getOrNull()
+        else -> null
+    } ?: Dns.SYSTEM.lookup(hostname)
 }
 
 fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
@@ -836,3 +839,16 @@ fun Context.wrappers(): Sequence<ContextWrapper> = sequence {
 }
 
 inline fun <reified T : Activity> View.findActivity(): T? = context.wrappers().mapNotNull { it as? T }.firstOrNull()
+
+val View.parents: Sequence<View>
+    get() = sequence {
+        when (val it = parent) {
+            is View -> {
+                yield(it)
+                yieldAll(it.parents)
+            }
+        }
+    }
+
+inline fun <reified T : View> View.findParents(): Sequence<T> = parents.mapNotNull { it as? T }
+inline fun <reified T : View> View.findParent(): T? = findParents<T>().firstOrNull()
