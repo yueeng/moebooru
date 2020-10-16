@@ -41,6 +41,14 @@
             android:summaryOff="@string/settings_host_ip_off"
             android:summaryOn="@string/settings_host_ip_on"
             android:title="@string/settings_host_ip" />
+        <EditTextPreference
+            android:defaultValue="@string/app_ip"
+            android:dialogIcon="@drawable/ic_host_ip"
+            android:dialogLayout="@layout/settings_ip_address"
+            android:icon="@drawable/ic_host_ip"
+            android:key="app.host_ip_address"
+            android:title="@string/settings_host_ip_address"
+            app:useSimpleSummaryProvider="true" />
         <SeekBarPreference
             android:defaultValue="256"
             android:icon="@drawable/ic_storage"
