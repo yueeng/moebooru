@@ -161,14 +161,14 @@ data class ItemPoolPost(
 
 @Parcelize
 data class ItemVoteBy(
-    @SN("1") var v1: List<ItemUser>,
-    @SN("2") var v2: List<ItemUser>,
-    @SN("3") var v3: List<ItemUser>,
+    @SN("1") var v1: List<ItemUser>?,
+    @SN("2") var v2: List<ItemUser>?,
+    @SN("3") var v3: List<ItemUser>?,
 ) : Parcelable {
     val v
         get() = listOf(3 to v3, 2 to v2, 1 to v1)
-            .filter { it.second.isNotEmpty() }
-            .map { it.first to it.second }
+            .filter { it.second?.isNotEmpty() == true }
+            .map { it.first to it.second!! }
             .toMap()
 }
 
