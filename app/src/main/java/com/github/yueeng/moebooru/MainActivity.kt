@@ -169,7 +169,7 @@ class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, p
         val posts = Service.instance.post(page = key, Q(query), limit = params.loadSize)
         call?.invoke(key)
         val prev = if (posts.isNotEmpty()) (key - 1).takeIf { it > 0 } else null
-        val next = if (posts.size == params.loadSize) key + 1 else null
+        val next = if (posts.size == params.loadSize) key + (params.loadSize / ImageViewModel.pageSize) else null
         LoadResult.Page(posts, prev, next)
     } catch (e: Exception) {
         LoadResult.Error(e)
