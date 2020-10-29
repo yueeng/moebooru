@@ -111,7 +111,7 @@ class UserFragment : Fragment() {
             lifecycleScope.launchWhenCreated {
                 model.name.asFlow().mapNotNull { it }.collectLatest { name ->
                     binding.toolbar.title = name.toTitleCase()
-                    requireActivity().title = name.toTitleCase()
+                    if (!mine) requireActivity().title = name.toTitleCase()
                     if (model.user.value == null) {
                         runCatching { Service.instance.user(name) }.getOrNull()
                             ?.firstOrNull()?.id?.let { model.user.postValue(it) }
