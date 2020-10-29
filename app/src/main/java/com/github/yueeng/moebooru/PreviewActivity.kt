@@ -168,6 +168,14 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
                 }
             }
+            val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
+            val tagItem = MutableLiveData<JImageItem>()
+            lifecycleScope.launchWhenCreated {
+                tagItem.asFlow().filter { bottomSheetBehavior.isOpen }.distinctUntilChanged().collectLatest {
+                    tagAdapter.submit(it)
+                    TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
+                }
+            }
             lifecycleScope.launchWhenCreated {
                 previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
@@ -176,8 +184,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         .into(binding.button7)
                     GlideApp.with(this@PreviewFragment).asBitmap().load(item.preview_url)
                         .into(SimpleCustomTarget<Bitmap> { background.postValue(it) })
-                    tagAdapter.submit(item)
-                    TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
+                    tagItem.postValue(item)
                 }
             }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
@@ -202,13 +209,12 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), StarActivity::class.java).putExtra("post", item.id), options.toBundle())
             }
-            val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
             binding.button3.setOnClickListener {
                 val open = bottomSheetBehavior.isOpen
                 if (open) bottomSheetBehavior.close() else bottomSheetBehavior.open()
             }
             bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-                override fun onStateChanged(bottomSheet: View, newState: Int) = Unit
+                override fun onStateChanged(bottomSheet: View, newState: Int) = tagItem.postValue(adapter.peek(binding.pager.currentItem))
                 override fun onSlide(bottomSheet: View, slideOffset: Float) {
                     binding.button3.rotation = slideOffset * 180F
                 }
