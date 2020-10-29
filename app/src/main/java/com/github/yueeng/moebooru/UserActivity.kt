@@ -95,8 +95,12 @@ class UserFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 OAuth.name.asFlow().collectLatest {
-                    if (mine) onPrepareOptionsMenu(binding.toolbar.menu) else requireActivity().invalidateOptionsMenu()
-                    if (mine && it.isNotEmpty()) model.name.postValue(it)
+                    if (mine) {
+                        onPrepareOptionsMenu(binding.toolbar.menu)
+                        if (it.isNotEmpty()) model.name.postValue(it)
+                        return@collectLatest
+                    }
+                    requireActivity().invalidateOptionsMenu()
                 }
             }
             lifecycleScope.launchWhenCreated {
@@ -106,8 +110,8 @@ class UserFragment : Fragment() {
             }
             lifecycleScope.launchWhenCreated {
                 model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                    if (mine) binding.toolbar.title = name.toTitleCase()
-                    else requireActivity().title = name.toTitleCase()
+                    binding.toolbar.title = name.toTitleCase()
+                    requireActivity().title = name.toTitleCase()
                     if (model.user.value == null) {
                         runCatching { Service.instance.user(name) }.getOrNull()
                             ?.firstOrNull()?.id?.let { model.user.postValue(it) }
