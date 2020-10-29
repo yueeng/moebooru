@@ -8,6 +8,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ResolveInfo
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -18,14 +19,14 @@ import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
 import android.util.TypedValue
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
-import android.widget.DatePicker
-import android.widget.ImageView
-import android.widget.MultiAutoCompleteTextView
-import android.widget.ProgressBar
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.annotation.RequiresApi
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
@@ -852,3 +853,39 @@ val View.parents: Sequence<View>
 
 inline fun <reified T : View> View.findParents(): Sequence<T> = parents.mapNotNull { it as? T }
 inline fun <reified T : View> View.findParent(): T? = findParents<T>().firstOrNull()
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun createProcessTextIntent(): Intent = Intent()
+    .setAction(Intent.ACTION_PROCESS_TEXT)
+    .setType("text/plain")
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun Context.getSupportedActivities(): List<ResolveInfo> = packageManager
+    .queryIntentActivities(createProcessTextIntent(), 0)
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun createProcessTextIntentForResolveInfo(info: ResolveInfo): Intent = createProcessTextIntent()
+    .putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false)
+    .setClassName(info.activityInfo.packageName, info.activityInfo.name)
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun Context.initializeSupportedActivitiesMenu(menu: Menu) = try {
+    getSupportedActivities().forEachIndexed { index, resolveInfo ->
+        menu.add(Menu.NONE, Menu.NONE, 100 + index, resolveInfo.loadLabel(packageManager))
+            .intent = createProcessTextIntentForResolveInfo(resolveInfo)
+    }
+} catch (e: Exception) {
+    Toast.makeText(this, getString(R.string.app_process_text_error, e.localizedMessage), Toast.LENGTH_SHORT).show()
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun View.showSupportedActivitiesMenu(tag: String) = PopupMenu(context, this).also { popup ->
+    context.initializeSupportedActivitiesMenu(popup.menu)
+    popup.setOnMenuItemClickListener { menu ->
+        menu.intent?.let {
+            context.startActivity(it.putExtra(Intent.EXTRA_PROCESS_TEXT, tag))
+            true
+        } ?: false
+    }
+    if (popup.menu.size() > 0) popup.show()
+}

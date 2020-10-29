@@ -257,6 +257,11 @@ class UserFragment : Fragment() {
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
                 requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag?.query)), options.toBundle())
             }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                binding.root.setOnLongClickListener { view ->
+                    view.showSupportedActivitiesMenu(tag?.name ?: "").menu.size() > 0
+                }
+            }
         }
 
         var tag: Tag? = null

@@ -140,6 +140,11 @@ class SavedFragment : Fragment() {
                     options.toBundle()
                 )
             }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                binding.root.setOnLongClickListener { view ->
+                    view.showSupportedActivitiesMenu(tag.name).menu.size() > 0
+                }
+            }
             binding.button1.setOnClickListener {
                 lifecycleScope.launchWhenCreated {
                     tag.pin = !tag.pin
@@ -157,9 +162,6 @@ class SavedFragment : Fragment() {
             this.tag = tag
             binding.text1.text = tag.name
             binding.button1.setImageResource(if (tag.pin) R.drawable.ic_remove else R.drawable.ic_add)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                binding.root.tooltipText = tag.tag
-            }
             binding.button1.isVisible = viewModel.edit.value == true
         }
     }
