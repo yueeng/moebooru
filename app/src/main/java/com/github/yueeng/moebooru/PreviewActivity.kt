@@ -412,6 +412,12 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         }
                     }
                 }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    binding.root.setOnLongClickListener { view ->
+                        val tag = data[bindingAdapterPosition]
+                        view.showSupportedActivitiesMenu(tag.name).menu.size() > 0
+                    }
+                }
             }
 
         override fun onBindViewHolder(holder: TagHolder, position: Int) = holder.bind(data[position])
