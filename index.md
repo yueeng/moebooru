@@ -1,4 +1,4 @@
-{% include %}
+{% include "https://github.com/yueeng/moebooru/raw/master/README.md" %}
 
 ## Welcome to GitHub Pages
 
