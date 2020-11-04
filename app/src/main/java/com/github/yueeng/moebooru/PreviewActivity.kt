@@ -412,7 +412,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     when (tag.type) {
                         Tag.TYPE_URL -> requireActivity().openWeb(tag.tag)
                         Tag.TYPE_DOWNLOAD -> download(item.id, tag.tag, item.author)
-                        else -> {
+                        else -> if (tag.tag.isNotEmpty()) {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
                             requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
                         }
@@ -431,6 +431,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         private lateinit var item: JImageItem
         suspend fun submit(item: JImageItem) {
             this.item = item
+            if (currentList.size == 0) submitList(listOf(Tag(Tag.TYPE_UNKNOWN, "Waiting...", "")))
             val tags = withContext(Dispatchers.Default) {
                 val common = listOf(
                     Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
