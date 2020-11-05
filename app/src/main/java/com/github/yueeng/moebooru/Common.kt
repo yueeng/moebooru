@@ -574,10 +574,21 @@ object Save {
         }
     }
 
-    suspend fun check(key: String): WorkInfo.State? {
+    suspend fun check(key: String): WorkInfo.State? = withTimeout(1000) {
         val manager = WorkManager.getInstance(MainApplication.instance())
-        val work = manager.getWorkInfosForUniqueWork(key).await()
-        return work.firstOrNull()?.state
+        val data = manager.getWorkInfosForUniqueWorkLiveData(key)
+        suspendCancellableCoroutine { continuation ->
+            val observer = object : Observer<List<WorkInfo>> {
+                override fun onChanged(it: List<WorkInfo>?) {
+                    continuation.resume(it?.firstOrNull()?.state)
+                    data.removeObserver(this)
+                }
+            }
+            continuation.invokeOnCancellation {
+                data.removeObserver(observer)
+            }
+            data.observeForever(observer)
+        }
     }
 
     enum class SO {
