@@ -22,5 +22,4 @@ jobs:
     - name : upload apk
       uses: actions/upload-artifact@v2
       with:
-        name: apk
-        path: ${{ github.workspace }}/app/build/outputs/apk/*/debug
+        path: ${{ github.workspace }}/app/build/outputs/apk/*/debug/*.apk
