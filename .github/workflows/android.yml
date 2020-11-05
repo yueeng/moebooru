@@ -19,7 +19,13 @@ jobs:
         java-version: 11
     - name: Build with Gradle
       run: ./gradlew assembleDebug
-    - name : upload apk
+    - name : konachan.apk
       uses: actions/upload-artifact@v2
       with:
-        path: ${{ github.workspace }}/app/build/outputs/apk/*/debug/*.apk
+        name: konachan.apk
+        path: ${{ github.workspace }}/app/build/outputs/apk/konachan/debug/app-konachan-debug.apk
+    - name : yande.apk
+      uses: actions/upload-artifact@v2
+      with:
+        name: yande.apk
+        path: ${{ github.workspace }}/app/build/outputs/apk/yande/debug/app-yande-debug.apk
