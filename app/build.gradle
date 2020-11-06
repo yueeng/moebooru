@@ -16,10 +16,9 @@ android {
         resConfigs "zh"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        kapt {
-            arguments {
-                arg("room.schemaLocation", "$projectDir/schemas".toString())
-            }
+        ndk.abiFilters 'armeabi-v7a'
+        kapt.arguments {
+            arg("room.schemaLocation", "$projectDir/schemas".toString())
         }
     }
 
