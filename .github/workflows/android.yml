@@ -35,7 +35,7 @@ jobs:
             ${{ runner.os }}-maven-
       - name: Signing Apk
         run: |
-          dd if=.github/workflows/android.jks.des3|openssl des3 -pbkdf2 -d -k ${{ secrets.ANDROID_JKS_PASSWORD }}|tar zxvf -
+          echo '${{ secrets.ANDROID_JKS }}'|base64 -d > android.jks
           echo 'storeFile=../android.jks' >> local.properties
           echo 'storePassword=${{ secrets.STORE_PASSWORD }}' >> local.properties
           echo 'keyAlias=${{ secrets.KEY_ALIAS }}' >> local.properties
