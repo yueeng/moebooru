@@ -46,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: moebooru.apk
-          path: $GITHUB_WORKSPACE/app/build/outputs/apk/*/release/*
+          path: ${{ github.workspace }}/app/build/outputs/apk/*/release/*
