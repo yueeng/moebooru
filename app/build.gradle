@@ -3,6 +3,14 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
+def config = {
+    def props = new Properties()
+    new File("local.properties").withInputStream {
+        stream -> props.load(stream)
+    }
+    return new ConfigSlurper().parse(props)
+}()
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
@@ -22,6 +30,14 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            storeFile file(config.storeFile)
+            storePassword config.storePassword
+            keyAlias config.keyAlias
+            keyPassword config.keyPassword
+        }
+    }
     buildTypes {
         debug {
             applicationIdSuffix '.debug'
@@ -31,6 +47,7 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     flavorDimensions 'moe'
