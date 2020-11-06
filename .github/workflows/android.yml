@@ -17,10 +17,17 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
+    - name: Signing Apk
+      run: |
+        dd if=.github/workflows/android.jks.des3|openssl des3 -pbkdf2 -d -k ${{ secrets.ANDROID_JKS_PASSWORD }}|tar zxvf -
+        echo 'storeFile=../android.jks' >> local.properties
+        echo 'storePassword=${{ secrets.STORE_PASSWORD }}' >> local.properties
+        echo 'keyAlias=${{ secrets.KEY_ALIAS }}' >> local.properties
+        echo 'keyPassword=${{ secrets.KEY_PASSWORD }}' >> local.properties
     - name: Build with Gradle
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleRelease
     - name : moebooru.apk
       uses: actions/upload-artifact@v2
       with:
         name: moebooru.apk
-        path: ${{ github.workspace }}/app/build/outputs/apk/*/debug/*.apk
+        path: ${{ github.workspace }}/app/build/outputs/apk/*/release/*.apk

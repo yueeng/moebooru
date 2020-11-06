@@ -36,6 +36,8 @@ android {
             storePassword config.storePassword
             keyAlias config.keyAlias
             keyPassword config.keyPassword
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
     }
     buildTypes {
