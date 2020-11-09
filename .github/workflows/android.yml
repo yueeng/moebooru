@@ -53,8 +53,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: prerelease
-          release_name: prerelease
+          tag_name: ${{ github.ref }}
+          release_name: pre-release ${{ github.ref }}
           body: |
             Moebooru Apk Pre Release
             - ${{ github.ref }}
