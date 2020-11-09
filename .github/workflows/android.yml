@@ -62,7 +62,7 @@ jobs:
           draft: false
           prerelease: true
       - name: Upload Release Konachan Apk
-        id: upload-release-asset
+        id: upload-konachan-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,7 +72,7 @@ jobs:
           asset_name: app-konachan-release.apk
           asset_content_type: application/apk
       - name: Upload Release Yande Apk
-        id: upload-release-asset
+        id: upload-yande-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
