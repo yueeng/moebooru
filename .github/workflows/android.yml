@@ -47,3 +47,37 @@ jobs:
         with:
           name: moebooru.apk
           path: ${{ github.workspace }}/app/build/outputs/apk/*/release/*
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: prerelease
+          release_name: prerelease
+          body: |
+            Moebooru Apk Pre Release
+            - ${{ github.ref }}
+            - ${{ github.sha }}
+          draft: false
+          prerelease: true
+      - name: Upload Release Konachan Apk
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ${{ github.workspace }}/app/build/outputs/apk/konachan/release/app-konachan-release.apk
+          asset_name: app-konachan-release.apk
+          asset_content_type: application/apk
+      - name: Upload Release Yande Apk
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          asset_path: ${{ github.workspace }}/app/build/outputs/apk/yande/release/app-yande-release.apk
+          asset_name: app-yande-release.apk
+          asset_content_type: application/apk
