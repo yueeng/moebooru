@@ -55,8 +55,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: ${{ time_tick }}
-          release_name: pre-release ${{ time_tick }}
+          tag_name: ${{ env.time_tick }}
+          release_name: pre-release ${{ env.time_tick }}
           body: |
             - ${{ github.ref }}
             - ${{ github.sha }}
