@@ -5,6 +5,7 @@ package com.github.yueeng.moebooru
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Menu
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.lifecycle.*
@@ -23,7 +24,7 @@ class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
         supportFragmentManager.beginTransaction().replace(R.id.preferences, fragment).commit()
     }
 
-    override fun enableSettingsMenu(): Boolean = false
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean = false
 }
 
 class SettingsFragment : PreferenceFragmentCompat() {
