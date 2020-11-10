@@ -23,6 +23,7 @@ import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
+import android.webkit.WebSettings
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.RequiresApi
@@ -129,6 +130,11 @@ fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
     .cache(Cache(MainApplication.instance().cacheDir, (1L shl 20) * (MoeSettings.cache.value ?: 256)))
     .cookieJar(okCookie)
     .dns(okDns)
+    .addInterceptor { chain ->
+        val agent = WebSettings.getDefaultUserAgent(MainApplication.instance())
+        val request = chain.request().newBuilder().header("user-agent", agent).build()
+        chain.proceed(request)
+    }
     .addNetworkInterceptor { chain ->
         val request = chain.request()
         val url = request.url.toString()
