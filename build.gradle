@@ -25,3 +25,38 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+task summary {
+    def download = { name, host ->
+        println "==========$name summary==========="
+        def folder = new File("app/src/$name/assets")
+        def fileJson = new File("$folder/summary.json")
+        def fileEtag = new File("$folder/summary.etag")
+        def etag = null
+        if (fileEtag.exists()) etag = fileEtag.readLines().join('')
+        def src = "https://$host/tag/summary.json"
+        def url = new URL(src)
+        def connection = (HttpURLConnection) url.openConnection()
+        try {
+            connection.connectTimeout = 1000 * 5
+            connection.readTimeout = 1000 * 60
+            connection.useCaches = true
+            if (etag != null && etag != '') connection.setRequestProperty('if-none-match', etag)
+            connection.connect()
+            println "${connection.getResponseCode()}: ${connection.getResponseMessage()}"
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) return
+            connection.inputStream.withReader { i -> fileJson.withOutputStream { it << i } }
+            etag = connection.getHeaderField("ETag")
+            if (etag != null && etag != '') fileEtag.withOutputStream { it << etag }
+        } catch (Exception e) {
+            println e.message
+        } finally {
+            connection.disconnect()
+        }
+    }
+    doLast {
+        download("konachan", "konachan.com")
+        download("yande", "yande.re")
+        return
+    }
+}

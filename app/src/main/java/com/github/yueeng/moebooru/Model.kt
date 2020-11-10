@@ -35,6 +35,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import java.io.File
+import java.net.HttpURLConnection
 import java.text.SimpleDateFormat
 import java.util.*
 import com.google.gson.annotations.SerializedName as SN
@@ -47,7 +48,6 @@ val moeHost = MainApplication.instance().getString(R.string.app_host)
 val moeIp = MainApplication.instance().getString(R.string.app_ip)
 val moeUrl = "https://$moeHost"
 val moeSummaryUrl = "$moeUrl/tag/summary.json"
-val moeSummaryEtag = MainApplication.instance().getString(R.string.app_summary_etag)
 const val github = "https://github.com/yueeng/moebooru"
 const val release = "$github/releases"
 
@@ -636,17 +636,16 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         class UpdateWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
             override fun doWork(): Result = try {
                 val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                val etag = preferences.getString("summary-etag", moeSummaryEtag)
-                val request = Request.Builder().url(moeSummaryUrl).build()
+                val etag = preferences.getString("summary-etag", null) ?: applicationContext.assets.open("summary.etag").bufferedReader().readText()
+                val request = Request.Builder().url(moeSummaryUrl).header("if-none-match", etag).build()
                 val response = okHttp.newCall(request).execute()
-                val online = response.header("ETag")
-                if (online != null && online != etag) {
+                if (response.code != HttpURLConnection.HTTP_NOT_MODIFIED) {
                     response.body?.byteStream()?.use { input ->
                         File(applicationContext.filesDir, "summary.json").outputStream().use {
                             input.copyTo(it)
                         }
-                        preferences.edit().putString("summary-etag", online).apply()
                     }
+                    preferences.edit().putString("summary-etag", response.header("ETag")).apply()
                 }
                 Result.success()
             } catch (e: Exception) {
@@ -656,11 +655,8 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
         val summary: String by lazy {
             val file = File(MainApplication.instance().filesDir, "summary.json")
-            val summary = if (file.exists()) file.readText() else {
-                MainApplication.instance().assets.open("summary.json").bufferedReader().readText().also { summary ->
-                    file.writeText(summary)
-                }
-            }
+            val summary = if (file.exists()) file.readText()
+            else MainApplication.instance().assets.open("summary.json").bufferedReader().readText()
             WorkManager.getInstance(MainApplication.instance()).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())
             summary
         }
