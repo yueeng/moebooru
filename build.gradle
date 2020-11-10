@@ -30,7 +30,6 @@ task summary {
     def download = { name, host ->
         println "==========$name summary==========="
         def folder = new File("app/src/$name/assets")
-        def fileJson = new File("$folder/summary.json")
         def fileEtag = new File("$folder/summary.etag")
         def etag = null
         if (fileEtag.exists()) etag = fileEtag.readLines().join('')
@@ -45,6 +44,7 @@ task summary {
             connection.connect()
             println "${connection.getResponseCode()}: ${connection.getResponseMessage()}"
             if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) return
+            def fileJson = new File("$folder/summary.json")
             connection.inputStream.withReader { i -> fileJson.withOutputStream { it << i } }
             etag = connection.getHeaderField("ETag")
             if (etag != null && etag != '') fileEtag.withOutputStream { it << etag }
