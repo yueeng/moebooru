@@ -46,8 +46,9 @@ task summary {
             if (connection.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED) return
             def fileJson = new File("$folder/summary.json")
             connection.inputStream.withReader { i -> fileJson.withOutputStream { it << i } }
-            etag = connection.getHeaderField("ETag")
-            if (etag != null && etag != '') fileEtag.withOutputStream { it << etag }
+            def newEtag = connection.getHeaderField("ETag")
+            println "etag: $etag -> $newEtag"
+            if (newEtag != null && newEtag != '') fileEtag.withOutputStream { it << newEtag }
         } catch (Exception e) {
             println e.message
         } finally {
@@ -58,5 +59,13 @@ task summary {
         download("konachan", "konachan.com")
         download("yande", "yande.re")
         return
+    }
+}
+
+task publish {
+    dependsOn 'summary'
+    dependsOn 'app:assembleRelease'
+    doLast {
+        println 'publish'
     }
 }
