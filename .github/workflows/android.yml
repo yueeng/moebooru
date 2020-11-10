@@ -41,7 +41,7 @@ jobs:
           echo 'keyAlias=${{ secrets.KEY_ALIAS }}' >> local.properties
           echo 'keyPassword=${{ secrets.KEY_PASSWORD }}' >> local.properties
       - name: Build with Gradle
-        run: ./gradlew assembleRelease
+        run: ./gradlew publish
       - name: Moebooru Apk
         uses: actions/upload-artifact@v2
         with:
