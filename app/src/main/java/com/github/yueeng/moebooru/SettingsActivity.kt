@@ -80,6 +80,7 @@ object MoeSettings {
     private const val KEY_PREVIEW_COLOR = "app.preview_color"
     private const val KEY_HOST_IP = "app.host_ip"
     private const val KEY_HOST_IP_ADDRESS = "app.host_ip_address"
+    private const val KEY_API_KEY = "app.api_key"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -111,6 +112,10 @@ object MoeSettings {
     val page = preferences.booleanLiveData(KEY_LIST_PAGE, false)
     val preview = preferences.booleanLiveData(KEY_LIST_QUALITY, false)
     val previewColor = preferences.booleanLiveData(KEY_PREVIEW_COLOR, false)
+    private val apiKey = preferences.stringLiveData(KEY_API_KEY, null)
+    suspend fun apiKey(): String? = if (apiKey.value?.isNotEmpty() == true) apiKey.value!! else Service.apiKey()?.also {
+        preferences.edit { putString(KEY_API_KEY, it) }
+    }
 
     init {
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {

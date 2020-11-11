@@ -333,10 +333,10 @@ class StarViewModel(handle: SavedStateHandle) : ViewModel() {
     val busy = handle.getLiveData("busy", false)
     suspend fun data(post: Int): ItemScore? = try {
         busy.postValue(true)
-        runCatching { Service.instance.vote(post, authenticity_token = Service.csrf()!!) }
+        runCatching { Service.instance.vote(post, apiKey = MoeSettings.apiKey()) }
             .getOrNull()?.vote?.let { score ->
                 star.postValue(score)
-                runCatching { Service.instance.vote(post, score, authenticity_token = Service.csrf()!!) }.getOrNull()
+                runCatching { Service.instance.vote(post, score, apiKey = MoeSettings.apiKey()) }.getOrNull()
             }
     } finally {
         busy.postValue(false)
@@ -344,7 +344,7 @@ class StarViewModel(handle: SavedStateHandle) : ViewModel() {
 
     suspend fun vote(post: Int, score: Int) = try {
         busy.postValue(true)
-        runCatching { Service.instance.vote(post, score, authenticity_token = Service.csrf()!!) }.getOrNull()
+        runCatching { Service.instance.vote(post, score, apiKey = MoeSettings.apiKey()) }.getOrNull()
     } finally {
         busy.postValue(false)
     }
