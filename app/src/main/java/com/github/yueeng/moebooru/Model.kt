@@ -336,8 +336,8 @@ interface MoebooruService {
     suspend fun vote(
         @Field("id") id: Int,
         @Field("score") score: Int? = null,
-        @Field("authenticity_token") authenticity_token: String,
-        @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token
+        @Field("api_key") apiKey: String?,
+        @Field("username") username: String? = OAuth.name.value,
     ): ItemScore?
 
     @FormUrlEncoded
@@ -368,6 +368,13 @@ class Service(private val service: MoebooruService) : MoebooruService by service
         suspend fun csrf(): String? = try {
             val home = okHttp.newCall(Request.Builder().url("$moeUrl/user/home").build()).await { _, response -> response.body?.string() }
             Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
+        } catch (e: Exception) {
+            null
+        }
+
+        suspend fun apiKey(): String? = try {
+            val home = okHttp.newCall(Request.Builder().url("$moeUrl/settings/api").build()).await { _, response -> response.body?.string() }
+            Jsoup.parse(home).select("#content>h1+div").text().trimStart { it != ':' }.trim(':').trim()
         } catch (e: Exception) {
             null
         }
