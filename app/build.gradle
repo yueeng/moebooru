@@ -28,6 +28,7 @@ android {
         kapt.arguments {
             arg("room.schemaLocation", "$projectDir/schemas".toString())
         }
+        buildConfigField "String", "BUILD_TIME", "\"${config["buildTime"] ?: new Date().format("YYYYMMddHHmm")}\""
     }
 
     signingConfigs {
