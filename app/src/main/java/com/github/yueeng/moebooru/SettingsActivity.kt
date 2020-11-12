@@ -59,7 +59,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
         findPreference<Preference>("about")?.let {
-            it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME)
+            it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
         }
     }
 }
