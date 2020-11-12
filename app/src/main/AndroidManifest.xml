@@ -33,7 +33,13 @@
         <activity android:name=".PopularActivity" />
         <activity
             android:name=".SimilarActivity"
-            android:label="@string/app_similar" />
+            android:label="@string/app_similar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".SettingsActivity"
             android:label="@string/app_settings" />
