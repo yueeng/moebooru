@@ -105,16 +105,17 @@ data class JImageItem(
     @SN("sample_url") val sample_url: String,
     @SN("sample_width") val sample_width: Int,
     @SN("score") val score: Int,
-    @SN("service") val service: String,
+    @SN("service") val service: String?,
     @SN("similarity") val similarity: Double,
     @SN("source") val source: String,
-    @SN("status") val status: String,
+    @SN("status") val status: String?,
     @SN("tags") val tags: String,
-    @SN("url") val url: String,
+    @SN("url") val url: String?,
     @SN("width") val width: Int,
 ) : Parcelable {
     val mpixels get() = width * height / 1000000F
     val resolution get() = Resolution.match(mpixels)
+    val isDeleted get() = status == "deleted"
 }
 
 @Parcelize
@@ -197,6 +198,14 @@ data class ItemScore(
 ) : JResult()
 
 @Parcelize
+data class JMoeSimilar(
+    @SN("posts") val posts: List<JImageItem>,
+    @SN("search_id") val searchId: String?,
+    @SN("source") val source: JImageItem,
+    @SN("success") val success: Boolean
+) : Parcelable
+
+@Parcelize
 data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
     companion object {
         const val TYPE_UNKNOWN = -1
@@ -212,7 +221,8 @@ data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
         const val TYPE_PARENT = -5
         const val TYPE_URL = -6
         const val TYPE_CLIPBOARD = -7
-        const val TYPE_DOWNLOAD = -8
+        const val TYPE_SIMILAR = -8
+        const val TYPE_DOWNLOAD = -9
 
         fun string(type: Int) = when (type) {
             TYPE_GENERAL -> "GENERAL"
@@ -228,6 +238,7 @@ data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
             TYPE_URL -> "WEBSITE"
             TYPE_CLIPBOARD -> "COPY"
             TYPE_DOWNLOAD -> "DOWNLOAD"
+            TYPE_SIMILAR -> "SIMILAR"
             else -> ""
         }
 
@@ -276,6 +287,13 @@ interface MoebooruService {
 
     @GET("post/popular_recent.json")
     suspend fun popular_recent(): List<JImageItem>
+
+    @GET("post/similar.json")
+    suspend fun similar(
+        @Query("id") id: Int? = null,
+        @Query("url") url: String? = null,
+        @Query("services") services: String? = "all",
+    ): JMoeSimilar
 
     @GET("user.json")
     suspend fun user(@Query("id") id: Int): List<ItemUser>

@@ -17,6 +17,7 @@
     <string name="app_search">搜索</string>
     <string name="app_settings">设置</string>
     <string name="app_share">分享</string>
+    <string name="app_similar">相似</string>
     <string name="app_update">检查更新</string>
     <string name="app_version">%1$s v%2$s.%3$s</string>
 
