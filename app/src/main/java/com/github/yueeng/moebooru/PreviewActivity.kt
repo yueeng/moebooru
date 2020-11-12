@@ -412,6 +412,10 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     when (tag.type) {
                         Tag.TYPE_URL -> requireActivity().openWeb(tag.tag)
                         Tag.TYPE_DOWNLOAD -> download(item.id, tag.tag, item.author)
+                        Tag.TYPE_SIMILAR -> {
+                            val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
+                            requireActivity().startActivity(Intent(activity, SimilarActivity::class.java).putExtra("id", tag.tag.toInt()), options.toBundle())
+                        }
                         else -> if (tag.tag.isNotEmpty()) {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
                             requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
@@ -447,6 +451,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 if (item.source.isNotEmpty()) {
                     common.add(Tag(Tag.TYPE_URL, "Source", item.source))
                 }
+                common.add(Tag(Tag.TYPE_SIMILAR, "Similar", "${item.id}"))
                 listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size).filter { it.first.isNotEmpty() }.forEach { i ->
                     val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
                     val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
