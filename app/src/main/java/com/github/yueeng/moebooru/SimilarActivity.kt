@@ -3,7 +3,10 @@ package com.github.yueeng.moebooru
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
+import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,19 +23,45 @@ import com.github.yueeng.moebooru.databinding.ImageItemBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import java.io.ByteArrayOutputStream
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class SimilarActivity : MoeActivity(R.layout.activity_main) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportFragmentManager.run {
-            val fragment = findFragmentById(R.id.container) as? SimilarFragment ?: SimilarFragment().apply { arguments = intent.extras }
-            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
-            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-            beginTransaction().replace(R.id.container, fragment)
-                .replace(R.id.mine, mine)
-                .replace(R.id.saved, saved)
-                .commit()
+        lifecycleScope.launchWhenCreated {
+            if (intent.action == Intent.ACTION_SEND) {
+                val image: Uri? = intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                if (image != null) {
+                    runCatching {
+                        suspendCoroutine<String> { c ->
+                            contentResolver.openInputStream(image).use {
+                                GlideApp.with(this@SimilarActivity).asBitmap().load(image)
+                                    .override(100, 100).into(SimpleCustomTarget<Bitmap> {
+                                        c.resume(ByteArrayOutputStream().use { stream ->
+                                            it.compress(Bitmap.CompressFormat.JPEG, 70, stream)
+                                            val base64 = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+                                            "data:image/jpg;base64,$base64"
+                                        })
+                                    })
+                            }
+                        }
+                    }.getOrNull()?.let {
+                        intent.putExtra("url", it)
+                    }
+                }
+            }
+            supportFragmentManager.run {
+                val fragment = findFragmentById(R.id.container) as? SimilarFragment ?: SimilarFragment().apply { arguments = intent.extras }
+                val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
+                val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
+                beginTransaction().replace(R.id.container, fragment)
+                    .replace(R.id.mine, mine)
+                    .replace(R.id.saved, saved)
+                    .commit()
+            }
         }
     }
 }
@@ -92,13 +121,14 @@ class SimilarFragment : Fragment() {
         fun bind(item: JImageItem) {
             val url = when {
                 item.preview_url.startsWith("//") -> "https:${item.preview_url}"
+                item.preview_url.startsWith("/") -> "$moeUrl${item.preview_url}"
                 else -> item.preview_url
             }
             progress.postValue(url)
             GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
-            binding.text1.text = item.service ?: moeHost
+            binding.text1.text = item.service?.takeIf { it.isNotEmpty() } ?: moeHost
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
                 params.dimensionRatio = "${item.width}:${item.height}"
             }
@@ -116,6 +146,7 @@ class SimilarFragment : Fragment() {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
                             requireActivity().startActivity(Intent(activity, PreviewActivity::class.java).putExtra("query", Q().id(item.id)).putExtra("index", 0), options.toBundle())
                         }
+                        "" -> Unit
                         else -> requireContext().openWeb(item.url)
                     }
                 }

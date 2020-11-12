@@ -529,11 +529,11 @@ fun TedPermission.Builder.onGranted(view: View, function: () -> Unit): TedPermis
 }
 
 object Save {
-    fun encode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
+    fun fileNameEncode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
         r.replace(i, ' ')
     }
 
-    val String.fileName get() = encode(toHttpUrl().pathSegments.last())
+    val String.fileName get() = fileNameEncode(toHttpUrl().pathSegments.last())
 
     class SaveWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
         @OptIn(FlowPreview::class)

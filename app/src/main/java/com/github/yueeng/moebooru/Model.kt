@@ -26,6 +26,7 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -288,10 +289,11 @@ interface MoebooruService {
     @GET("post/popular_recent.json")
     suspend fun popular_recent(): List<JImageItem>
 
-    @GET("post/similar.json")
+    @FormUrlEncoded
+    @POST("post/similar.json")
     suspend fun similar(
         @Query("id") id: Int? = null,
-        @Query("url") url: String? = null,
+        @Field("url") url: String? = null,
         @Query("services") services: String? = "all",
     ): JMoeSimilar
 
@@ -390,8 +392,16 @@ class Service(private val service: MoebooruService) : MoebooruService by service
     override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, Q.safe(tags), limit)
 
     companion object {
+        private val intJsonDeserializer = JsonDeserializer { json, _, _ ->
+            try {
+                json!!.asInt
+            } catch (e: NumberFormatException) {
+                0
+            }
+        }
+        private val gson = GsonBuilder().registerTypeAdapter(Int::class.java, intJsonDeserializer).setLenient().create()
         private val retrofit: Retrofit = Retrofit.Builder()
-            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .client(okHttp)
             .baseUrl(moeUrl)
             .build()
