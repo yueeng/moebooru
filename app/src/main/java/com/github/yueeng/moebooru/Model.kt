@@ -80,10 +80,12 @@ data class JImageItem(
     @SN("creator_id") val creator_id: Int,
     @SN("file_size") val file_size: Int,
     @SN("file_url") val file_url: String,
-    @SN("frames_pending_string") val frames_pending_string: String,
-    @SN("frames_string") val frames_string: String,
+    @SN("flag_detail") val flagDetail: JFlagDetail,
+//    @SN("frames") val frames: List<Any>,
+//    @SN("frames_pending") val framesPending: List<Any>,
+//    @SN("frames_pending_string") val frames_pending_string: String,
+//    @SN("frames_string") val frames_string: String,
     @SN("has_children") val has_children: Boolean,
-    @SN("parent_id") val parent_id: Int,
     @SN("height") val height: Int,
     @SN("id") val id: Int,
     @SN("is_held") val is_held: Boolean,
@@ -93,6 +95,7 @@ data class JImageItem(
     @SN("jpeg_url") val jpeg_url: String,
     @SN("jpeg_width") val jpeg_width: Int,
     @SN("md5") val md5: String,
+    @SN("parent_id") val parent_id: Int,
     @SN("preview_height") val preview_height: Int,
     @SN("preview_url") val preview_url: String,
     @SN("preview_width") val preview_width: Int,
@@ -102,14 +105,24 @@ data class JImageItem(
     @SN("sample_url") val sample_url: String,
     @SN("sample_width") val sample_width: Int,
     @SN("score") val score: Int,
+    @SN("service") val service: String,
+    @SN("similarity") val similarity: Double,
     @SN("source") val source: String,
     @SN("status") val status: String,
     @SN("tags") val tags: String,
+    @SN("url") val url: String,
     @SN("width") val width: Int,
 ) : Parcelable {
     val mpixels get() = width * height / 1000000F
     val resolution get() = Resolution.match(mpixels)
 }
+
+@Parcelize
+data class JFlagDetail(
+    @SN("created_at") val createdAt: String,
+    @SN("post_id") val postId: Int,
+    @SN("reason") val reason: String
+) : Parcelable
 
 @Parcelize
 open class JResult(
@@ -374,7 +387,7 @@ class Service(private val service: MoebooruService) : MoebooruService by service
 
         suspend fun apiKey(): String? = try {
             val home = okHttp.newCall(Request.Builder().url("$moeUrl/settings/api").build()).await { _, response -> response.body?.string() }
-            Jsoup.parse(home).select("#content>h1+div").text().trimStart { it != ':' }.trim(':').trim()
+            Jsoup.parse(home).select("h1+div").text().trimStart { it != ':' }.trim().trim(':').trim()
         } catch (e: Exception) {
             null
         }
