@@ -80,7 +80,7 @@ data class JImageItem(
     @SN("creator_id") val creator_id: Int,
     @SN("file_size") val file_size: Int,
     @SN("file_url") val file_url: String,
-    @SN("flag_detail") val flagDetail: JFlagDetail,
+    @SN("flag_detail") val flagDetail: JFlagDetail?,
 //    @SN("frames") val frames: List<Any>,
 //    @SN("frames_pending") val framesPending: List<Any>,
 //    @SN("frames_pending_string") val frames_pending_string: String,
