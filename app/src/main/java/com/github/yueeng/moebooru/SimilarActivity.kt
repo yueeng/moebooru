@@ -128,7 +128,11 @@ class SimilarFragment : Fragment() {
             GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
-            binding.text1.text = item.service?.takeIf { it.isNotEmpty() } ?: moeHost
+            binding.text1.text = when (item.service) {
+                null -> moeHost
+                "" -> "Source"
+                else -> item.service
+            }
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
                 params.dimensionRatio = "${item.width}:${item.height}"
             }
@@ -142,11 +146,11 @@ class SimilarFragment : Fragment() {
                 binding.root.setOnClickListener {
                     val item = getItem(bindingAdapterPosition) ?: return@setOnClickListener
                     when (item.url) {
+                        "" -> Unit
                         null -> {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
                             requireActivity().startActivity(Intent(activity, PreviewActivity::class.java).putExtra("query", Q().id(item.id)).putExtra("index", 0), options.toBundle())
                         }
-                        "" -> Unit
                         else -> requireContext().openWeb(item.url)
                     }
                 }

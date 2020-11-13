@@ -17,7 +17,7 @@
     <string name="app_search">Search</string>
     <string name="app_settings">Settings</string>
     <string name="app_share">Share</string>
-    <string name="app_similar">Similar</string>
+    <string name="app_similar">Similar images</string>
     <string name="app_update">Check Update</string>
     <string name="app_version">%1$s v%2$s.%3$s</string>
 
