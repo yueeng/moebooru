@@ -123,7 +123,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
             }
             lifecycleScope.launchWhenCreated {
-                previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
+                previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
                     ProgressBehavior.on(item.sample_url).onCompletion {
                         binding.progress1.isInvisible = true
                         binding.progress1.progress = 0
@@ -177,7 +177,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 }
             }
             lifecycleScope.launchWhenCreated {
-                previewModel.index.asFlow().filter { it < adapter.itemCount }.mapNotNull { adapter.peek(it) }.collectLatest { item ->
+                previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
                     GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher)
                         .transition(DrawableTransitionOptions.withCrossFade())
@@ -195,7 +195,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 }
             }
             binding.button1.setOnClickListener {
-                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author)
             }
             binding.button2.setOnClickListener {
@@ -205,7 +205,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
                     return@setOnClickListener
                 }
-                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), StarActivity::class.java).putExtra("post", item.id), options.toBundle())
             }
@@ -214,7 +214,10 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 if (open) bottomSheetBehavior.close() else bottomSheetBehavior.open()
             }
             bottomSheetBehavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-                override fun onStateChanged(bottomSheet: View, newState: Int) = tagItem.postValue(adapter.peek(binding.pager.currentItem))
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
+                    adapter.peekSafe(binding.pager.currentItem)?.let(tagItem::postValue)
+                }
+
                 override fun onSlide(bottomSheet: View, slideOffset: Float) {
                     binding.button3.rotation = slideOffset * 180F
                 }
@@ -226,7 +229,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
                     return@setOnClickListener
                 }
-                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
                     lifecycleScope.launchWhenCreated {
                         val dest = File(requireContext().cacheDir, UUID.randomUUID().toString())
@@ -243,14 +246,14 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
-                    val item = adapter.peek(binding.pager.currentItem) ?: return@onGranted
+                    val item = adapter.peekSafe(binding.pager.currentItem) ?: return@onGranted
                     val file = File(File(requireContext().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
                     val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
                     Save.save(item.id, item.jpeg_url, uri, Save.SO.WALLPAPER)
                 }.check()
             }
             binding.button6.setOnClickListener {
-                val item = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_url.fileName)
                 Save.save(item.id, item.jpeg_url, Uri.fromFile(file), Save.SO.OTHER, tip = false) {
                     lifecycleScope.launchWhenCreated {
@@ -269,7 +272,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
                     return@setOnClickListener
                 }
-                val model = adapter.peek(binding.pager.currentItem) ?: return@setOnClickListener
+                val model = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
             }

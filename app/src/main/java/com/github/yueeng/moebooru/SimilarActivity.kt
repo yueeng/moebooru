@@ -77,6 +77,7 @@ class SimilarFragment : Fragment() {
         super.onCreate(savedInstanceState)
         lifecycleScope.launchWhenCreated {
             if (arguments?.getString("action") != Intent.ACTION_SEND) return@launchWhenCreated
+            if (arguments?.containsKey("url") == true) return@launchWhenCreated
             val image: Uri = arguments?.getParcelable(Intent.EXTRA_STREAM) ?: return@launchWhenCreated
             runCatching {
                 requireContext().contentResolver.openInputStream(image).use {
@@ -148,9 +149,18 @@ class SimilarFragment : Fragment() {
                         "" -> Unit
                         null -> {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                            requireActivity().startActivity(Intent(activity, PreviewActivity::class.java).putExtra("query", Q().id(item.id)).putExtra("index", 0), options.toBundle())
+                            val intent = Intent(activity, PreviewActivity::class.java)
+                                .putExtra("query", Q().id(item.id)).putExtra("index", 0)
+                            requireActivity().startActivity(intent, options.toBundle())
                         }
-                        else -> requireContext().openWeb(item.url)
+                        else -> when (item.service) {
+                            "yande.re", "konachan.com" -> {
+                                val intent = Intent("com.github.yueeng.moebooru.${item.service}.PREVIEW")
+                                    .putExtra("query", Q().md5(item.md5)).putExtra("index", 0)
+                                requireActivity().startActivity(intent)
+                            }
+                            else -> requireContext().openWeb(item.url)
+                        }
                     }
                 }
             }

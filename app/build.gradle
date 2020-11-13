@@ -62,6 +62,7 @@ android {
             resValue 'string', 'app_host', 'yande.re'
             resValue 'string', 'app_ip', '198.98.54.92'
             resValue 'string', 'app_create_time', '2006-8-13'
+            manifestPlaceholders = [preview: "yande.re"]
         }
         konachan {
             dimension 'moe'
@@ -70,6 +71,7 @@ android {
             resValue 'string', 'app_host', 'konachan.com'
             resValue 'string', 'app_ip', '104.28.10.64'
             resValue 'string', 'app_create_time', '2008-1-13'
+            manifestPlaceholders = [preview: "konachan.com"]
         }
     }
     buildFeatures {

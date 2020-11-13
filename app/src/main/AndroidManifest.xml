@@ -25,8 +25,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ListActivity" />
-        <activity android:name=".PreviewActivity" />
+        <activity android:name=".ListActivity">
+            <intent-filter>
+                <action android:name="com.github.yueeng.moebooru.${preview}.LIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".PreviewActivity">
+            <intent-filter>
+                <action android:name="com.github.yueeng.moebooru.${preview}.PREVIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity android:name=".QueryActivity" />
         <activity android:name=".UserActivity" />
         <activity android:name=".StarActivity" />
