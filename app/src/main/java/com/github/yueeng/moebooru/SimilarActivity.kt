@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import java.io.ByteArrayOutputStream
+import java.net.URL
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -119,11 +120,7 @@ class SimilarFragment : Fragment() {
 
         private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(item: JImageItem) {
-            val url = when {
-                item.preview_url.startsWith("//") -> "https:${item.preview_url}"
-                item.preview_url.startsWith("/") -> "$moeUrl${item.preview_url}"
-                else -> item.preview_url
-            }
+            val url = URL(URL(moeUrl), item.preview_url).toString()
             progress.postValue(url)
             GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
