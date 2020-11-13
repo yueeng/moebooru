@@ -39,6 +39,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
 import androidx.lifecycle.Observer
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -906,3 +907,6 @@ fun View.showSupportedActivitiesMenu(tag: String) = PopupMenu(context, this).als
     }
     if (popup.menu.size() > 0) popup.show()
 }
+
+fun <T : Any, VH : RecyclerView.ViewHolder> PagingDataAdapter<T, VH>.peekSafe(index: Int): T? =
+    if (index in 0 until itemCount) peek(index) else null

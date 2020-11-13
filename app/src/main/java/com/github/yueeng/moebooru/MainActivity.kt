@@ -319,7 +319,7 @@ class ImageFragment : Fragment() {
             }
             binding.text1.setOnClickListener {
                 val adapter = bindingAdapter as? ImageAdapter ?: return@setOnClickListener
-                val item = adapter.peek(bindingAdapterPosition) ?: return@setOnClickListener
+                val item = adapter.peekSafe(bindingAdapterPosition) ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
                 requireActivity().startActivity(Intent(context, ListActivity::class.java).putExtra("query", Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge)), options.toBundle())
             }
