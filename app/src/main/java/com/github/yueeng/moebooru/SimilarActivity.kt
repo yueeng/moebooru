@@ -20,55 +20,35 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import com.github.yueeng.moebooru.databinding.FragmentSimilarBinding
 import com.github.yueeng.moebooru.databinding.ImageItemBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.net.URL
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class SimilarActivity : MoeActivity(R.layout.activity_main) {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launchWhenCreated {
-            if (intent.action == Intent.ACTION_SEND) {
-                val image: Uri? = intent.getParcelableExtra(Intent.EXTRA_STREAM)
-                if (image != null) {
-                    runCatching {
-                        suspendCoroutine<String> { c ->
-                            contentResolver.openInputStream(image).use {
-                                GlideApp.with(this@SimilarActivity).asBitmap().load(image)
-                                    .override(100, 100).into(SimpleCustomTarget<Bitmap> {
-                                        c.resume(ByteArrayOutputStream().use { stream ->
-                                            it.compress(Bitmap.CompressFormat.JPEG, 70, stream)
-                                            val base64 = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
-                                            "data:image/jpg;base64,$base64"
-                                        })
-                                    })
-                            }
-                        }
-                    }.getOrNull()?.let {
-                        intent.putExtra("url", it)
-                    }
-                }
-            }
-            supportFragmentManager.run {
-                val fragment = findFragmentById(R.id.container) as? SimilarFragment ?: SimilarFragment().apply { arguments = intent.extras }
-                val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
-                val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-                beginTransaction().replace(R.id.container, fragment)
-                    .replace(R.id.mine, mine)
-                    .replace(R.id.saved, saved)
-                    .commit()
-            }
+        intent.putExtra("action", intent.action)
+        supportFragmentManager.run {
+            val fragment = findFragmentById(R.id.container) as? SimilarFragment ?: SimilarFragment().apply { arguments = intent.extras }
+            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
+            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
+            beginTransaction().replace(R.id.container, fragment)
+                .replace(R.id.mine, mine)
+                .replace(R.id.saved, saved)
+                .commit()
         }
     }
 }
 
-class SimilarDataSource(private val id: Int? = null, private val url: String? = null) : PagingSource<Int, JImageItem>() {
+class SimilarDataSource(private val args: Bundle?) : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
+        val id = args?.getInt("id")?.takeIf { it != 0 }
+        val url = args?.getString("url")
+        if (id == null && url == null) throw Exception("empty")
         val all = MoeSettings.safe.value == true
         val similar = Service.instance.similar(id = id, url = url)
         val posts = (listOf(similar.source) + similar.posts)
@@ -81,7 +61,7 @@ class SimilarDataSource(private val id: Int? = null, private val url: String? = 
 }
 
 class SimilarViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
-    val posts = Pager(PagingConfig(20)) { SimilarDataSource(args?.getInt("id")?.takeIf { it != 0 }, args?.getString("url")) }
+    val posts = Pager(PagingConfig(20)) { SimilarDataSource(args) }
         .flow.cachedIn(viewModelScope)
 }
 
@@ -93,6 +73,28 @@ class SimilarViewModelFactory(owner: SavedStateRegistryOwner, private val defaul
 class SimilarFragment : Fragment() {
     private val model: SimilarViewModel by viewModels { SimilarViewModelFactory(this, arguments) }
     private val adapter = SimilarAdapter()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        lifecycleScope.launchWhenCreated {
+            if (arguments?.getString("action") != Intent.ACTION_SEND) return@launchWhenCreated
+            val image: Uri = arguments?.getParcelable(Intent.EXTRA_STREAM) ?: return@launchWhenCreated
+            runCatching {
+                requireContext().contentResolver.openInputStream(image).use {
+                    val base64 = withContext(Dispatchers.IO) {
+                        val bitmap = GlideApp.with(this@SimilarFragment).asBitmap()
+                            .load(image).submit(150, 150).get()
+                        ByteArrayOutputStream().use { stream ->
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream)
+                            Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+                        }
+                    }
+                    arguments?.putString("url", "data:image/jpg;base64,$base64")
+                    adapter.refresh()
+                }
+            }
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         FragmentSimilarBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
