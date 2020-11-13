@@ -64,7 +64,7 @@ import kotlin.math.max
 class PreviewActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (intent.action == Intent.ACTION_VIEW || intent.action == "com.github.yueeng.moebooru.$moeHost.PREVIEW") {
+        if (intent.action == Intent.ACTION_VIEW) {
             val regex = """https?://(?:www.)?$moeHost/post/show/(\d+)(?:/.*)?""".toRegex(RegexOption.IGNORE_CASE)
             regex.matchEntire(intent.data.toString())?.let { match ->
                 val id = match.groups[1]!!.value.toInt()
