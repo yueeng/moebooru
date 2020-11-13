@@ -130,6 +130,11 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
 class ListActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.action == Intent.ACTION_VIEW) {
+            intent.data?.getQueryParameter("tags")?.let {
+                intent.putExtra("query", Q(it))
+            } ?: return
+        }
         supportFragmentManager.run {
             val fragment = findFragmentById(R.id.container) as? ListFragment
                 ?: ListFragment().apply { arguments = intent.extras }

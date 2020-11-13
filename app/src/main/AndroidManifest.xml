@@ -27,8 +27,20 @@
         </activity>
         <activity android:name=".ListActivity">
             <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
                 <action android:name="com.github.yueeng.moebooru.${host}.LIST" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="${host}"
+                    android:path="/post"
+                    android:scheme="http" />
+                <data
+                    android:host="${host}"
+                    android:path="/post"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
         <activity android:name=".PreviewActivity">
