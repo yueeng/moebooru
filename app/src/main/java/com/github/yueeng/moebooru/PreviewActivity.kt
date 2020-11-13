@@ -64,8 +64,15 @@ import kotlin.math.max
 class PreviewActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.action == Intent.ACTION_VIEW || intent.action == "com.github.yueeng.moebooru.$moeHost.PREVIEW") {
+            val regex = """https?://(?:www.)?$moeHost/post/show/(\d+)(?:/.*)?""".toRegex(RegexOption.IGNORE_CASE)
+            regex.matchEntire(intent.data.toString())?.let { match ->
+                val id = match.groups[1]!!.value.toInt()
+                intent.putExtra("query", Q().id(id))
+            } ?: return
+        }
         supportFragmentManager.run {
-            val fragment = supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment
+            val fragment = findFragmentById(R.id.container) as? PreviewFragment
                 ?: PreviewFragment().also { it.arguments = intent.extras }
             val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
             val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
@@ -455,11 +462,12 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     common.add(Tag(Tag.TYPE_URL, "Source", item.source))
                 }
                 common.add(Tag(Tag.TYPE_SIMILAR, "Similar", "${item.id}"))
-                listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size).filter { it.first.isNotEmpty() }.forEach { i ->
-                    val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
-                    val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
-                    common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
-                }
+                listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size)
+                    .filter { it.first.isNotEmpty() }.filter { it.second > 0 }.forEach { i ->
+                        val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
+                        val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
+                        common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
+                    }
                 val tags = item.tags.split(' ').map {
                     Q.suggest(it, true).firstOrNull { i -> i.second == it }
                 }.mapNotNull { it }.map { Tag(it.first, it.second.toTitleCase(), it.second) }

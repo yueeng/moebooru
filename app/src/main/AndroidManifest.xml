@@ -27,14 +27,26 @@
         </activity>
         <activity android:name=".ListActivity">
             <intent-filter>
-                <action android:name="com.github.yueeng.moebooru.${preview}.LIST" />
+                <action android:name="com.github.yueeng.moebooru.${host}.LIST" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
         <activity android:name=".PreviewActivity">
             <intent-filter>
-                <action android:name="com.github.yueeng.moebooru.${preview}.PREVIEW" />
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="com.github.yueeng.moebooru.${host}.PREVIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="@string/app_host"
+                    android:pathPrefix="/post/show/"
+                    android:scheme="http" />
+                <data
+                    android:host="@string/app_host"
+                    android:pathPrefix="/post/show/"
+                    android:scheme="https" />
             </intent-filter>
         </activity>
         <activity android:name=".QueryActivity" />
