@@ -5,6 +5,7 @@ package com.github.yueeng.moebooru
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.DialogInterface
+import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
 import android.view.LayoutInflater
@@ -80,7 +81,8 @@ data class JImageItem(
     @SN("created_at") val created_at: Int,
     @SN("creator_id") val creator_id: Int,
     @SN("file_size") val file_size: Int,
-    @SN("file_url") val file_url: String,
+    @SN("file_url") val _file_url: String?,
+    @SN("file_ext") val file_ext: String?,
     @SN("flag_detail") val flagDetail: JFlagDetail?,
 //    @SN("frames") val frames: List<Any>,
 //    @SN("frames_pending") val framesPending: List<Any>,
@@ -93,7 +95,7 @@ data class JImageItem(
     @SN("is_shown_in_index") val is_shown_in_index: Boolean,
     @SN("jpeg_file_size") val jpeg_file_size: Int,
     @SN("jpeg_height") val jpeg_height: Int,
-    @SN("jpeg_url") val jpeg_url: String,
+    @SN("jpeg_url") val _jpeg_url: String?,
     @SN("jpeg_width") val jpeg_width: Int,
     @SN("md5") val md5: String,
     @SN("parent_id") val parent_id: Int,
@@ -103,7 +105,7 @@ data class JImageItem(
     @SN("rating") val rating: String,
     @SN("sample_file_size") val sample_file_size: Int,
     @SN("sample_height") val sample_height: Int,
-    @SN("sample_url") val sample_url: String,
+    @SN("sample_url") val _sample_url: String?,
     @SN("sample_width") val sample_width: Int,
     @SN("score") val score: Int,
     @SN("service") val service: String?,
@@ -117,6 +119,9 @@ data class JImageItem(
     val mpixels get() = width * height / 1000000F
     val resolution get() = Resolution.match(mpixels)
     val isDeleted get() = status == "deleted"
+    val sample_url get() = _sample_url ?: "$moeUrl/sample/$md5/${Uri.encode("$moeHost - $id sample")}.jpg"
+    val jpeg_url get() = _jpeg_url ?: "$moeUrl/${if (jpeg_file_size > 0) "jpeg" else "image"}/$md5/${Uri.encode("$moeHost - $id")}.jpg"
+    val file_url get() = _file_url ?: "$moeUrl/image/$md5/${Uri.encode("$moeHost - $id")}.${file_ext ?: "jpg"}"
 }
 
 @Parcelize

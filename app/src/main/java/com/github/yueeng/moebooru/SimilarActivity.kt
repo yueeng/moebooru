@@ -60,7 +60,7 @@ class SimilarDataSource(private val args: Bundle?) : PagingSource<Int, JImageIte
     }
 }
 
-class SimilarViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
+class SimilarViewModel(@Suppress("UNUSED_PARAMETER") handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val posts = Pager(PagingConfig(20)) { SimilarDataSource(args) }
         .flow.cachedIn(viewModelScope)
 }
@@ -153,14 +153,7 @@ class SimilarFragment : Fragment() {
                                 .putExtra("query", Q().id(item.id)).putExtra("index", 0)
                             requireActivity().startActivity(intent, options.toBundle())
                         }
-                        else -> when (item.service) {
-                            "yande.re", "konachan.com" -> {
-                                val intent = Intent("com.github.yueeng.moebooru.${item.service}.PREVIEW")
-                                    .putExtra("query", Q().md5(item.md5)).putExtra("index", 0)
-                                requireActivity().startActivity(intent)
-                            }
-                            else -> requireContext().openWeb(item.url)
-                        }
+                        else -> requireContext().openWeb(item.url)
                     }
                 }
             }
