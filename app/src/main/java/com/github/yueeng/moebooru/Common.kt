@@ -2,6 +2,7 @@
 
 package com.github.yueeng.moebooru
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.ContentValues
@@ -27,6 +28,7 @@ import android.webkit.WebSettings
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -696,6 +698,56 @@ object Save {
                 call?.invoke(it.outputData.getString("file")?.toUri())
             }
         })
+    }
+
+
+    fun AppCompatActivity.download(id: Int, url: String, author: String, anchor: View, saving: (() -> Unit)? = null) {
+        fun download() {
+            val filename = url.fileName
+            val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
+            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.IS_PENDING, true)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    put(MediaStore.MediaColumns.ARTIST, author.toTitleCase())
+                    put(MediaStore.MediaColumns.ALBUM, moeHost)
+                }
+            }
+            val target = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
+            save(id, url, target, SO.SAVE)
+            saving?.invoke()
+        }
+
+        fun check() {
+            lifecycleScope.launchWhenCreated {
+                when (check("save-${id}")) {
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.BLOCKED,
+                    WorkInfo.State.RUNNING -> {
+                        Toast.makeText(this@download, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
+                        return@launchWhenCreated
+                    }
+                    WorkInfo.State.SUCCEEDED -> {
+                        Snackbar.make(anchor, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
+                            .setAnchorView(anchor)
+                            .setAction(R.string.app_ok) { download() }
+                            .show()
+                        return@launchWhenCreated
+                    }
+                    else -> download()
+                }
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
+            TedPermission.with(this).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(anchor) {
+                check()
+            }.check()
+        }
     }
 }
 

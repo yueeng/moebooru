@@ -2,6 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
 import android.app.ActivityOptions
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -26,7 +27,10 @@ import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.github.yueeng.moebooru.Save.download
 import com.github.yueeng.moebooru.databinding.*
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.android.material.transition.MaterialSharedAxis
@@ -322,6 +326,48 @@ class ImageFragment : Fragment() {
                     options.toBundle()
                 )
             }
+            binding.root.setOnLongClickListener {
+                val item = this.item ?: return@setOnLongClickListener false
+                val adapter = PreviewFragment.TagAdapter()
+                val recycler = RecyclerView(context).apply {
+                    layoutManager = FlexboxLayoutManager(context).apply {
+                        flexDirection = FlexDirection.ROW
+                    }
+                    this.adapter = adapter
+                }
+                lifecycleScope.launchWhenCreated {
+                    adapter.submit(item)
+                }
+
+                MaterialAlertDialogBuilder(context)
+                    .setView(recycler)
+                    .setPositiveButton(R.string.app_save, null)
+                    .setNeutralButton(R.string.app_favorite, null)
+                    .setNegativeButton(R.string.app_cancel, null)
+                    .create()
+                    .apply {
+                        setOnShowListener {
+                            getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                                (requireActivity() as AppCompatActivity).download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author, it) {
+                                    dismiss()
+                                }
+                            }
+                            getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                                if (!OAuth.available) {
+                                    OAuth.login(this@ImageFragment) {
+                                        it.performClick()
+                                    }
+                                    return@setOnClickListener
+                                }
+                                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                                startActivity(Intent(requireContext(), StarActivity::class.java).putExtra("post", item.id), options.toBundle())
+                                dismiss()
+                            }
+                        }
+                    }
+                    .show()
+                true
+            }
             binding.text1.setOnClickListener {
                 val adapter = bindingAdapter as? ImageAdapter ?: return@setOnClickListener
                 val item = adapter.peekSafe(bindingAdapterPosition) ?: return@setOnClickListener
@@ -330,8 +376,10 @@ class ImageFragment : Fragment() {
             }
         }
 
+        var item: JImageItem? = null
         private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
         fun bind(item: JImageItem, payloads: MutableList<Any>) {
+            this.item = item
             if (payloads.isEmpty() || payloads.contains("info")) {
                 binding.text1.isGone = MoeSettings.info.value ?: false
             }
