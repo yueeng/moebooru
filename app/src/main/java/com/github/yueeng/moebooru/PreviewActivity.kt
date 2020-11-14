@@ -4,7 +4,6 @@ import android.Manifest
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.app.ActivityOptions
-import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -12,7 +11,6 @@ import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,8 +36,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
-import androidx.work.WorkInfo
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.github.yueeng.moebooru.Save.download
 import com.github.yueeng.moebooru.Save.fileName
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
 import com.github.yueeng.moebooru.databinding.PreviewItemBinding
@@ -47,7 +45,6 @@ import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
@@ -203,7 +200,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
             binding.button1.setOnClickListener {
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
-                download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author)
+                (requireActivity() as AppCompatActivity).download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author, binding.button1)
             }
             binding.button2.setOnClickListener {
                 if (!OAuth.available) {
@@ -285,54 +282,6 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
         }.root
 
-    private fun download(id: Int, url: String, author: String) {
-        fun download() {
-            val filename = url.fileName
-            val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
-            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.IS_PENDING, true)
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    put(MediaStore.MediaColumns.ARTIST, author.toTitleCase())
-                    put(MediaStore.MediaColumns.ALBUM, moeHost)
-                }
-            }
-            val target = requireContext().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
-            Save.save(id, url, target, Save.SO.SAVE)
-        }
-
-        fun check() {
-            lifecycleScope.launchWhenCreated {
-                when (Save.check("save-${id}")) {
-                    WorkInfo.State.ENQUEUED,
-                    WorkInfo.State.BLOCKED,
-                    WorkInfo.State.RUNNING -> {
-                        Toast.makeText(requireContext(), getString(R.string.download_running), Toast.LENGTH_SHORT).show()
-                        return@launchWhenCreated
-                    }
-                    WorkInfo.State.SUCCEEDED -> {
-                        Snackbar.make(binding.button1, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
-                            .setAnchorView(binding.button1)
-                            .setAction(R.string.app_ok) { download() }
-                            .show()
-                        return@launchWhenCreated
-                    }
-                    else -> download()
-                }
-            }
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
-            TedPermission.with(requireContext()).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(binding.root) {
-                check()
-            }.check()
-        }
-    }
-
     private val cropShare = registerForActivityResult(CropImage()) { result ->
         val item = previewModel.crop.value ?: return@registerForActivityResult
         previewModel.crop.value = null
@@ -413,22 +362,23 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         }
     }
 
-    inner class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
+    class TagAdapter : ListAdapter<Tag, TagHolder>(diffCallback { old, new -> old.tag == new.tag }) {
         private val data get() = currentList
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TagHolder =
             TagHolder(PreviewTagItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)).apply {
                 binding.root.setOnClickListener {
+                    val activity = it.findActivity<AppCompatActivity>() ?: return@setOnClickListener
                     val tag = data[bindingAdapterPosition]
                     when (tag.type) {
-                        Tag.TYPE_URL -> requireActivity().openWeb(tag.tag)
-                        Tag.TYPE_DOWNLOAD -> download(item.id, tag.tag, item.author)
+                        Tag.TYPE_URL -> activity.openWeb(tag.tag)
+                        Tag.TYPE_DOWNLOAD -> activity.download(item.id, tag.tag, item.author, it)
                         Tag.TYPE_SIMILAR -> {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                            requireActivity().startActivity(Intent(activity, SimilarActivity::class.java).putExtra("id", tag.tag.toInt()), options.toBundle())
+                            activity.startActivity(Intent(activity, SimilarActivity::class.java).putExtra("id", tag.tag.toInt()), options.toBundle())
                         }
                         else -> if (tag.tag.isNotEmpty()) {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                            requireActivity().startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
+                            activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
                         }
                     }
                 }

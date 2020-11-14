@@ -6,6 +6,7 @@
     <string name="app_complete">成功</string>
     <string name="app_download">%1$s 下载</string>
     <string name="app_failed">失败</string>
+    <string name="app_favorite">收藏</string>
     <string name="app_github">GitHub</string>
     <string name="app_go">跳转</string>
     <string name="app_ok">确定</string>
@@ -14,6 +15,7 @@
     <string name="app_process_text_error">获取文字操作菜单出错: %1$s.</string>
     <string name="app_resolution">%1$dx%2$d[%3$s]</string>
     <string name="app_retry">重试</string>
+    <string name="app_save">保存</string>
     <string name="app_search">搜索</string>
     <string name="app_settings">设置</string>
     <string name="app_share">分享</string>
