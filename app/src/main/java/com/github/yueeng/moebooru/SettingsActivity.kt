@@ -10,11 +10,13 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.lifecycle.*
 import androidx.preference.*
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+
 
 class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,12 +56,33 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         findPreference<Preference>("update")?.let {
             it.setOnPreferenceClickListener {
-                requireContext().openWeb(release)
+                update()
                 true
             }
         }
         findPreference<Preference>("about")?.let {
             it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
+        }
+    }
+
+    private fun update(pre: Boolean = false) {
+        lifecycleScope.launchWhenCreated {
+            val latest = (if (pre) Service.github.releases().firstOrNull() else Service.github.latest()) ?: return@launchWhenCreated
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(latest.name)
+                .setMessage(latest.body)
+                .setPositiveButton(getString(R.string.app_download_apk)) { _, _ ->
+                    val url = latest.assets.firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl ?: return@setPositiveButton
+                    requireContext().openWeb(url)
+                }
+                .setNegativeButton(R.string.app_cancel, null)
+                .apply {
+                    if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
+                        update(true)
+                    }
+                }
+                .create()
+                .show()
         }
     }
 }

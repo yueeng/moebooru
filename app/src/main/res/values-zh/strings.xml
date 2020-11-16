@@ -5,6 +5,7 @@
     <string name="app_column">列</string>
     <string name="app_complete">成功</string>
     <string name="app_download">%1$s 下载</string>
+    <string name="app_download_apk">下载</string>
     <string name="app_failed">失败</string>
     <string name="app_favorite">收藏</string>
     <string name="app_github">GitHub</string>
@@ -12,6 +13,7 @@
     <string name="app_ok">确定</string>
     <string name="app_page_jump">页码</string>
     <string name="app_page_number">%1$d/%2$d</string>
+    <string name="app_pre_release">预发布</string>
     <string name="app_process_text_error">获取文字操作菜单出错: %1$s.</string>
     <string name="app_resolution">%1$dx%2$d[%3$s]</string>
     <string name="app_retry">重试</string>
