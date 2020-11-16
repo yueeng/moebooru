@@ -167,7 +167,7 @@ suspend fun <T> Call.await(action: (Call, Response) -> T): T = suspendCancellabl
     })
 }
 
-private class ProgressResponseBody(
+class ProgressResponseBody(
     private val responseBody: ResponseBody,
     private val progressListener: (bytesRead: Long, contentLength: Long, done: Boolean) -> Unit
 ) : ResponseBody() {
