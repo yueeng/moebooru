@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
@@ -36,6 +37,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
+import com.alexvasilkov.gestures.GestureController
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.Save.download
 import com.github.yueeng.moebooru.Save.fileName
@@ -316,13 +318,31 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
 
     inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
-            binding.image1.setOnClickListener {
-                val fragment = this@PreviewFragment
-                val pager = fragment.binding
-                val behavior = BottomSheetBehavior.from(pager.sliding)
-                if (behavior.isOpen) behavior.close()
-                else if (pager.pager.currentItem + 1 < fragment.adapter.itemCount) pager.pager.setCurrentItem(pager.pager.currentItem + 1, true)
-            }
+            binding.image1.controller.setOnGesturesListener(object : GestureController.SimpleOnGestureListener() {
+                override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
+                    val fragment = this@PreviewFragment
+                    val pager = fragment.binding
+                    val behavior = BottomSheetBehavior.from(pager.sliding)
+                    if (behavior.isOpen) {
+                        behavior.close()
+                        return true
+                    }
+                    val width = binding.image1.width
+                    when {
+                        event.x < width * .35 -> (pager.pager.currentItem - 1).takeIf { it >= 0 }?.let {
+                            pager.pager.setCurrentItem(it, true)
+                        }
+                        event.x > width * .65 -> (pager.pager.currentItem + 1).takeIf { it < fragment.adapter.itemCount }?.let {
+                            pager.pager.setCurrentItem(it, true)
+                        }
+                        else -> {
+                            pager.toolbar.isInvisible = !pager.toolbar.isInvisible
+                            pager.sliding.isInvisible = !pager.sliding.isInvisible
+                        }
+                    }
+                    return true
+                }
+            })
         }
 
         private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
