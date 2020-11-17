@@ -281,10 +281,9 @@ class UserFragment : Fragment() {
             binding.root.setOnClickListener {
                 val adapter = bindingAdapter as ImageAdapter
                 val title = adapter.currentList.reversed().dropWhile { it != tag }.mapNotNull { it as? Title }.firstOrNull()!!
-                val images = adapter.currentList.dropWhile { it != title }.takeWhile { it != tag }
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
                 requireActivity().startActivity(
-                    Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("index", images.size - 1),
+                    Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("id", tag!!.id),
                     options.toBundle()
                 )
             }
