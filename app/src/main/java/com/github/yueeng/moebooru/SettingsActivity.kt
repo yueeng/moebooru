@@ -67,7 +67,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun update(pre: Boolean = false) {
         lifecycleScope.launchWhenCreated {
-            val latest = (if (pre) Service.github.releases().firstOrNull() else Service.github.latest()) ?: return@launchWhenCreated
+            val latest = when (pre) {
+                true -> Service.github.releases().firstOrNull()
+                false -> Service.github.latest()
+            } ?: return@launchWhenCreated
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(latest.name)
                 .setMessage(latest.body)
