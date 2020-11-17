@@ -89,7 +89,7 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
 }
 
 class PreviewViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
-    val index = handle.getLiveData("index", args?.getInt("index") ?: 0)
+    val index = handle.getLiveData("index", args?.getInt("index", -1) ?: -1)
     val crop = handle.getLiveData<JImageItem>("crop")
 }
 
@@ -123,8 +123,14 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     .distinctUntilChangedBy { it.refresh }
                     .filter { it.refresh is LoadState.NotLoading }
                     .collect {
-                        if (previewModel.index.value!! >= 0) binding.pager.post {
-                            binding.pager.setCurrentItem(previewModel.index.value!!, false)
+                        val index = when (previewModel.index.value) {
+                            -1 -> arguments?.getInt("id")?.let { id ->
+                                adapter.snapshot().indexOfFirst { it?.id == id }
+                            }?.also(previewModel.index::postValue)
+                            else -> null
+                        } ?: previewModel.index.value!!
+                        if (index >= 0) binding.pager.post {
+                            binding.pager.setCurrentItem(index, false)
                         }
                     }
             }
