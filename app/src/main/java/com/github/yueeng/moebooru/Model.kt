@@ -830,9 +830,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
             /* Allow "fir_las" to match both "first_last" and "last_first". */
             if (tag.indexOf("_") != -1) {
-                val tags = tag.split('_', limit = 2)
-                val first = escape(tags[0])
-                val last = escape(tags[1])
+                val (first, last) = tag.split('_', limit = 2).let { escape(it[0]) to escape(it[1]) }
                 regex_parts.add("(($first[^`]*_$last)|($last[^`]*_$first))")
             }
 
