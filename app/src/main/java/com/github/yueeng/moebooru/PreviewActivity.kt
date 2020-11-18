@@ -421,7 +421,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         private lateinit var item: JImageItem
         suspend fun submit(item: JImageItem) {
             this.item = item
-            if (currentList.size == 0) submitList(listOf(Tag(Tag.TYPE_UNKNOWN, "Waiting...", "")))
+//            if (currentList.size == 0) submitList(listOf(Tag(Tag.TYPE_UNKNOWN, "Waiting...", "")))
             val tags = withContext(Dispatchers.Default) {
                 val common = listOf(
                     Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
@@ -444,9 +444,8 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
                         common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
                     }
-                val tags = item.tags.split(' ').mapNotNull {
-                    Q.suggest(it, true).firstOrNull { i -> i.second == it }
-                }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
+                val tags = item.tags.split(' ').map { Q.summaryMap[it] to it }
+                    .map { Tag(it.first ?: Tag.TYPE_UNKNOWN, it.second.toTitleCase(), it.second) }
                 (common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
             }
             submitList(tags)

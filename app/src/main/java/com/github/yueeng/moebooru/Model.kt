@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.text.isDigitsOnly
 import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
@@ -32,6 +33,7 @@ import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.RawValue
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -806,6 +808,15 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
             else MainApplication.instance().assets.open("summary.json").bufferedReader().readText()
             WorkManager.getInstance(MainApplication.instance()).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())
             summary
+        }
+
+        val summaryMap by lazy {
+            JSONObject(summary).getString("data").split(' ')
+                .map { it.split('`').filter { s -> s.isNotEmpty() } }
+                .filter { it.size >= 2 }
+                .filter { it[0].isDigitsOnly() }
+                .map { it[1] to it[0].toInt() }
+                .toMap()
         }
 
         fun tag(tag: String, top_results_only: Boolean = false): Regex {

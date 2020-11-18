@@ -17,9 +17,11 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.transition.platform.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 
 class MainApplication : Application() {
@@ -40,6 +42,11 @@ class MainApplication : Application() {
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
             MoeSettings.cache.asFlow().drop(1).collectLatest {
                 okHttp = createOkHttpClient()
+            }
+        }
+        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
+            withContext(Dispatchers.Default) {
+                Q.summaryMap[""]
             }
         }
     }
