@@ -444,9 +444,9 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
                         common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
                     }
-                val tags = item.tags.split(' ').map {
+                val tags = item.tags.split(' ').mapNotNull {
                     Q.suggest(it, true).firstOrNull { i -> i.second == it }
-                }.mapNotNull { it }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
+                }.map { Tag(it.first, it.second.toTitleCase(), it.second) }
                 (common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
             }
             submitList(tags)
