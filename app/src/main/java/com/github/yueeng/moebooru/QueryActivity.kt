@@ -9,7 +9,10 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.DatePicker
+import android.widget.Filter
+import android.widget.RadioButton
+import android.widget.SimpleAdapter
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import androidx.core.view.isVisible
@@ -162,7 +165,8 @@ class QueryFragment : Fragment() {
             view.text1.setText(default)
         }
         if (key == "keyword") {
-            val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_list_item_1) {
+            val suggestions = mutableListOf<Map<String, String>>()
+            val adapter = object : SimpleAdapter(requireContext(), suggestions, R.layout.simple_list_item_2, arrayOf("tag", "alias"), intArrayOf(R.id.text1, R.id.text2)) {
                 override fun getFilter(): Filter = filter
                 val filter = object : Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults = FilterResults().also { results ->
@@ -176,15 +180,26 @@ class QueryFragment : Fragment() {
                     override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
                         @Suppress("UNCHECKED_CAST")
                         val data = results?.values as? List<Triple<Int, String, String>>
-                        clear()
+                        suggestions.clear()
                         if (data?.isNotEmpty() == true) {
-                            addAll(data.map { it.second })
+                            suggestions.addAll(data.map { mapOf("tag" to it.second, "alias" to it.third) })
                             notifyDataSetChanged()
                         } else {
                             notifyDataSetInvalidated()
                         }
                     }
+
+                    override fun convertResultToString(resultValue: Any?): CharSequence {
+                        @Suppress("UNCHECKED_CAST")
+                        val map = resultValue as Map<String, String>
+                        return map["tag"] as CharSequence
+                    }
+
                 }
+            }
+            adapter.setViewBinder { v,_, data ->
+                v.isVisible = data.isNotEmpty()
+                false
             }
             view.text1.setAdapter(adapter)
             view.text1.threshold = 1
