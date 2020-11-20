@@ -38,6 +38,7 @@ import androidx.transition.ChangeBounds
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import com.alexvasilkov.gestures.GestureController
+import com.bumptech.glide.Priority
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.Save.download
 import com.github.yueeng.moebooru.Save.fileName
@@ -114,6 +115,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             lifecycleScope.launchWhenCreated {
                 model.posts.collectLatest { adapter.submitData(it) }
             }
+            binding.pager.offscreenPageLimit = 1
             binding.pager.adapter = adapter
             binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) = previewModel.index.postValue(position)
@@ -355,8 +357,14 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
 
         @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
+            val priority = when {
+                this@PreviewFragment.binding.pager.currentItem == bindingAdapterPosition -> Priority.IMMEDIATE
+                this@PreviewFragment.binding.pager.currentItem > bindingAdapterPosition -> Priority.HIGH
+                else -> Priority.NORMAL
+            }
             progress.postValue(item.sample_url)
             GlideApp.with(binding.image1).load(item.sample_url)
+                .priority(priority)
                 .placeholder(R.mipmap.ic_launcher_foreground)
                 .thumbnail(GlideApp.with(binding.image1).load(item.preview_url).transition(DrawableTransitionOptions.withCrossFade()).onResourceReady { _, _, _, _, _ ->
                     binding.image1.setImageDrawable(null)
