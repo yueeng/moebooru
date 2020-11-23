@@ -126,9 +126,9 @@ val okDns = object : Dns {
 }
 
 fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
-    .connectTimeout(10, TimeUnit.SECONDS)
-    .writeTimeout(30, TimeUnit.SECONDS)
-    .readTimeout(60, TimeUnit.SECONDS)
+    .connectTimeout(15, TimeUnit.SECONDS)
+//    .writeTimeout(30, TimeUnit.SECONDS)
+//    .readTimeout(60, TimeUnit.SECONDS)
     .hostnameVerifier { _, _ -> true }
     .cache(Cache(MainApplication.instance().cacheDir, (1L shl 20) * (MoeSettings.cache.value ?: 256)))
     .cookieJar(okCookie)
