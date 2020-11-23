@@ -1,5 +1,3 @@
-import com.android.SdkConstants
-
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
@@ -7,7 +5,7 @@ plugins {
     id 'kotlin-kapt'
 }
 
-def config = new File(SdkConstants.FN_LOCAL_PROPERTIES).withInputStream { stream ->
+def config = new File("local.properties").withInputStream { stream ->
     new ConfigSlurper().parse(new Properties().tap { load(stream) })
 }
 
