@@ -29,8 +29,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
-import kotlinx.android.parcel.Parcelize
-import kotlinx.android.parcel.RawValue
+import kotlinx.parcelize.Parcelize
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.json.JSONObject
@@ -554,8 +553,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         override fun toString(): String = value
     }
 
-    @Parcelize
-    class Value<out T : Any>(val op: Op = Op.eq, val v1: @RawValue T, val v2: @RawValue T? = null, val ex: String? = null) : Parcelable {
+    data class Value<out T : Any>(val op: Op = Op.eq, val v1: T, val v2: T? = null, val ex: String? = null) : Parcelable {
         enum class Op(val value: String) {
             eq("%s"),
             lt("<%s"),
@@ -574,7 +572,6 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         constructor(op: Op, v: Pair<T, T?>, ex: String?) : this(op, v.first, v.second, ex)
 
         companion object {
-
             fun <T : Any> from(source: String, fn: (String) -> T): Value<T> {
                 return source.split(":", limit = 2).let { sv ->
                     val v = sv[0]
@@ -591,7 +588,30 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                     }
                 }
             }
+
+            @JvmField
+            val CREATOR = object : Parcelable.Creator<Value<*>> {
+                override fun createFromParcel(parcel: Parcel): Value<*> = Value<Any>(parcel)
+                override fun newArray(size: Int): Array<Value<*>?> = arrayOfNulls(size)
+            }
         }
+
+        @Suppress("UNCHECKED_CAST")
+        constructor(parcel: Parcel) : this(
+            parcel.readValue(Value::class.java.classLoader) as Op,
+            parcel.readValue(Value::class.java.classLoader) as T,
+            parcel.readValue(Value::class.java.classLoader) as T?,
+            parcel.readString()
+        )
+
+        override fun writeToParcel(parcel: Parcel, flags: Int) {
+            parcel.writeValue(op)
+            parcel.writeValue(v1)
+            parcel.writeValue(v2)
+            parcel.writeString(ex)
+        }
+
+        override fun describeContents(): Int = 0
     }
 
     val user: String? by map

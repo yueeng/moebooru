@@ -19,10 +19,10 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
-import kotlinx.android.parcel.Parcelize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.*
+import kotlinx.parcelize.Parcelize
 import okhttp3.Request
 import org.jsoup.Jsoup
 import kotlin.math.roundToInt
@@ -88,7 +88,7 @@ class UserFragment : Fragment() {
     }
 
     @OptIn(FlowPreview::class)
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
             if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
                 binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
@@ -377,7 +377,7 @@ class StarFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentStarBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             model.star.observe(viewLifecycleOwner, Observer {

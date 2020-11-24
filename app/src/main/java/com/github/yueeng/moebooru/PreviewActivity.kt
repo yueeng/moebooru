@@ -108,7 +108,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
 
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
             (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
             activity?.title = query.toString().toTitleCase()
@@ -460,5 +460,5 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         }
     }
 
-    override fun query(): Q? = query
+    override fun query(): Q = query
 }

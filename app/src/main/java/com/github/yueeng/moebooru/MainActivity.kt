@@ -69,7 +69,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
     private lateinit var binding: FragmentMainBinding
 
     @SuppressLint("RestrictedApi")
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentMainBinding.inflate(inflater, container, false).also { binding ->
             this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
@@ -128,7 +128,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
         else -> super.onOptionsItemSelected(item)
     }
 
-    override fun query(): Q? = adapter.data[binding.pager.currentItem].second
+    override fun query(): Q = adapter.data[binding.pager.currentItem].second
 }
 
 class ListActivity : MoeActivity(R.layout.activity_main) {
@@ -154,7 +154,7 @@ class ListActivity : MoeActivity(R.layout.activity_main) {
 
 class ListFragment : Fragment(), SavedFragment.Queryable {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             arguments?.getParcelable<Q>("query")?.toString()?.let { requireActivity().title = it.toTitleCase() }
@@ -180,7 +180,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
         else -> super.onOptionsItemSelected(item)
     }
 
-    override fun query(): Q? = query
+    override fun query(): Q = query
 }
 
 class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {
@@ -227,7 +227,7 @@ class ImageFragment : Fragment() {
     private val sum = MutableLiveData<Int>()
 
     @OptIn(FlowPreview::class)
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateHeaderAndFooter(HeaderAdapter(adapter), FooterAdapter(adapter))
