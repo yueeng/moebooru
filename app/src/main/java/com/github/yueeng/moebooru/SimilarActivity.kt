@@ -96,7 +96,7 @@ class SimilarFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentSimilarBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.recycler.adapter = adapter

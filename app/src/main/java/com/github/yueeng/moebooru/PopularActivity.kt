@@ -51,7 +51,7 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
     private val adapter by lazy { PopularAdapter(this) }
     private val tabAdapter by lazy { TabAdapter() }
     private lateinit var binding: FragmentPopularBinding
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentPopularBinding.inflate(inflater, container, false).also { binding ->
             this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
@@ -124,7 +124,7 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
         private val yearFormatter get() = SimpleDateFormat("yyyy", Locale.getDefault())
         fun getTime(position: Int) = pos2date(position)
-        fun getPageTitle(position: Int): CharSequence? = when (type) {
+        fun getPageTitle(position: Int): CharSequence = when (type) {
             "day" -> pos2date(position).format(dayFormatter)
             "week" -> pos2date(position).let {
                 "${it.lastDayOfWeekWithLocale.format(monthFormatter)} W${it.lastDayOfWeekWithLocale.get(Calendar.WEEK_OF_MONTH)}"
@@ -176,5 +176,5 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         else -> super.onOptionsItemSelected(item)
     }
 
-    override fun query(): Q? = adapter.getItem(binding.pager.currentItem)
+    override fun query(): Q = adapter.getItem(binding.pager.currentItem)
 }

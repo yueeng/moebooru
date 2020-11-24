@@ -72,7 +72,7 @@ class QueryFragment : Fragment() {
     private val adapter by lazy { QueryAdapter() }
 
     @SuppressLint("RestrictedApi")
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             requireActivity().title = getString(R.string.app_name)
@@ -197,7 +197,7 @@ class QueryFragment : Fragment() {
 
                 }
             }
-            adapter.setViewBinder { v,_, data ->
+            adapter.setViewBinder { v, _, data ->
                 v.isVisible = data.isNotEmpty()
                 false
             }
