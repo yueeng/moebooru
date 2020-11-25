@@ -126,11 +126,11 @@
     <string name="settings_high_quality">下载时自动选择高质量图片</string>
     <string name="settings_high_quality_off">相同宽高的Jpeg (占用空间少)</string>
     <string name="settings_high_quality_on">高质量 Png/Jpeg</string>
-    <string name="settings_host_ip">网络请求使用IP代替HOST</string>
-    <string name="settings_host_ip_address">用于代替HOST的IP地址</string>
+    <string name="settings_host_ip">内置DNS</string>
+    <string name="settings_host_ip_address">内置DNS IP</string>
     <string name="settings_host_ip_address_default">默认: %1$s</string>
     <string name="settings_host_ip_off">默认</string>
-    <string name="settings_host_ip_on">使用IP请求</string>
+    <string name="settings_host_ip_on">使用内置DNS</string>
     <string name="settings_list_info">禁用列表信息显示</string>
     <string name="settings_list_info_off">显示信息</string>
     <string name="settings_list_info_on">禁用信息</string>
