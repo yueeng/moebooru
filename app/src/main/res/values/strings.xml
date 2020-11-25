@@ -126,11 +126,11 @@
     <string name="settings_high_quality">Auto choose high quality image when download</string>
     <string name="settings_high_quality_off">The same width &amp; height Jpeg (small size)</string>
     <string name="settings_high_quality_on">High quality Png/Jpeg (large size)</string>
-    <string name="settings_host_ip">Use ip instead of host when http request</string>
-    <string name="settings_host_ip_address">The ip address instead of host</string>
+    <string name="settings_host_ip">Inner Dns</string>
+    <string name="settings_host_ip_address">Inner DNS ip</string>
     <string name="settings_host_ip_address_default">default: %1$s</string>
     <string name="settings_host_ip_off">Default</string>
-    <string name="settings_host_ip_on">Use the ip when http request failed</string>
+    <string name="settings_host_ip_on">Use inner DNS</string>
     <string name="settings_list_info">Disable info in picture list</string>
     <string name="settings_list_info_off">Show info</string>
     <string name="settings_list_info_on">Disable info</string>
