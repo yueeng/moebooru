@@ -44,7 +44,7 @@ class SavedFragment : Fragment() {
     private val viewModel: SavedViewModel by sharedViewModels({ "saved" }) { SavedViewModelFactory(this, null) }
     private val pinAdapter by lazy { SavedAdapter() }
     private val adapter by lazy { SavedAdapter() }
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentSavedBinding.inflate(inflater, container, false).also { binding ->
             binding.toolbar.setTitle(R.string.saved_title)
             binding.toolbar.setOnMenuItemClickListener {
