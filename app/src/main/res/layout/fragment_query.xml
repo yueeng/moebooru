@@ -45,6 +45,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:backgroundTint="@color/colorAccent"
+        android:contentDescription="@string/app_name"
         app:fabSize="normal"
         app:layout_anchor="@+id/bottomAppBar"
         app:layout_anchorGravity="center_horizontal"

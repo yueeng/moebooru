@@ -28,6 +28,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
+                android:contentDescription="@string/app_name"
                 android:src="@drawable/ic_undo"
                 app:fabSize="mini"
                 app:layout_constraintBottom_toBottomOf="parent"
