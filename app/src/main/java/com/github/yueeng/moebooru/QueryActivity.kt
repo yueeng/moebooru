@@ -9,10 +9,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
-import android.widget.DatePicker
-import android.widget.Filter
-import android.widget.RadioButton
-import android.widget.SimpleAdapter
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.children
 import androidx.core.view.isVisible
@@ -165,8 +162,11 @@ class QueryFragment : Fragment() {
             view.text1.setText(default)
         }
         if (key == "keyword") {
-            val suggestions = mutableListOf<Map<String, String>>()
-            val adapter = object : SimpleAdapter(requireContext(), suggestions, R.layout.simple_list_item_2, arrayOf("tag", "alias"), intArrayOf(R.id.text1, R.id.text2)) {
+            val suggestions = mutableListOf<Map<String, Any>>()
+            val adapter = object : SimpleAdapter(
+                requireContext(), suggestions, R.layout.query_suggestion_item,
+                arrayOf("type", "tag", "alias"), intArrayOf(R.id.text1, R.id.text2, R.id.text3)
+            ) {
                 override fun getFilter(): Filter = filter
                 val filter = object : Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults = FilterResults().also { results ->
@@ -182,7 +182,7 @@ class QueryFragment : Fragment() {
                         val data = results?.values as? List<Triple<Int, String, String>>
                         suggestions.clear()
                         if (data?.isNotEmpty() == true) {
-                            suggestions.addAll(data.map { mapOf("tag" to it.second, "alias" to it.third) })
+                            suggestions.addAll(data.map { mapOf("type" to it.first, "tag" to it.second, "alias" to it.third) })
                             notifyDataSetChanged()
                         } else {
                             notifyDataSetInvalidated()
@@ -191,15 +191,23 @@ class QueryFragment : Fragment() {
 
                     override fun convertResultToString(resultValue: Any?): CharSequence {
                         @Suppress("UNCHECKED_CAST")
-                        val map = resultValue as Map<String, String>
+                        val map = resultValue as Map<String, Any>
                         return map["tag"] as CharSequence
                     }
 
                 }
             }
-            adapter.setViewBinder { v, _, data ->
-                v.isVisible = data.isNotEmpty()
-                false
+            adapter.setViewBinder { v, any, data ->
+                when (v.id) {
+                    R.id.text1 -> true.also {
+                        (v as TextView).text = Tag.string(any as Int)
+                        v.setTextColor(Tag.color(any))
+                    }
+                    R.id.text2, R.id.text3 -> false.also {
+                        v.isVisible = data.isNotEmpty()
+                    }
+                    else -> false
+                }
             }
             view.text1.setAdapter(adapter)
             view.text1.threshold = 1
