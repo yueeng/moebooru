@@ -35,6 +35,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.ChangeBounds
+import androidx.transition.Explode
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import com.alexvasilkov.gestures.GestureController
@@ -344,8 +345,9 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                             pager.pager.setCurrentItem(it, true)
                         }
                         else -> {
-                            pager.toolbar.isInvisible = !pager.toolbar.isInvisible
-                            pager.sliding.isInvisible = !pager.sliding.isInvisible
+                            TransitionManager.beginDelayedTransition(pager.root, Explode())
+                            pager.toolbar.isVisible = pager.toolbar.isGone
+                            pager.sliding.isVisible = pager.sliding.isGone
                         }
                     }
                     return true
