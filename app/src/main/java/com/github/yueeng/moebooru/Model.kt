@@ -13,6 +13,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.content.edit
 import androidx.core.text.isDigitsOnly
 import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
@@ -37,6 +38,7 @@ import org.jsoup.Jsoup
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.HttpURLConnection
 import java.text.SimpleDateFormat
@@ -809,11 +811,15 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                 val request = Request.Builder().url(moeSummaryUrl).header("if-none-match", etag).build()
                 val response = okHttp.newCall(request).execute()
                 if (response.code != HttpURLConnection.HTTP_NOT_MODIFIED) {
-                    response.body?.byteStream()?.use { input ->
+                    ByteArrayOutputStream(response.body?.contentLength()?.toInt()?.takeIf { it > 0 } ?: 1024).use { output ->
+                        response.body?.byteStream()?.use { input ->
+                            input.copyTo(output)
+                        }
                         File(applicationContext.filesDir, "summary.json").outputStream().use {
-                            input.copyTo(it)
+                            output.writeTo(it)
                         }
                     }
+
                     preferences.edit().putString("summary-etag", response.header("ETag")).apply()
                 }
                 Result.success()
@@ -822,21 +828,36 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
             }
         }
 
-        val summary: String by lazy {
-            val file = File(MainApplication.instance().filesDir, "summary.json")
-            val summary = if (file.exists()) file.readText()
-            else MainApplication.instance().assets.open("summary.json").bufferedReader().readText()
-            WorkManager.getInstance(MainApplication.instance()).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())
-            summary
-        }
+        private var _summary: String? = null
+        val summary get() = synchronized(Q) { _summary ?: runCatching { initSummary(); _summary!! }.getOrDefault("") }
+        private var _summaryMap: Map<String, Int>? = null
+        val summaryMap get() = synchronized(Q) { _summaryMap ?: runCatching { initSummary(); _summaryMap!! }.getOrDefault(emptyMap()) }
 
-        val summaryMap by lazy {
-            JSONObject(summary).getString("data").split(' ')
-                .map { it.split('`').filter { s -> s.isNotEmpty() } }
-                .filter { it.size >= 2 }
-                .filter { it[0].isDigitsOnly() }
-                .map { it[1] to it[0].toInt() }
-                .toMap()
+        private fun initSummary() = MainApplication.instance().run {
+            try {
+                val file = File(filesDir, "summary.json")
+                val (summary, json) = runCatching { file.readText().let { it to JSONObject(it) } }.getOrElse {
+                    if (file.exists()) file.delete()
+                    PreferenceManager.getDefaultSharedPreferences(this).edit { remove("summary-etag") }
+                    MainApplication.instance().assets.open("summary.json").use { stream ->
+                        stream.bufferedReader().use { reader ->
+                            reader.readText().let {
+                                it to JSONObject(it)
+                            }
+                        }
+                    }
+                }
+                val summaryMap = json.getString("data").split(' ')
+                    .map { it.split('`').filter { s -> s.isNotEmpty() } }
+                    .filter { it.size >= 2 }
+                    .filter { it[0].isDigitsOnly() }
+                    .map { it[1] to it[0].toInt() }
+                    .toMap()
+                _summary = summary
+                _summaryMap = summaryMap
+                WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())
+            } catch (_: Exception) {
+            }
         }
 
         fun tag(tag: String, top_results_only: Boolean = false): Regex {
