@@ -177,8 +177,9 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             startActivity(Intent(this, SettingsActivity::class.java), options.toBundle())
         }
         R.id.search -> true.also {
+            val query = (supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment.Queryable)?.query() ?: Q()
             val options = ActivityOptions.makeSceneTransitionAnimation(this, findViewById(item.itemId), "shared_element_container")
-            startActivity(Intent(this, QueryActivity::class.java), options.toBundle())
+            startActivity(Intent(this, QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
     }
