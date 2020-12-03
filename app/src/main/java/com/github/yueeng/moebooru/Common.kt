@@ -74,7 +74,8 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import com.google.android.material.progressindicator.ProgressIndicator
+import com.google.android.material.progressindicator.BaseProgressIndicator
+import com.google.android.material.progressindicator.BaseProgressIndicatorSpec
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
@@ -888,7 +889,7 @@ val RecyclerView.ViewHolder.resources: Resources get() = context.resources
 fun ProgressBar.setProgressCompat(progress: Int, animate: Boolean = true) =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) setProgress(progress, animate) else setProgress(progress)
 
-fun ProgressIndicator.setIndeterminateSafe(indeterminate: Boolean) {
+fun <S : BaseProgressIndicatorSpec> BaseProgressIndicator<S>.setIndeterminateSafe(indeterminate: Boolean) {
     if (isIndeterminate == indeterminate) return
     if (indeterminate && isVisible) {
         isInvisible = true
