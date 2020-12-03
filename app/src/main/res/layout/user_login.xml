@@ -44,9 +44,8 @@
                 tools:text="@string/app_name" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.progressindicator.ProgressIndicator
+        <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/indicator"
-            style="@style/Widget.MaterialComponents.ProgressIndicator.Circular.Determinate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:indeterminate="true"

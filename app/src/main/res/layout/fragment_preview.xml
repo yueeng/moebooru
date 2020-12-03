@@ -20,9 +20,8 @@
         android:background="@drawable/background_toolbar_translucent"
         android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar" />
 
-    <com.google.android.material.progressindicator.ProgressIndicator
+    <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/busy"
-        style="@style/Widget.MaterialComponents.ProgressIndicator.Circular.Indeterminate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_anchor="@id/pager"
@@ -48,9 +47,8 @@
             app:layout_constraintStart_toEndOf="@id/button2"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.google.android.material.progressindicator.ProgressIndicator
+        <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/progress1"
-            style="@style/Widget.MaterialComponents.ProgressIndicator.Circular.Indeterminate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="0dp"
@@ -58,13 +56,12 @@
             android:indeterminate="false"
             android:max="100"
             android:padding="0dp"
-            android:scaleX="1.65"
-            android:scaleY="1.65"
-            app:indicatorSize="2dp"
+            app:indicatorSize="60dp"
             app:layout_constraintBottom_toBottomOf="@id/button1"
             app:layout_constraintEnd_toEndOf="@id/button1"
             app:layout_constraintStart_toStartOf="@id/button1"
-            app:layout_constraintTop_toTopOf="@id/button1" />
+            app:layout_constraintTop_toTopOf="@id/button1"
+            app:trackThickness="2dp" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/button2"
