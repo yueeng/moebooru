@@ -24,17 +24,16 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:src="@mipmap/ic_launcher" />
 
-        <ProgressBar
+        <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progress"
-            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:layout_margin="5dp"
             android:max="100"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:trackThickness="2dp" />
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/text1"

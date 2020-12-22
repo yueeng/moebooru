@@ -75,7 +75,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.progressindicator.BaseProgressIndicator
-import com.google.android.material.progressindicator.BaseProgressIndicatorSpec
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.TedPermission
@@ -240,10 +239,10 @@ object ProgressBehavior {
             asFlow().collectLatest { image ->
                 progressBar.isVisible = false
                 progressBar.progress = 0
-                progressBar.isIndeterminate = true
+                progressBar.setIndeterminateSafe(true)
                 if (image.isNotEmpty()) on(image).sample(500).collectLatest {
                     progressBar.isGone = it == 100
-                    progressBar.isIndeterminate = it == -1
+                    progressBar.setIndeterminateSafe(it == -1)
                     progressBar.setProgressCompat(it)
                 }
             }
@@ -889,8 +888,12 @@ val RecyclerView.ViewHolder.resources: Resources get() = context.resources
 fun ProgressBar.setProgressCompat(progress: Int, animate: Boolean = true) =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) setProgress(progress, animate) else setProgress(progress)
 
-fun <S : BaseProgressIndicatorSpec> BaseProgressIndicator<S>.setIndeterminateSafe(indeterminate: Boolean) {
+fun ProgressBar.setIndeterminateSafe(indeterminate: Boolean) {
     if (isIndeterminate == indeterminate) return
+    if (this !is BaseProgressIndicator<*>) {
+        isIndeterminate = indeterminate
+        return
+    }
     if (indeterminate && isVisible) {
         isInvisible = true
         isIndeterminate = indeterminate

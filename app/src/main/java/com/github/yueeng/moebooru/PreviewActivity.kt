@@ -143,7 +143,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         binding.progress1.isInvisible = true
                         binding.progress1.progress = 0
                         binding.progress1.alpha = 1F
-                        binding.progress1.isIndeterminate = true
+                        binding.progress1.setIndeterminateSafe(true)
                         (binding.progress1.tag as? ObjectAnimator)?.cancel()
                     }.sample(500).collectLatest {
                         binding.progress1.setIndeterminateSafe(it == -1)
