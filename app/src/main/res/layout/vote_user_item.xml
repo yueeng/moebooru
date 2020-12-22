@@ -39,14 +39,14 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
-        <ProgressBar
+        <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progress"
-            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_constraintBottom_toTopOf="@+id/text1"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:trackThickness="2dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
