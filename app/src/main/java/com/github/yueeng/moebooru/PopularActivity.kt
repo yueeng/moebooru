@@ -82,7 +82,7 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
             binding.button1.setOnClickListener {
                 val constraints = CalendarConstraints.Builder()
                     .setStart(moeCreateTime.timeInMillis)
-                    .setEnd(Calendar.getInstance().timeInMillis)
+                    .setEnd(calendar().timeInMillis)
                     .setOpenAt(adapter.getTime(binding.pager.currentItem).timeInMillis)
                     .build()
                 val picker = MaterialDatePicker.Builder.datePicker()
@@ -90,25 +90,25 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
                     .setCalendarConstraints(constraints)
                     .build()
                 picker.addOnPositiveButtonClickListener {
-                    binding.pager.currentItem = date2pos(Calendar.getInstance().apply { time = Date(it) })
+                    binding.pager.currentItem = date2pos(calendar().apply { time = Date(it) })
                 }
                 picker.show(childFragmentManager, "picker")
             }
         }.root
 
     fun date2pos(target: Calendar) = when (type) {
-        "day" -> Calendar.getInstance().minus(target).daysGreedy - 1
-        "week" -> Calendar.getInstance().minus(target).weeksGreedy - 1
-        "month" -> Calendar.getInstance().minus(target).months - 1
-        "year" -> Calendar.getInstance().minus(target).year - 1
+        "day" -> calendar().minus(target).daysGreedy - 1
+        "week" -> calendar().minus(target).weeksGreedy - 1
+        "month" -> calendar().minus(target).months - 1
+        "year" -> calendar().minus(target).year - 1
         else -> throw  IllegalArgumentException()
     }
 
     fun pos2date(position: Int) = when (type) {
-        "day" -> Calendar.getInstance().day(-position, true)
-        "week" -> Calendar.getInstance().weekOfYear(-position, true)
-        "month" -> Calendar.getInstance().month(-position, true)
-        "year" -> Calendar.getInstance().year(-position, true)
+        "day" -> calendar().day(-position, true)
+        "week" -> calendar().weekOfYear(-position, true)
+        "month" -> calendar().month(-position, true)
+        "year" -> calendar().year(-position, true)
         else -> throw  IllegalArgumentException()
     }
 
@@ -120,9 +120,9 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         }
 
         fun getItem(position: Int) = Q().popular(type, pos2date(position).time)
-        private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        private val yearFormatter get() = SimpleDateFormat("yyyy", Locale.getDefault())
+        private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { timeZone = utcTimeZone }
+        private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault()).apply { timeZone = utcTimeZone }
+        private val yearFormatter get() = SimpleDateFormat("yyyy", Locale.getDefault()).apply { timeZone = utcTimeZone }
         fun getTime(position: Int) = pos2date(position)
         fun getPageTitle(position: Int): CharSequence = when (type) {
             "day" -> pos2date(position).format(dayFormatter)

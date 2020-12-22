@@ -354,7 +354,7 @@ fun String.toTitleCase(vararg delimiters: String = arrayOf("_")) = delimiters.fo
     }
 }
 
-fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = Calendar.getInstance().let { calendar ->
+fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = calendar().let { calendar ->
     calendar.firstDayOfWeek = firstOfWeek
     calendar.time = this
     calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek + index - 1)
@@ -363,27 +363,27 @@ fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Dat
 
 fun Date.lastDayOfWeek(): Date = firstDayOfWeek(7)
 
-fun Date.firstDayOfMonth(): Date = Calendar.getInstance().let { calendar ->
+fun Date.firstDayOfMonth(): Date = calendar().let { calendar ->
     calendar.time = this
     calendar.set(Calendar.DAY_OF_MONTH, 1)
     calendar.time
 }
 
-fun Date.lastDayOfMonth(): Date = Calendar.getInstance().let { calendar ->
+fun Date.lastDayOfMonth(): Date = calendar().let { calendar ->
     calendar.time = this
     calendar.set(Calendar.DAY_OF_MONTH, 1)
     calendar.roll(Calendar.DAY_OF_MONTH, -1)
     calendar.time
 }
 
-fun Date.firstDayOfYear(): Date = Calendar.getInstance().let { calendar ->
+fun Date.firstDayOfYear(): Date = calendar().let { calendar ->
     calendar.time = this
     calendar.set(Calendar.MONTH, 0)
     calendar.set(Calendar.DAY_OF_MONTH, 1)
     calendar.time
 }
 
-fun Date.lastDayOfYear(): Date = Calendar.getInstance().let { calendar ->
+fun Date.lastDayOfYear(): Date = calendar().let { calendar ->
     calendar.time = this
     calendar.set(Calendar.MONTH, 0)
     calendar.roll(Calendar.MONTH, -1)
@@ -422,7 +422,8 @@ class TimeSpan(val end: Calendar, val begin: Calendar) {
 }
 
 operator fun Calendar.minus(other: Calendar): TimeSpan = TimeSpan(this, other)
-
+val utcTimeZone: TimeZone by lazy { TimeZone.getTimeZone("UTC") }
+fun calendar(zone: TimeZone? = null): Calendar = Calendar.getInstance(zone ?: utcTimeZone)
 fun Calendar.year(year: Int, add: Boolean = false) = apply { if (add) add(Calendar.YEAR, year) else set(Calendar.YEAR, year) }
 fun Calendar.month(month: Int, add: Boolean = false) = apply { if (add) add(Calendar.MONTH, month) else set(Calendar.MONTH, month) }
 fun Calendar.day(day: Int, add: Boolean = false) = apply { if (add) add(Calendar.DAY_OF_MONTH, day) else set(Calendar.DAY_OF_MONTH, day) }
@@ -459,7 +460,7 @@ fun DateFormat.tryParse(string: CharSequence): Date? = try {
 }
 
 var DatePicker.date
-    get() = Calendar.getInstance().year(year).month(month).day(dayOfMonth)
+    get() = calendar().year(year).month(month).day(dayOfMonth)
     set(value) = updateDate(value.year, value.month, value.day)
 
 inline fun <reified VM : ViewModel> Fragment.sharedViewModels(
