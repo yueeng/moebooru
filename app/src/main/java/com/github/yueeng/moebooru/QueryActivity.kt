@@ -318,8 +318,8 @@ class QueryFragment : Fragment() {
                 val current = Q.formatter.tryParse(pe.second.text.toString()) ?: Date()
                 val pick = DatePicker(requireContext()).apply {
                     minDate = moeCreateTime.milliseconds
-                    maxDate = Calendar.getInstance().milliseconds
-                    date = Calendar.getInstance().apply { time = current }
+                    maxDate = calendar().milliseconds
+                    date = calendar().apply { time = current }
                 }
                 MaterialAlertDialogBuilder(requireContext()).setView(pick)
                     .setPositiveButton(R.string.app_ok) { _, _ ->

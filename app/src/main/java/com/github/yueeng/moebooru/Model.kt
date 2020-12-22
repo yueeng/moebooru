@@ -46,8 +46,8 @@ import java.util.*
 import com.google.gson.annotations.SerializedName as SN
 
 @SuppressLint("SimpleDateFormat")
-val moeCreateTime: Calendar = Calendar.getInstance().apply {
-    time = SimpleDateFormat("yyyy-MM-dd").parse(MainApplication.instance().getString(R.string.app_create_time))!!
+val moeCreateTime: Calendar = calendar().apply {
+    time = SimpleDateFormat("yyyy-MM-dd").apply { timeZone = utcTimeZone }.parse(MainApplication.instance().getString(R.string.app_create_time))!!
 }
 val moeHost = MainApplication.instance().getString(R.string.app_host)
 val moeIp = MainApplication.instance().getString(R.string.app_ip)
@@ -762,7 +762,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
             override fun createFromParcel(source: Parcel): Q = Q(source)
             override fun newArray(size: Int): Array<Q?> = arrayOfNulls(size)
         }
-        val formatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val formatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { timeZone = utcTimeZone }
         val cheats = linkedMapOf(
             ("keyword" to (R.string.query_keyword to R.string.query_keyword_desc)),
             ("order" to (R.string.query_order to R.string.query_order_desc)),
@@ -937,13 +937,13 @@ object OAuth {
     }
 
     val available: Boolean get() = !name.value.isNullOrEmpty()
-    val timestamp = MutableLiveData(Calendar.getInstance().time.time / 1000)
+    val timestamp = MutableLiveData(calendar().time.time / 1000)
     fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?${timestamp.value}" else null
     fun avatar(fragment: Fragment, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
         fragment.lifecycleScope.launchWhenCreated {
             runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
                 .onSuccess {
-                    timestamp.postValue(Calendar.getInstance().time.time / 1000)
+                    timestamp.postValue(calendar().time.time / 1000)
                     avatar.postValue(post_id)
                     fn(post_id)
                 }

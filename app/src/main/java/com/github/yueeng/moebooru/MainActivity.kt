@@ -102,7 +102,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
         }.root
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
-        val data = mutableListOf("Popular" to Q().order(Q.Order.score).date(Calendar.getInstance().also { it.add(Calendar.DAY_OF_YEAR, -1) }.time, Q.Value.Op.ge))
+        val data = mutableListOf("Popular" to Q().order(Q.Order.score).date(calendar().also { it.add(Calendar.DAY_OF_YEAR, -1) }.time, Q.Value.Op.ge))
         override fun getItemId(position: Int): Long = data[position].hashCode().toLong()
         override fun containsItem(itemId: Long): Boolean = data.map { it.hashCode().toLong() }.contains(itemId)
         override fun getItemCount(): Int = data.size
