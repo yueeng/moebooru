@@ -815,8 +815,10 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                         response.body?.byteStream()?.use { input ->
                             input.copyTo(output)
                         }
-                        File(applicationContext.filesDir, "summary.json").outputStream().use {
-                            output.writeTo(it)
+                        synchronized(Q) {
+                            File(applicationContext.filesDir, "summary.json").outputStream().use {
+                                output.writeTo(it)
+                            }
                         }
                     }
 
@@ -839,11 +841,9 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                 val (summary, json) = runCatching { file.readText().let { it to JSONObject(it) } }.getOrElse {
                     if (file.exists()) file.delete()
                     PreferenceManager.getDefaultSharedPreferences(this).edit { remove("summary-etag") }
-                    MainApplication.instance().assets.open("summary.json").use { stream ->
-                        stream.bufferedReader().use { reader ->
-                            reader.readText().let {
-                                it to JSONObject(it)
-                            }
+                    MainApplication.instance().assets.open("summary.json").bufferedReader().use { reader ->
+                        reader.readText().let {
+                            it to JSONObject(it)
                         }
                     }
                 }
