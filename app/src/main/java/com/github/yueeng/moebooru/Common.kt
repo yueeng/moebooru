@@ -116,7 +116,6 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
         }
     }
 }
-val okHttp get() = MainApplication.instance().okHttp
 val okDns = object : Dns {
     override fun lookup(hostname: String): List<InetAddress> = when {
         MoeSettings.host.value == true && hostname.endsWith(moeHost) ->
@@ -125,7 +124,7 @@ val okDns = object : Dns {
     } ?: Dns.SYSTEM.lookup(hostname)
 }
 
-fun createOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+val okHttp: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
 //    .writeTimeout(30, TimeUnit.SECONDS)
 //    .readTimeout(60, TimeUnit.SECONDS)

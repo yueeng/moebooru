@@ -2,6 +2,7 @@ package com.github.yueeng.moebooru
 
 import android.app.ActivityOptions
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -10,21 +11,22 @@ import android.transition.Fade
 import android.transition.Slide
 import android.transition.TransitionSet
 import android.view.*
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.res.use
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.transition.platform.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.lang.reflect.Modifier
+import kotlin.system.exitProcess
 
-class MainApplication : Application() {
+class MainApplication : Application(), Thread.UncaughtExceptionHandler {
     companion object {
         private lateinit var app: MainApplication
         fun instance() = app
@@ -34,21 +36,48 @@ class MainApplication : Application() {
         app = this
     }
 
-    lateinit var okHttp: OkHttpClient
+    override fun attachBaseContext(base: Context?) {
+        super.attachBaseContext(base)
+        Thread.setDefaultUncaughtExceptionHandler(this)
+    }
+
     override fun onCreate() {
-        AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value!!)
         super.onCreate()
-        okHttp = createOkHttpClient()
-        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            MoeSettings.cache.asFlow().drop(1).collectLatest {
-                okHttp = createOkHttpClient()
+        AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value ?: AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+    }
+
+    override fun uncaughtException(t: Thread, e: Throwable) {
+        startActivity(
+            Intent(this, CrashActivity::class.java)
+                .putExtra("e", e)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        exitProcess(1)
+    }
+}
+
+class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setSupportActionBar(findViewById(R.id.toolbar))
+        val e = intent.getSerializableExtra("e") as Throwable
+        val seq = generateSequence(e) { it.cause }
+        val ex = StringWriter().use { stream ->
+            PrintWriter(stream).use { writer ->
+                writer.println("=====BuildConfig=====")
+                BuildConfig::class.java.declaredFields.filter { Modifier.isStatic(it.modifiers) }.forEach {
+                    writer.println("${it.name}: ${it.get(null)}")
+                }
+                writer.println()
+                writer.println("=====Exception=====")
+                seq.forEach {
+                    it.printStackTrace(writer)
+                }
+                writer.println("-------------------")
             }
+            stream.toString()
         }
-        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            withContext(Dispatchers.Default) {
-                Q.summaryMap[""]
-            }
-        }
+        findViewById<TextView>(R.id.text1).text = ex
     }
 }
 
