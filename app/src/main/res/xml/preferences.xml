@@ -55,6 +55,7 @@
             android:key="app.cache_size"
             android:max="2048"
             android:title="@string/settings_cache_size"
+            app:isPreferenceVisible="false"
             app:min="256"
             app:showSeekBarValue="true" />
     </PreferenceCategory>
