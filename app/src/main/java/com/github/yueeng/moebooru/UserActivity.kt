@@ -227,6 +227,7 @@ class UserFragment : Fragment() {
                     }
                 }
             }
+        } catch (_: Exception) {
         } finally {
             busy.postValue(false)
         }
