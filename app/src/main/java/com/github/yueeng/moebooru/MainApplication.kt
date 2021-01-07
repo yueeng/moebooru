@@ -2,6 +2,8 @@ package com.github.yueeng.moebooru
 
 import android.app.ActivityOptions
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -78,6 +80,19 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
             stream.toString()
         }
         findViewById<TextView>(R.id.text1).text = ex
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menu?.add(Menu.NONE, 0x1000, Menu.NONE, "COPY")?.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        0x1000 -> true.also {
+            val manager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            manager.setPrimaryClip(ClipData.newPlainText("ERROR", findViewById<TextView>(R.id.text1).text))
+        }
+        else -> super.onOptionsItemSelected(item)
     }
 }
 
