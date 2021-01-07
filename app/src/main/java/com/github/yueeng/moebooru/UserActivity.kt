@@ -193,14 +193,12 @@ class UserFragment : Fragment() {
             val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
             coroutineScope {
                 launch {
-                    val url = "$moeUrl/user/show/$user"
-                    val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
-                    val jsoup = withContext(Dispatchers.Default) { Jsoup.parse(html, url) }
-                    launch {
+                    runCatching {
+                        val url = "$moeUrl/user/show/$user"
+                        val html = okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() }
+                        val jsoup = withContext(Dispatchers.Default) { Jsoup.parse(html, url) }
                         val id = jsoup.select("img.avatar").parents().firstOrNull { it.tagName() == "a" }?.attr("href")?.let { Regex("\\d+").find(it) }?.value?.toInt() ?: 0
                         model.avatar.postValue(id)
-                    }
-                    launch {
                         val posts = jsoup.select("td:contains(Posts)").next().firstOrNull()?.text()?.toIntOrNull() ?: 0
                         if (posts > 0) {
                             data["Common"]?.first?.add(Tag("Posts: ${posts}P", "user:$name"))
