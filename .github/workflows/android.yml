@@ -55,8 +55,8 @@ jobs:
       - name: Artifact Apk
         uses: actions/upload-artifact@v2
         with:
-          name: moebooru.apk
-          path: ${{ github.workspace }}/app/build/outputs/apk/**
+          name: outputs
+          path: ${{ github.workspace }}/app/build/outputs/**
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
