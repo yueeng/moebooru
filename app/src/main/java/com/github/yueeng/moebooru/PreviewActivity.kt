@@ -16,7 +16,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnEnd
 import androidx.core.content.FileProvider
@@ -50,8 +49,6 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.gun0912.tedpermission.TedPermission
-import com.yalantis.ucrop.UCrop
-import com.yalantis.ucrop.UCropActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -92,7 +89,6 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
 
 class PreviewViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
     val index = handle.getLiveData("index", args?.getInt("index", -1) ?: -1)
-    val crop = handle.getLiveData<JImageItem>("crop")
 }
 
 class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
@@ -246,17 +242,13 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 }
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
-                    lifecycleScope.launchWhenCreated {
-                        val dest = File(requireContext().cacheDir, UUID.randomUUID().toString())
-                        val option = UCrop.Options().apply {
-                            setAllowedGestures(UCropActivity.SCALE, UCropActivity.NONE, UCropActivity.SCALE)
-                            setHideBottomControls(true)
-                        }
-                        val crop = UCrop.of(Uri.fromFile(file), Uri.fromFile(dest))
-                            .withAspectRatio(1F, 1F).withOptions(option)
-                        previewModel.crop.value = item
-                        cropAvatar.launch(crop)
-                    }
+                    startActivity(
+                        Intent(requireContext(), CropActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .putExtra("op", CropActivity.OPTION_AVATAR)
+                            .putExtra("id", item.id)
+                            .putExtra("source", Uri.fromFile(file))
+                    )
                 })
             }
             binding.button5.setOnClickListener {
@@ -270,15 +262,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             binding.button6.setOnClickListener {
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
                 val file = File(requireContext().cacheDir, item.jpeg_url.fileName)
-                Save.save(item.id, item.jpeg_url, Uri.fromFile(file), Save.SO.OTHER, tip = false) {
-                    lifecycleScope.launchWhenCreated {
-                        it?.let { source ->
-                            val dest = File(File(requireContext().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
-                            previewModel.crop.value = item
-                            cropShare.launch(UCrop.of(source, Uri.fromFile(dest)))
-                        }
-                    }
-                }
+                Save.save(item.id, item.jpeg_url, Uri.fromFile(file), Save.SO.CROP, tip = false)
             }
             binding.button7.setOnClickListener {
                 if (!OAuth.available) {
@@ -292,31 +276,6 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
             }
         }.root
-
-    private val cropShare = registerForActivityResult(CropImage()) { result ->
-        val item = previewModel.crop.value ?: return@registerForActivityResult
-        previewModel.crop.value = null
-        if (result == null) return@registerForActivityResult
-        val extension = MimeTypeMap.getFileExtensionFromUrl(result.output.path!!)
-        val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-        val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", File(result.output.path!!))
-        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-            type = mime
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }, getString(R.string.app_share)))
-        requireContext().notifyImageComplete(uri, item.id, getString(R.string.app_name), item.jpeg_url.fileName)
-    }
-
-    private val cropAvatar = registerForActivityResult(CropImage()) { data ->
-        val item = previewModel.crop.value ?: return@registerForActivityResult
-        previewModel.crop.value = null
-        if (data == null) return@registerForActivityResult
-        OAuth.avatar(this, OAuth.user.value!!, item.id, 1F * data.offsetX / data.originWidth, 1F * (data.offsetX + data.imageWidth) / data.originWidth, 1F * data.offsetY / data.originHeight, 1F * (data.offsetY + data.imageHeight) / data.originHeight) {
-            Toast.makeText(requireContext(), R.string.app_complete, Toast.LENGTH_SHORT).show()
-        }
-    }
 
     fun onBackPressed(): Boolean {
         val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)

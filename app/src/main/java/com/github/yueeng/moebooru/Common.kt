@@ -601,10 +601,10 @@ object Save {
     }
 
     enum class SO {
-        SAVE, WALLPAPER, OTHER
+        SAVE, WALLPAPER, CROP, OTHER
     }
 
-    fun save(id: Int, url: String, target: Uri, so: SO, tip: Boolean = true, call: ((Uri?) -> Unit)? = null) {
+    fun save(id: Int, url: String, target: Uri, so: SO, tip: Boolean = true) {
         val context = MainApplication.instance()
         val params = Data.Builder().putString("url", url)
             .putString("target", target.toString())
@@ -676,6 +676,14 @@ object Save {
                         SO.WALLPAPER -> context.contentResolver.openInputStream(target)?.use { stream ->
                             WallpaperManager.getInstance(MainApplication.instance()).setStream(stream)
                         }
+                        SO.CROP -> context.startActivity(
+                            Intent(context, CropActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                .putExtra("op", CropActivity.OPTION_SHARE)
+                                .putExtra("id", id)
+                                .putExtra("name", fileName)
+                                .putExtra("source", it.outputData.getString("file")?.toUri())
+                        )
                         else -> Unit
                     }
                 }
@@ -695,7 +703,6 @@ object Save {
             }
             if (it.state.isFinished) {
                 info.removeObservers(ProcessLifecycleOwner.get())
-                call?.invoke(it.outputData.getString("file")?.toUri())
             }
         })
     }

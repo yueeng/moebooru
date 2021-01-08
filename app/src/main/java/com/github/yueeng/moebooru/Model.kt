@@ -17,6 +17,7 @@ import androidx.core.content.edit
 import androidx.core.text.isDigitsOnly
 import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -939,8 +940,8 @@ object OAuth {
     val available: Boolean get() = !name.value.isNullOrEmpty()
     val timestamp = MutableLiveData(calendar().time.time / 1000)
     fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?${timestamp.value}" else null
-    fun avatar(fragment: Fragment, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
-        fragment.lifecycleScope.launchWhenCreated {
+    fun avatar(owner: LifecycleOwner, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
+        owner.lifecycleScope.launchWhenCreated {
             runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
                 .onSuccess {
                     timestamp.postValue(calendar().time.time / 1000)
