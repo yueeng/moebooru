@@ -121,6 +121,7 @@ class QueryFragment : Fragment() {
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.saved_title)
                 .setView(view.root)
+                .setCancelable(false)
                 .setPositiveButton(R.string.app_ok) { _, _ ->
                     ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
                         Db.db.withTransaction {
@@ -171,7 +172,7 @@ class QueryFragment : Fragment() {
                 val filter = object : Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults = FilterResults().also { results ->
                         if (constraint?.isNotBlank() == true) {
-                            val data = Q.suggest(constraint.toString().trim()).take(10).toList()
+                            val data = Q.suggest(constraint.toString().trim()).take(20).toList()
                             results.values = data
                             results.count = data.size
                         }
@@ -216,7 +217,10 @@ class QueryFragment : Fragment() {
         view.text1.addTextChangedListener {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
-        MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(key)
+            .setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -258,7 +262,10 @@ class QueryFragment : Fragment() {
         } else {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
-        MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(key)
+            .setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -344,7 +351,10 @@ class QueryFragment : Fragment() {
         } else {
             view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
         }
-        MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(key)
+            .setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -399,7 +409,10 @@ class QueryFragment : Fragment() {
         view.edit1.addTextChangedListener {
             view.input1.isErrorEnabled = it.isNullOrEmpty()
         }
-        MaterialAlertDialogBuilder(requireContext()).setTitle(key).setView(view.root)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(key)
+            .setView(view.root)
+            .setCancelable(false)
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
             .create()
@@ -472,6 +485,7 @@ class QueryFragment : Fragment() {
         adapter.checked = data.indexOfFirst { it["n"] == value }
         MaterialAlertDialogBuilder(requireActivity())
             .setTitle(Q.cheats[key]!!.first)
+            .setCancelable(false)
             .setSingleChoiceItems(adapter, 0) { _, w -> adapter.checked = w }
             .setPositiveButton(R.string.app_ok, null)
             .setNegativeButton(R.string.app_cancel, null)
