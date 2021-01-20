@@ -602,12 +602,10 @@ object Save {
                         put(MediaStore.MediaColumns.MIME_TYPE, mime)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
-                        } else {
-                            @Suppress("DEPRECATION")
+                        } else @Suppress("DEPRECATION") {
                             val picture = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                             val folder = File(picture, moeHost).apply { mkdirs() }
                             val file = File(folder, fileName)
-                            @Suppress("DEPRECATION")
                             put(MediaStore.MediaColumns.DATA, file.path)
                         }
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
