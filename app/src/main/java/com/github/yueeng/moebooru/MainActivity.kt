@@ -27,7 +27,7 @@ import androidx.transition.TransitionManager
 import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.github.yueeng.moebooru.Save.download
+import com.github.yueeng.moebooru.Save.save
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
@@ -348,9 +348,7 @@ class ImageFragment : Fragment() {
                     .apply {
                         setOnShowListener {
                             getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                                (requireActivity() as AppCompatActivity).download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author, it) {
-                                    dismiss()
-                                }
+                                (requireActivity() as AppCompatActivity).save(item.id, item.save_url, Save.SO.SAVE, item.author, it)
                             }
                             getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
                                 if (!OAuth.available) {
