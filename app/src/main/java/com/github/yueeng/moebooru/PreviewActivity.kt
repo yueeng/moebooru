@@ -18,7 +18,6 @@ import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnEnd
-import androidx.core.content.FileProvider
 import androidx.core.content.res.use
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
@@ -40,8 +39,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.alexvasilkov.gestures.GestureController
 import com.bumptech.glide.Priority
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.github.yueeng.moebooru.Save.download
-import com.github.yueeng.moebooru.Save.fileName
+import com.github.yueeng.moebooru.Save.save
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
 import com.github.yueeng.moebooru.databinding.PreviewItemBinding
 import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
@@ -54,7 +52,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.util.*
 import kotlin.math.max
 
@@ -207,7 +204,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
             binding.button1.setOnClickListener {
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
-                (requireActivity() as AppCompatActivity).download(item.id, if (MoeSettings.quality.value == true) item.file_url else item.jpeg_url, item.author, binding.button1)
+                (requireActivity() as AppCompatActivity).save(item.id, item.save_url, Save.SO.SAVE, item.author, binding.button1)
             }
             binding.button2.setOnClickListener {
                 if (!OAuth.available) {
@@ -254,15 +251,12 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             binding.button5.setOnClickListener {
                 TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
                     val item = adapter.peekSafe(binding.pager.currentItem) ?: return@onGranted
-                    val file = File(File(requireContext().cacheDir, "shared").apply { mkdirs() }, item.jpeg_url.fileName)
-                    val uri = FileProvider.getUriForFile(requireContext(), "${BuildConfig.APPLICATION_ID}.fileprovider", file)
-                    Save.save(item.id, item.jpeg_url, uri, Save.SO.WALLPAPER)
+                    (requireActivity() as AppCompatActivity).save(item.id, item.jpeg_url, Save.SO.WALLPAPER)
                 }.check()
             }
             binding.button6.setOnClickListener {
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
-                val file = File(requireContext().cacheDir, item.jpeg_url.fileName)
-                Save.save(item.id, item.jpeg_url, Uri.fromFile(file), Save.SO.CROP, tip = false)
+                (requireActivity() as AppCompatActivity).save(item.id, item.jpeg_url, Save.SO.CROP)
             }
             binding.button7.setOnClickListener {
                 if (!OAuth.available) {
@@ -366,7 +360,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     val tag = data[bindingAdapterPosition]
                     when (tag.type) {
                         Tag.TYPE_URL -> activity.openWeb(tag.tag)
-                        Tag.TYPE_DOWNLOAD -> activity.download(item.id, tag.tag, item.author, it)
+                        Tag.TYPE_DOWNLOAD -> activity.save(item.id, item.save_url, Save.SO.SAVE, item.author, it)
                         Tag.TYPE_SIMILAR -> {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
                             activity.startActivity(Intent(activity, SimilarActivity::class.java).putExtra("id", tag.tag.toInt()), options.toBundle())

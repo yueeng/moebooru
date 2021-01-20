@@ -15,6 +15,7 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.MediaStore
 import android.text.SpannableString
 import android.text.Spanned
@@ -32,6 +33,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.core.view.isGone
@@ -40,7 +42,6 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
@@ -55,7 +56,6 @@ import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.DecodeFormat
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.model.GlideUrl
@@ -87,9 +87,9 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.sample
 import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.net.InetAddress
@@ -532,26 +532,42 @@ fun TedPermission.Builder.onGranted(view: View, function: () -> Unit): TedPermis
 }
 
 object Save {
-    fun fileNameEncode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
+    enum class SO {
+        SAVE, WALLPAPER, CROP, SHARE
+    }
+
+    private fun fileNameEncode(path: String): String = """\/:*?"<>|""".fold(path) { r, i ->
         r.replace(i, ' ')
     }
 
-    val String.fileName get() = fileNameEncode(toHttpUrl().pathSegments.last())
-
     class SaveWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+        val id by lazy { inputData.getInt("id", 0) }
+        val url by lazy { inputData.getString("url")!! }
+        val option by lazy { inputData.getInt("option", 0).let { SO.values()[it] } }
+        val fileName get() = fileNameEncode(url.toHttpUrl().pathSegments.last())
+        val target by lazy { File(applicationContext.cacheDir, UUID.randomUUID().toString()) }
+        val notification by lazy {
+            NotificationCompat.Builder(context, moeHost)
+                .setContentTitle(context.getString(R.string.app_download, context.getString(R.string.app_name)))
+                .setContentText(fileName)
+                .setSmallIcon(R.drawable.ic_stat_name)
+                .setOngoing(true)
+        }
+
+        init {
+            setForegroundAsync(ForegroundInfo(id, notification.build()))
+        }
+
+        @SuppressLint("MissingPermission")
         @OptIn(FlowPreview::class)
         @ExperimentalTime
         override suspend fun doWork(): Result = try {
-            val url = inputData.getString("url")?.toHttpUrlOrNull() ?: throw IllegalArgumentException()
-            val target = inputData.getString("target")?.toUri() ?: throw IllegalArgumentException()
-            val id = inputData.getInt("id", 0)
+            notification.setContentTitle(applicationContext.getString(R.string.app_download, applicationContext.getString(R.string.app_name)))
+                .setProgress(0, 0, true)
+                .setSmallIcon(R.drawable.ic_stat_name)
+                .setOngoing(true)
+            setForeground(ForegroundInfo(id, notification.build()))
             coroutineScope {
-                val notification = NotificationCompat.Builder(applicationContext, moeHost)
-                    .setContentTitle(applicationContext.getString(R.string.app_download, applicationContext.getString(R.string.app_name)))
-                    .setProgress(0, 0, true)
-                    .setSmallIcon(R.drawable.ic_stat_name)
-                    .setOngoing(true)
-                setForeground(ForegroundInfo(id, notification.build()))
                 val channel = Channel<Pair<Long, Long>>(Channel.CONFLATED)
                 launch {
                     channel.consumeAsFlow().sample(500).collectLatest {
@@ -568,7 +584,7 @@ object Save {
                             }
                             channel.offer(0L to body.contentLength())
                             body.byteStream().use { input ->
-                                applicationContext.contentResolver.openOutputStream(target)?.use { output ->
+                                target.outputStream().use { output ->
                                     input.copyTo(output)
                                 }
                             }
@@ -577,8 +593,100 @@ object Save {
                     channel.close()
                 }
             }
+            val shared = when (option) {
+                SO.SAVE -> {
+                    val extension = MimeTypeMap.getFileExtensionFromUrl(fileName)
+                    val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                    val values = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
+                        } else {
+                            @Suppress("DEPRECATION")
+                            val picture = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                            val folder = File(picture, moeHost).apply { mkdirs() }
+                            val file = File(folder, fileName)
+                            @Suppress("DEPRECATION")
+                            put(MediaStore.MediaColumns.DATA, file.path)
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            inputData.getString("author")?.let {
+                                put(MediaStore.MediaColumns.ARTIST, it.toTitleCase())
+                            }
+                            put(MediaStore.MediaColumns.ALBUM, moeHost)
+                        }
+                    }
+                    applicationContext.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)?.also { uri ->
+                        @Suppress("BlockingMethodInNonBlockingContext")
+                        applicationContext.contentResolver.openOutputStream(uri)?.use { output ->
+                            target.inputStream().use { it.copyTo(output) }
+                        }
+                    }
+                }
+                SO.SHARE -> {
+                    val file = File(File(applicationContext.cacheDir, "shared").apply { mkdirs() }, fileName).also(target::renameTo)
+                    FileProvider.getUriForFile(applicationContext, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+                }
+                SO.WALLPAPER -> target.inputStream().use { stream ->
+                    @Suppress("BlockingMethodInNonBlockingContext")
+                    WallpaperManager.getInstance(applicationContext).setStream(stream)
+                    null
+                }
+                SO.CROP -> {
+                    applicationContext.startActivity(
+                        Intent(applicationContext, CropActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .putExtra("op", CropActivity.OPTION_SHARE)
+                            .putExtra("id", id)
+                            .putExtra("name", fileName)
+                            .putExtra("source", target.toUri())
+                    )
+                    null
+                }
+            }
+            if (shared != null) {
+                val extension = MimeTypeMap.getFileExtensionFromUrl(fileName)
+                val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    type = mime ?: "image/$extension"
+                    data = shared
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val padding = PendingIntent.getActivity(applicationContext, id, Intent.createChooser(intent, applicationContext.getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
+                notification.setContentText(fileName)
+                    .setProgress(0, 0, false)
+                    .setOngoing(false)
+                    .setAutoCancel(true)
+                    .setContentIntent(padding)
+                suspendCancellableCoroutine<Unit> { continuation ->
+                    GlideApp.with(MainApplication.instance()).asBitmap().load(target).override(500, 500)
+                        .into(object : CustomTarget<Bitmap>() {
+                            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                                notification.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
+                                    .setLargeIcon(resource)
+                                continuation.resume(Unit)
+                            }
+
+                            override fun onLoadFailed(errorDrawable: Drawable?) {
+                                continuation.cancel()
+                            }
+
+                            override fun onLoadCleared(placeholder: Drawable?) = Unit
+                        })
+                }
+                NotificationManagerCompat.from(applicationContext).notify(id.inv(), notification.build())
+            }
             Result.success(Data.Builder().putString("file", target.toString()).build())
         } catch (e: Exception) {
+            if (option == SO.SAVE || option == SO.SHARE) {
+                notification.setContentText(applicationContext.getText(R.string.app_failed))
+                    .setProgress(0, 0, false)
+                    .setOngoing(false)
+                    .setAutoCancel(true)
+                NotificationManagerCompat.from(applicationContext).notify(id.inv(), notification.build())
+            }
             Result.failure(Data.Builder().putString("error", e.message).build())
         }
     }
@@ -587,7 +695,7 @@ object Save {
         val manager = WorkManager.getInstance(MainApplication.instance())
         val data = manager.getWorkInfosForUniqueWorkLiveData(key)
         suspendCancellableCoroutine { continuation ->
-            val observer = object : Observer<List<WorkInfo>> {
+            val observer = object : androidx.lifecycle.Observer<List<WorkInfo>> {
                 override fun onChanged(it: List<WorkInfo>?) {
                     continuation.resume(it?.firstOrNull()?.state)
                     data.removeObserver(this)
@@ -600,143 +708,35 @@ object Save {
         }
     }
 
-    enum class SO {
-        SAVE, WALLPAPER, CROP, OTHER
-    }
-
-    fun save(id: Int, url: String, target: Uri, so: SO, tip: Boolean = true) {
-        val context = MainApplication.instance()
-        val params = Data.Builder().putString("url", url)
-            .putString("target", target.toString())
-            .putInt("id", id).build()
-        val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params).build()
-        val manager = WorkManager.getInstance(MainApplication.instance()).apply {
-            if (so != SO.SAVE) enqueue(request) else enqueueUniqueWork("save-$id", ExistingWorkPolicy.KEEP, request)
-        }
-        val info = manager.getWorkInfoByIdLiveData(request.id)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManagerCompat.from(MainApplication.instance()).let { notify ->
-                val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_LOW)
-                notify.createNotificationChannel(channel)
-            }
-        }
-        val fileName = url.fileName
-        val notification = NotificationCompat.Builder(context, moeHost)
-            .setContentTitle(context.getString(R.string.app_download, context.getString(R.string.app_name)))
-            .setContentText(fileName)
-            .setSmallIcon(R.drawable.ic_stat_name)
-            .setOngoing(true)
-        info.observe(ProcessLifecycleOwner.get(), Observer {
-            when (it.state) {
-                WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
-                    notification.setProgress(0, 0, true)
-                        .setContentText(context.getString(R.string.download_ready))
-                    NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
-                }
-                WorkInfo.State.RUNNING -> Unit
-                WorkInfo.State.SUCCEEDED -> {
-                    if (tip) {
-                        val extension = MimeTypeMap.getFileExtensionFromUrl(fileName)
-                        val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            type = mime ?: "image/$extension"
-                            data = target
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        val padding = PendingIntent.getActivity(context, id, Intent.createChooser(intent, context.getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
-                        notification.apply {
-                            setContentText(fileName)
-                            setProgress(0, 0, false)
-                            setOngoing(false)
-                            setAutoCancel(true)
-                            setContentIntent(padding)
-                        }
-                        GlideApp.with(MainApplication.instance()).asBitmap().load(target).override(500, 500)
-                            .into(object : CustomTarget<Bitmap>() {
-                                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                                    notification.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
-                                        .setLargeIcon(resource)
-                                    NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
-                                }
-
-                                override fun onLoadFailed(errorDrawable: Drawable?) {
-                                    NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
-                                }
-
-                                override fun onLoadCleared(placeholder: Drawable?) = Unit
-                            })
-                    } else {
-                        NotificationManagerCompat.from(MainApplication.instance()).cancel(id)
-                    }
-                    when (so) {
-                        SO.SAVE -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) context.contentResolver.update(target, ContentValues().apply {
-                            put(MediaStore.MediaColumns.IS_PENDING, false)
-                        }, null, null)
-                        SO.WALLPAPER -> context.contentResolver.openInputStream(target)?.use { stream ->
-                            WallpaperManager.getInstance(MainApplication.instance()).setStream(stream)
-                        }
-                        SO.CROP -> context.startActivity(
-                            Intent(context, CropActivity::class.java)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                .putExtra("op", CropActivity.OPTION_SHARE)
-                                .putExtra("id", id)
-                                .putExtra("name", fileName)
-                                .putExtra("source", it.outputData.getString("file")?.toUri())
-                        )
-                        else -> Unit
-                    }
-                }
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
-                    if (tip && it.state == WorkInfo.State.FAILED) {
-                        notification.apply {
-                            setContentText(context.getText(R.string.app_failed))
-                            setProgress(0, 0, false)
-                            setOngoing(false)
-                            setAutoCancel(true)
-                        }
-                        NotificationManagerCompat.from(MainApplication.instance()).notify(id, notification.build())
-                    } else {
-                        NotificationManagerCompat.from(MainApplication.instance()).cancel(id)
-                    }
-                }
-            }
-            if (it.state.isFinished) {
-                info.removeObservers(ProcessLifecycleOwner.get())
-            }
-        })
-    }
-
-
-    fun AppCompatActivity.download(id: Int, url: String, author: String, anchor: View, saving: (() -> Unit)? = null) {
+    fun AppCompatActivity.save(
+        id: Int, url: String, so: SO,
+        author: String? = null, anchor: View? = null
+    ) {
         fun download() {
-            val filename = url.fileName
-            val extension = MimeTypeMap.getFileExtensionFromUrl(filename)
-            val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.MediaColumns.IS_PENDING, true)
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    put(MediaStore.MediaColumns.ARTIST, author.toTitleCase())
-                    put(MediaStore.MediaColumns.ALBUM, moeHost)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationManagerCompat.from(MainApplication.instance()).let { notify ->
+                    val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_LOW)
+                    notify.createNotificationChannel(channel)
                 }
             }
-            val target = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return
-            save(id, url, target, SO.SAVE)
-            saving?.invoke()
+            val params = Data.Builder()
+                .putInt("id", id)
+                .putString("url", url)
+                .putInt("option", so.ordinal)
+            if (author != null) params.putString("author", author)
+            val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params.build()).build()
+            WorkManager.getInstance(MainApplication.instance()).apply {
+                if (so != SO.SAVE) enqueue(request) else enqueueUniqueWork("save-$id", ExistingWorkPolicy.KEEP, request)
+            }
         }
 
         fun check() {
             lifecycleScope.launchWhenCreated {
-                when (check("save-${id}")) {
+                if (anchor == null) download() else when (check("save-${id}")) {
                     WorkInfo.State.ENQUEUED,
                     WorkInfo.State.BLOCKED,
                     WorkInfo.State.RUNNING -> {
-                        Toast.makeText(this@download, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@save, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
                         return@launchWhenCreated
                     }
                     WorkInfo.State.SUCCEEDED -> {
@@ -751,7 +751,7 @@ object Save {
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
-            TedPermission.with(this).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(anchor) {
+            TedPermission.with(this).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(anchor ?: window.decorView) {
                 check()
             }.check()
         }
@@ -767,46 +767,6 @@ fun Long.sizeString() = when {
     this <= 0xfffccccccccccccL shr 10 -> "%.1f TiB".format(this.toDouble() / (0x1 shl 40))
     this <= 0xfffccccccccccccL -> "%.1f PiB".format((this shr 10).toDouble() / (0x1 shl 40))
     else -> "%.1f EiB".format((this shr 20).toDouble() / (0x1 shl 40))
-}
-
-fun Context.notifyImageComplete(uri: Uri, id: Int, title: String, content: String) {
-    val extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
-    val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        type = mime ?: "image/$extension"
-        data = uri
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        NotificationManagerCompat.from(this).let { manager ->
-            val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_DEFAULT)
-            manager.createNotificationChannel(channel)
-        }
-    }
-    val builder = NotificationCompat.Builder(this, moeHost)
-        .setContentTitle(title)
-        .setContentText(content)
-        .setAutoCancel(true)
-        .setSmallIcon(R.drawable.ic_stat_name)
-        .setContentIntent(PendingIntent.getActivity(this, id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
-    GlideApp.with(this).asBitmap().load(uri)
-        .diskCacheStrategy(DiskCacheStrategy.NONE)
-        .skipMemoryCache(true)
-        .override(500, 500)
-        .into(object : CustomTarget<Bitmap>() {
-            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                builder.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
-                    .setLargeIcon(resource)
-                NotificationManagerCompat.from(this@notifyImageComplete).notify(id, builder.build())
-            }
-
-            override fun onLoadFailed(errorDrawable: Drawable?) =
-                NotificationManagerCompat.from(this@notifyImageComplete).notify(id, builder.build())
-
-            override fun onLoadCleared(placeholder: Drawable?) = Unit
-        })
 }
 
 fun Context.openWeb(uri: String) = startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
