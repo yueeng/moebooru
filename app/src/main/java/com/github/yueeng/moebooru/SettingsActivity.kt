@@ -6,11 +6,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.Menu
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.lifecycle.*
 import androidx.preference.*
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
@@ -56,38 +56,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         findPreference<Preference>("update")?.let {
             it.setOnPreferenceClickListener {
-                update()
+                (requireActivity() as? AppCompatActivity)?.checkAppUpdate()
                 true
             }
         }
         findPreference<Preference>("about")?.let {
             it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
-        }
-    }
-
-    private fun update(pre: Boolean = false) {
-        lifecycleScope.launchWhenCreated {
-            val latest = runCatching {
-                when (pre) {
-                    true -> Service.github.releases().firstOrNull()
-                    false -> Service.github.latest()
-                }
-            }.getOrNull() ?: return@launchWhenCreated
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(latest.name)
-                .setMessage(latest.body)
-                .setPositiveButton(getString(R.string.app_download_apk)) { _, _ ->
-                    val url = latest.assets.firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl ?: return@setPositiveButton
-                    requireContext().openWeb(url)
-                }
-                .setNegativeButton(R.string.app_cancel, null)
-                .apply {
-                    if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
-                        update(true)
-                    }
-                }
-                .create()
-                .show()
         }
     }
 }
