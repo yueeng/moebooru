@@ -74,6 +74,7 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.BaseProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import com.gun0912.tedpermission.PermissionListener
@@ -939,3 +940,40 @@ fun View.showSupportedActivitiesMenu(tag: String) = PopupMenu(context, this).als
 
 fun <T : Any, VH : RecyclerView.ViewHolder> PagingDataAdapter<T, VH>.peekSafe(index: Int): T? =
     if (index in 0 until itemCount) peek(index) else null
+
+val Context.appVersion: Version?
+    get() = try {
+        Version(packageManager.getPackageInfo(packageName, 0).versionName)
+    } catch (e: Exception) {
+        e.printStackTrace(); null
+    }
+
+fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = lifecycleScope.launchWhenCreated {
+    val latest = runCatching {
+        when (pre) {
+            true -> Service.github.releases().firstOrNull()
+            false -> Service.github.latest()
+        }
+    }.getOrNull() ?: return@launchWhenCreated
+    val name = if (compare) {
+        val ver = appVersion ?: return@launchWhenCreated
+        val online = Version.from(latest.tagName) ?: return@launchWhenCreated
+        if (ver >= online) return@launchWhenCreated
+        "v$ver > v$online"
+    } else latest.name
+    MaterialAlertDialogBuilder(this@checkAppUpdate)
+        .setTitle(name)
+        .setMessage(latest.body)
+        .setPositiveButton(getString(R.string.app_download_apk)) { _, _ ->
+            val url = latest.assets.firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl ?: return@setPositiveButton
+            openWeb(url)
+        }
+        .setNegativeButton(R.string.app_cancel, null)
+        .apply {
+            if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
+                checkAppUpdate(true)
+            }
+        }
+        .create()
+        .show()
+}

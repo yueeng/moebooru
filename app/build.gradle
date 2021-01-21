@@ -84,7 +84,7 @@ android {
         jvmTarget = "1.8"
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
     }
-    ndkVersion '21.3.6528147'
+    ndkVersion '22.0.7026061'
 }
 
 dependencies {
