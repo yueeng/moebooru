@@ -598,16 +598,24 @@ object Save {
                     val extension = MimeTypeMap.getFileExtensionFromUrl(fileName)
                     val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
                     val values = ContentValues().apply {
-                        put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                        put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/$moeHost")
+                        put(MediaStore.Images.ImageColumns.DISPLAY_NAME, fileName)
+                        put(MediaStore.Images.ImageColumns.MIME_TYPE, mime)
+                        put(MediaStore.Images.ImageColumns.DESCRIPTION, "$id")
+                        val del = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            put(MediaStore.Images.ImageColumns.RELATIVE_PATH, "Pictures/$moeHost")
+                            MediaStore.Images.ImageColumns.RELATIVE_PATH to "Pictures/$moeHost"
                         } else @Suppress("DEPRECATION") {
                             val picture = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                             val folder = File(picture, moeHost).apply { mkdirs() }
                             val file = File(folder, fileName)
-                            put(MediaStore.MediaColumns.DATA, file.path)
+                            put(MediaStore.Images.ImageColumns.DATA, file.path)
+                            MediaStore.Images.ImageColumns.DATA to file.path
                         }
+                        applicationContext.contentResolver.delete(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            "${del.first} = ? AND ${MediaStore.Images.ImageColumns.DESCRIPTION} = ?", arrayOf(del.second, "$id")
+                        )
+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             inputData.getString("author")?.let {
                                 put(MediaStore.MediaColumns.ARTIST, it.toTitleCase())
