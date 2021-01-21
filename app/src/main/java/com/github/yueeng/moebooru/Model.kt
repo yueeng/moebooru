@@ -44,6 +44,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.min
 import com.google.gson.annotations.SerializedName as SN
 
 @SuppressLint("SimpleDateFormat")
@@ -476,6 +477,41 @@ data class JGitHubReleaseUploader(
     @SN("type") val type: String,
     @SN("url") val url: String
 )
+
+data class Version(val ver: List<Int>) : Comparable<Version> {
+    override operator fun compareTo(other: Version): Int {
+        val v1 = ver
+        val v2 = other.ver
+        for (i in 0 until min(v1.size, v2.size)) {
+            val v = v1[i] - v2[i]
+            when {
+                v > 0 -> return 1
+                v < 0 -> return -1
+            }
+        }
+        return when {
+            v1.size > v2.size && v1.drop(v2.size).any { it != 0 } -> 1
+            v1.size < v2.size && v2.drop(v1.size).any { it != 0 } -> -1
+            else -> 0
+        }
+    }
+
+    override fun equals(other: Any?): Boolean = (other as? Version)?.let { compareTo(it) == 0 } ?: false
+
+    override fun hashCode(): Int = ver.hashCode()
+
+    override fun toString(): String = ver.joinToString(".")
+
+    constructor(ver: String) : this(ver.trimStart('v', 'V').split('.').mapNotNull { it.toIntOrNull() })
+
+    companion object {
+        fun from(ver: String?) = try {
+            ver?.let { Version(ver) }
+        } catch (_: Exception) {
+            null
+        }
+    }
+}
 
 interface GithubService {
     @GET("/repos/yueeng/moebooru/releases")

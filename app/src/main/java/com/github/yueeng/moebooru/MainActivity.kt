@@ -52,6 +52,7 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
                 .replace(R.id.saved, saved)
                 .commit()
         }
+        checkAppUpdate(compare = true)
     }
 
     override fun onBackPressed() {
