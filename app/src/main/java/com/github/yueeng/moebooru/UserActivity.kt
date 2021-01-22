@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.parcelize.Parcelize
 import okhttp3.Request
 import org.jsoup.Jsoup
-import kotlin.math.roundToInt
 
 
 class UserActivity : MoeActivity(R.layout.activity_main) {
@@ -293,8 +292,8 @@ class UserFragment : Fragment() {
         fun bind(item: JImageItem) {
             progress.postValue(item.preview_url)
             tag = item
-            val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height) * 0.75F
-            binding.root.minimumWidth = (height * item.preview_width / item.preview_height).roundToInt()
+            val height = binding.root.resources.getDimensionPixelSize(R.dimen.user_image_height)
+            binding.root.minimumWidth = height * item.preview_width / item.preview_height / 2
             binding.image1.glideUrl(item.preview_url, R.mipmap.ic_launcher_foreground)
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
