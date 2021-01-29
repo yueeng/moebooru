@@ -58,6 +58,8 @@ class SimilarDataSource(private val args: Bundle?) : PagingSource<Int, JImageIte
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
+
+    override fun getRefreshKey(state: PagingState<Int, JImageItem>): Int? = state.anchorPosition
 }
 
 class SimilarViewModel(@Suppress("UNUSED_PARAMETER") handle: SavedStateHandle, args: Bundle?) : ViewModel() {

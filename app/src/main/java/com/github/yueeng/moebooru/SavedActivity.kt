@@ -29,9 +29,9 @@ import kotlin.math.min
 class SavedViewModel(handle: SavedStateHandle) : ViewModel() {
     val context get() = MainApplication.instance()
     val pinned = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTagsWithIndex(true) }.flow
-        .map { it.insertHeaderItem(DbTag(0, context.getString(R.string.saved_pin), context.getString(R.string.saved_pin_move))) }.cachedIn(viewModelScope)
+        .map { it.insertHeaderItem(item = DbTag(0, context.getString(R.string.saved_pin), context.getString(R.string.saved_pin_move))) }.cachedIn(viewModelScope)
     val saved = Pager(PagingConfig(20, enablePlaceholders = false)) { Db.tags.pagingTags(false) }.flow
-        .map { it.insertHeaderItem(DbTag(0, context.getString(R.string.saved_tags), context.getString(R.string.saved_tags_swipe))) }.cachedIn(viewModelScope)
+        .map { it.insertHeaderItem(item = DbTag(0, context.getString(R.string.saved_tags), context.getString(R.string.saved_tags_swipe))) }.cachedIn(viewModelScope)
     val edit = handle.getLiveData<Boolean>("edit")
 }
 
