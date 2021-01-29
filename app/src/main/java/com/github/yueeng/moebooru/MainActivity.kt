@@ -195,6 +195,8 @@ class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, p
     } catch (e: Exception) {
         LoadResult.Error(e)
     }
+
+    override fun getRefreshKey(state: PagingState<Int, JImageItem>): Int? = state.anchorPosition
 }
 
 class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
