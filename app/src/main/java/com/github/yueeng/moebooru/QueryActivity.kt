@@ -172,7 +172,7 @@ class QueryFragment : Fragment() {
                 val filter = object : Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults = FilterResults().also { results ->
                         if (constraint?.isNotBlank() == true) {
-                            val data = Q.suggest(constraint.toString().trim()).take(20).toList()
+                            val data = Q.suggest(constraint.toString().trim()).take(30).toList()
                             results.values = data
                             results.count = data.size
                         }
