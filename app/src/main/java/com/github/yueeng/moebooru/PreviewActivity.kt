@@ -47,6 +47,7 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.gun0912.tedpermission.TedPermission
+import jp.wasabeef.glide.transformations.BlurTransformation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -166,8 +167,18 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
                 }
                 MoeSettings.previewColor.asFlow().distinctUntilChanged().collectLatest {
-                    if (!it) trans(0) else background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
+                    if (!it) {
+                        trans(0)
+                        binding.background.setImageBitmap(null)
+                        return@collectLatest
+                    }
+                    background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
                         if (bitmap == null) return@collect
+                        GlideApp.with(binding.background)
+                            .load(bitmap)
+                            .transform(BlurTransformation(5))
+                            .transition(DrawableTransitionOptions.withCrossFade())
+                            .into(binding.background)
                         val palette = withContext(Dispatchers.Default) {
                             Palette.from(bitmap).clearTargets()/*.addTarget(Target.VIBRANT).addTarget(Target.MUTED)*/.generate()
                         }
