@@ -39,9 +39,9 @@ class CropActivity : AppCompatActivity() {
             val extension = MimeTypeMap.getFileExtensionFromUrl(result.output.path!!)
             val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
             val uri = FileProvider.getUriForFile(this, "${BuildConfig.APPLICATION_ID}.fileprovider", File(result.output.path!!))
-            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                type = mime
-                putExtra(Intent.EXTRA_STREAM, uri)
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW).apply {
+                type = mime ?: "image/$extension"
+                data = uri
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }, getString(R.string.app_share)))
