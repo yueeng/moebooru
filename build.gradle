@@ -56,12 +56,11 @@ task summary {
     doLast {
         download("konachan", "konachan.com")
         download("yande", "yande.re")
-        return
+        println 'summary'
     }
 }
 
 task publish {
-    dependsOn 'summary'
     dependsOn 'app:assembleRelease'
     doLast {
         println 'publish'

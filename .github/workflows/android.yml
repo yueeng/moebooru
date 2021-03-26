@@ -43,6 +43,8 @@ jobs:
           echo 'keyAlias=${{ secrets.KEY_ALIAS }}' >> local.properties
           echo 'keyPassword=${{ secrets.KEY_PASSWORD }}' >> local.properties
           echo 'buildTime=${{ env.time_tick }}' >> local.properties
+      - name: Update summary.json
+        run: ./gradlew summary
       - name: Build with Gradle
         run: ./gradlew publish
       - name: Move Apk
