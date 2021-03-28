@@ -172,8 +172,10 @@ class QueryFragment : Fragment() {
                 val filter = object : Filter() {
                     override fun performFiltering(constraint: CharSequence?): FilterResults = FilterResults().also { results ->
                         if (constraint?.isNotBlank() == true) {
-                            val data = Q.suggest(constraint.toString().trim()).take(30).toList()
-                            results.values = data
+                            val sub = constraint.startsWith('-')
+                            val kw = if (sub) constraint.substring(1) else constraint
+                            val data = Q.suggest(kw.toString().trim()).take(30).toList()
+                            results.values = if (sub) data.map { Triple(it.first, "-${it.second}", it.third) } else data
                             results.count = data.size
                         }
                     }
