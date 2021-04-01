@@ -59,6 +59,52 @@
             app:layout_constraintEnd_toEndOf="@+id/button1"
             app:layout_constraintStart_toStartOf="@+id/button1"
             app:layout_constraintTop_toTopOf="@+id/button1" />
+        <Constraint
+            android:id="@+id/text2"
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="0"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="@+id/button2"
+            app:layout_constraintEnd_toStartOf="@+id/button2"
+            app:layout_constraintTop_toTopOf="@+id/button2" />
+        <Constraint
+            android:id="@+id/text2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="0"
+            app:layout_constraintBottom_toBottomOf="@+id/button2"
+            app:layout_constraintEnd_toStartOf="@+id/button2"
+            app:layout_constraintTop_toTopOf="@+id/button2" />
+        <Constraint
+            android:id="@+id/text3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="0"
+            app:layout_constraintBottom_toBottomOf="@+id/button3"
+            app:layout_constraintEnd_toStartOf="@+id/button3"
+            app:layout_constraintTop_toTopOf="@+id/button3" />
+        <Constraint
+            android:id="@+id/text4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="0"
+            app:layout_constraintBottom_toBottomOf="@+id/button4"
+            app:layout_constraintEnd_toStartOf="@+id/button4"
+            app:layout_constraintTop_toTopOf="@+id/button4" />
+        <Constraint
+            android:id="@+id/text5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="0"
+            app:layout_constraintBottom_toBottomOf="@+id/button5"
+            app:layout_constraintEnd_toStartOf="@+id/button5"
+            app:layout_constraintTop_toTopOf="@+id/button5" />
     </ConstraintSet>
 
     <ConstraintSet android:id="@+id/end">
@@ -107,5 +153,41 @@
             app:layout_constraintBottom_toTopOf="@+id/button4"
             app:layout_constraintEnd_toEndOf="@id/button1"
             app:layout_constraintStart_toStartOf="@id/button1" />
+        <Constraint
+            android:id="@+id/text2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="1"
+            app:layout_constraintBottom_toBottomOf="@+id/button2"
+            app:layout_constraintEnd_toStartOf="@+id/button2"
+            app:layout_constraintTop_toTopOf="@+id/button2" />
+        <Constraint
+            android:id="@+id/text3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="1"
+            app:layout_constraintBottom_toBottomOf="@+id/button3"
+            app:layout_constraintEnd_toStartOf="@+id/button3"
+            app:layout_constraintTop_toTopOf="@+id/button3" />
+        <Constraint
+            android:id="@+id/text4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="1"
+            app:layout_constraintBottom_toBottomOf="@+id/button4"
+            app:layout_constraintEnd_toStartOf="@+id/button4"
+            app:layout_constraintTop_toTopOf="@+id/button4" />
+        <Constraint
+            android:id="@+id/text5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:alpha="1"
+            app:layout_constraintBottom_toBottomOf="@+id/button5"
+            app:layout_constraintEnd_toStartOf="@+id/button5"
+            app:layout_constraintTop_toTopOf="@+id/button5" />
     </ConstraintSet>
 </MotionScene>
