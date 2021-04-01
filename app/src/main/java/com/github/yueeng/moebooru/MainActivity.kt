@@ -22,9 +22,7 @@ import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import androidx.savedstate.SavedStateRegistryOwner
-import androidx.transition.ChangeTransform
 import androidx.transition.TransitionManager
-import androidx.transition.TransitionSet
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.Save.save
@@ -33,7 +31,6 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
-import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import java.util.*
@@ -83,21 +80,10 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
                     adapter.notifyDataSetChanged()
                 }
             }
-            val buttons = listOf(binding.button2, binding.button3, binding.button4, binding.button5).onEach { fab ->
+            listOf(binding.button2, binding.button3, binding.button4, binding.button5).forEach { fab ->
                 fab.setOnClickListener {
                     val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), fab, "shared_element_container")
                     startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"), options.toBundle())
-                }
-            }
-            binding.button1.setOnClickListener {
-                val ex = binding.button1.rotation == 45F
-                val axis = MaterialSharedAxis(MaterialSharedAxis.Y, !ex)
-                val set = TransitionSet().addTransition(axis).addTransition(ChangeTransform())
-                TransitionManager.beginDelayedTransition(binding.button1.parent as ViewGroup, set)
-                binding.button1.rotation = if (ex) 0F else 45F
-                buttons.forEach {
-                    it.isInvisible = ex
-                    it.alpha = if (ex) 0F else 1F
                 }
             }
         }.root
