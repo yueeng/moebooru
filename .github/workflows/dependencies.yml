@@ -1,0 +1,27 @@
+name: Check Dependencies
+
+on: 
+  schedule:
+    - cron: '0 8 * * 5' # every friday AM 8:00
+  workflow_dispatch:
+jobs:
+  maven:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Grant permission
+      run: chmod +x gradlew
+    - uses: MeilCli/gradle-update-check-action@v3
+      id: outdated
+    - uses: 8398a7/action-slack@v2
+      if: steps.outdated.outputs.has_maven_update != 'false'
+      with:
+        status: ${{ job.status }}
+        text: ${{ steps.outdated.outputs.maven_update_text }}
+        author_name: GitHub Actions
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
