@@ -1,8 +1,9 @@
-name: Check Package
+name: Check Dependencies
 
 on: 
   schedule:
     - cron: '0 8 * * 5' # every friday AM 8:00
+  workflow_dispatch:
 jobs:
   maven:
     runs-on: ubuntu-latest
