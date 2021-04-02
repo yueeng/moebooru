@@ -5,11 +5,10 @@ plugins {
     id 'kotlin-kapt'
 }
 
-def config = new File("local.properties").withInputStream { stream ->
-    new ConfigSlurper().parse(new Properties().tap { load(stream) })
-}
-
 android {
+    def config = new File("local.properties").withInputStream { stream ->
+        new ConfigSlurper().parse(new Properties().tap { load(stream) })
+    }
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
 
@@ -136,5 +135,5 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.6'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
 }
