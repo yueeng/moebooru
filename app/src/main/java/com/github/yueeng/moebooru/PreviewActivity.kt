@@ -411,6 +411,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 if (item.source.isNotEmpty()) {
                     common.add(Tag(Tag.TYPE_URL, "Source", item.source))
                 }
+                common.add(Tag(Tag.TYPE_URL, "Web", item.web_url))
                 common.add(Tag(Tag.TYPE_SIMILAR, "Similar", "${item.id}"))
                 listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size)
                     .filter { it.first.isNotEmpty() }.filter { it.second > 0 }.forEach { i ->
