@@ -128,6 +128,7 @@ data class JImageItem(
     val jpeg_url get() = _jpeg_url ?: "$moeUrl/${if (jpeg_file_size > 0) "jpeg" else "image"}/$md5/${Uri.encode("$moeHost - $id")}.jpg"
     val file_url get() = _file_url ?: "$moeUrl/image/$md5/${Uri.encode("$moeHost - $id")}.${file_ext ?: "jpg"}"
     val save_url get() = if (MoeSettings.quality.value == true) file_url else jpeg_url
+    val web_url get() = "$moeUrl/post/show/$id"
 }
 
 @Parcelize
