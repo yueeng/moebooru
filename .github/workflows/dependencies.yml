@@ -12,6 +12,16 @@ jobs:
     - uses: actions/setup-java@v1
       with:
         java-version: 11
+    - name: Time tick
+      run: echo "time_tick=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
+    - name: Signing Apk
+      run: |
+        echo '${{ secrets.ANDROID_JKS }}'|base64 -d > android.jks
+        echo 'storeFile=../android.jks' >> local.properties
+        echo 'storePassword=${{ secrets.STORE_PASSWORD }}' >> local.properties
+        echo 'keyAlias=${{ secrets.KEY_ALIAS }}' >> local.properties
+        echo 'keyPassword=${{ secrets.KEY_PASSWORD }}' >> local.properties
+        echo 'buildTime=${{ env.time_tick }}' >> local.properties
     - name: Grant permission
       run: chmod +x gradlew
     - uses: MeilCli/gradle-update-check-action@v3
