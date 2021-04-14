@@ -5,6 +5,8 @@ on:
     branches: [ master ]
     paths-ignore:
       - '.github/**'
+      - 'README.md'
+      - 'LICENSE'
   workflow_dispatch:
 jobs:
   build:
