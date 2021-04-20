@@ -17,10 +17,7 @@ import androidx.core.content.edit
 import androidx.core.text.isDigitsOnly
 import androidx.core.view.isInvisible
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.*
 import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -31,6 +28,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filter
 import kotlinx.parcelize.Parcelize
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
@@ -968,11 +967,10 @@ object OAuth {
     val avatar = MutableLiveData<Int>()
 
     init {
-        name.observeForever {
-            if (it.isEmpty()) return@observeForever
-            ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-                runCatching { Service.instance.user(it) }
-                    .getOrNull()?.firstOrNull()?.id?.let { id -> user.postValue(id) }
+        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
+            name.asFlow().filter { it.isNotEmpty() }.collectLatest {
+                runCatching { Service.instance.user(it).firstOrNull()?.id }
+                    .getOrNull()?.let { id -> user.postValue(id) }
             }
         }
     }
