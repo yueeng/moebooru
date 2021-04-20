@@ -763,6 +763,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     constructor(source: String?) : this(source?.takeIf { it.isNotEmpty() }?.split(' ', '+')
         ?.map { it.split(':', limit = 2) }
         ?.let { list -> listOf(listOf(list.filter { it.size == 1 }.flatten().joinToString(" "))) + (list.filter { it.size > 1 }) }
+        ?.filter { it.any { i -> i.isNotEmpty() } }
         ?.map { list ->
             when (list.size) {
                 1 -> "keyword" to list.first()
