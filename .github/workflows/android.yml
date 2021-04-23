@@ -29,13 +29,6 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-      - name: Cache local Maven repository
-        uses: actions/cache@v2.1.5
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
       - name: Time tick
         run: echo "time_tick=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
       - name: Signing Apk
