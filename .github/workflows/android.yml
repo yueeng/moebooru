@@ -5,6 +5,7 @@ on:
     branches: [ master ]
     paths-ignore:
       - '.github/**'
+      - '.idea/**'
       - 'README.md'
       - 'LICENSE'
   workflow_dispatch:
