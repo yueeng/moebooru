@@ -416,7 +416,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 listOf(item.jpeg_url to item.jpeg_file_size, item.file_url to item.file_size)
                     .filter { it.first.isNotEmpty() }.filter { it.second > 0 }.forEach { i ->
                         val extension = MimeTypeMap.getFileExtensionFromUrl(i.first)
-                        val name = "${extension.toUpperCase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
+                        val name = "${extension.uppercase(Locale.ROOT)}${i.second.takeIf { it != 0 }?.toLong()?.sizeString()?.let { "[$it]" } ?: ""}"
                         common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
                     }
                 val tags = item.tags.split(' ').map { Q.summaryMap[it] to it }

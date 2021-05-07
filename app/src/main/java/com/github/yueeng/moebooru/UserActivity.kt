@@ -206,7 +206,7 @@ class UserFragment : Fragment() {
                         for (v in votes) {
                             data["Common"]?.first?.add(Tag("Vote ${v.second}: ${v.first}P", "vote:${v.second}:$name order:vote"))
                         }
-                        if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumBy { it.first }}P", "vote:1..3:$name order:vote"))
+                        if (votes.size > 1) data["Common"]?.first?.add(Tag("Vote all: ${votes.sumOf { it.first }}P", "vote:1..3:$name order:vote"))
                         for (i in tags) {
                             for (j in i.second) {
                                 val m = jsoup.select("th:contains($j)").next().select("a").map { it.text() }
