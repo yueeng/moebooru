@@ -348,9 +348,9 @@ class SymbolsTokenizer(private val symbols: Set<Char>) : MultiAutoCompleteTextVi
 }
 
 val regexTitleCase = """\b[a-z]""".toRegex()
-fun String.toTitleCase(vararg delimiters: String = arrayOf("_")) = delimiters.fold(this) { r, s -> r.replace(s, " ", true) }.let {
-    regexTitleCase.findAll(it).fold(it) { r, i ->
-        r.replaceRange(i.range, i.value.capitalize(Locale.getDefault()))
+fun String.toTitleCase(vararg delimiters: String = arrayOf("_")) = delimiters.fold(this) { r, s -> r.replace(s, " ", true) }.let { word ->
+    regexTitleCase.findAll(word).fold(word) { r, i ->
+        r.replaceRange(i.range, i.value.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() })
     }
 }
 
@@ -547,7 +547,7 @@ object Save {
         val option by lazy { inputData.getInt("option", 0).let { SO.values()[it] } }
         val fileName get() = fileNameEncode(url.toHttpUrl().pathSegments.last())
         val target by lazy { File(applicationContext.cacheDir, UUID.randomUUID().toString()) }
-        val notification by lazy {
+        val notification: NotificationCompat.Builder by lazy {
             NotificationCompat.Builder(context, moeHost)
                 .setContentTitle(context.getString(R.string.app_download, context.getString(R.string.app_name)))
                 .setContentText(fileName)
