@@ -19,6 +19,7 @@ import android.webkit.MimeTypeMap
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.animation.doOnEnd
 import androidx.core.content.res.use
+import androidx.core.net.toUri
 import androidx.core.os.bundleOf
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
@@ -409,7 +410,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     common.add(Tag(Tag.TYPE_PARENT, "Parent", "id:${item.parent_id}"))
                 }
                 if (item.source.isNotEmpty()) {
-                    common.add(Tag(Tag.TYPE_URL, "Source", item.source))
+                    common.add(Tag(Tag.TYPE_URL, item.source.toUri().host?.replace("""^[wW]+\.(.+)$""".toRegex(), "$1") ?: "Source", item.source))
                 }
                 common.add(Tag(Tag.TYPE_URL, "Web", item.web_url))
                 common.add(Tag(Tag.TYPE_SIMILAR, "Similar", "${item.id}"))
