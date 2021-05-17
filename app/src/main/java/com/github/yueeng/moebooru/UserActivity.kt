@@ -20,7 +20,6 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.flow.*
 import kotlinx.parcelize.Parcelize
 import okhttp3.Request
@@ -489,10 +488,10 @@ class StarFragment : Fragment() {
             else -> throw IllegalArgumentException()
         }
 
-        private val changed = ConflatedBroadcastChannel<Unit>()
-        val changedFlow get() = changed.asFlow()
+        private val changed = MutableStateFlow(0)
+        val changedFlow get() = changed.asStateFlow()
         override fun onCurrentListChanged(previousList: MutableList<Any>, currentList: MutableList<Any>) {
-            changed.offer(Unit)
+            changed.value++
         }
     }
 }
