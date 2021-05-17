@@ -581,9 +581,9 @@ object Save {
                     okHttp.newCall(Request.Builder().url(url).build()).await { _, response ->
                         response.body?.use {
                             val body = ProgressResponseBody(it) { bytesRead, contentLength, _ ->
-                                channel.offer(bytesRead to contentLength)
+                                channel.trySend(bytesRead to contentLength)
                             }
-                            channel.offer(0L to body.contentLength())
+                            channel.trySend(0L to body.contentLength())
                             body.byteStream().use { input ->
                                 target.outputStream().use { output ->
                                     input.copyTo(output)
