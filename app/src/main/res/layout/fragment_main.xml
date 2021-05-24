@@ -33,11 +33,22 @@
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
     <androidx.constraintlayout.motion.widget.MotionLayout
+        android:id="@+id/motion1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layoutDescription="@xml/fragment_main_xml_constraintlayout_scene"
         app:layout_anchor="@id/pager"
         app:layout_anchorGravity="end|bottom">
+
+        <FrameLayout
+            android:id="@+id/scram1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#4000"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/button5"
