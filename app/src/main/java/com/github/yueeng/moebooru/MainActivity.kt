@@ -80,6 +80,9 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
                     adapter.notifyDataSetChanged()
                 }
             }
+            binding.scram1.setOnClickListener {
+                binding.motion1.transitionToStart()
+            }
             listOf(binding.button2, binding.button3, binding.button4, binding.button5).forEach { fab ->
                 fab.setOnClickListener {
                     val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), fab, "shared_element_container")
