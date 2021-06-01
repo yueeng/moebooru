@@ -25,6 +25,7 @@ import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
+import android.webkit.URLUtil
 import android.webkit.WebSettings
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContract
@@ -776,7 +777,12 @@ fun Long.sizeString() = when {
     else -> "%.1f EiB".format((this shr 20).toDouble() / (0x1 shl 40))
 }
 
-fun Context.openWeb(uri: String) = startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+fun Context.openWeb(uri: String) = startActivity(
+    when (URLUtil.isValidUrl(uri)) {
+        true -> Intent(Intent.ACTION_VIEW, uri.toUri())
+        false -> Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, uri)
+    }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+)
 
 class AlphaBlackBitmapTransformation(val alpha: Int = 0x7F, val color: Int = Color.BLACK) : BitmapTransformation() {
     companion object {
