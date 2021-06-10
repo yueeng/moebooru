@@ -20,17 +20,19 @@ import androidx.lifecycle.*
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.withTransaction
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.TransitionManager
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.*
+import kotlin.coroutines.resume
 
 class QueryActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,36 +113,36 @@ class QueryFragment : Fragment() {
             }
         }.root
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun save() = lifecycleScope.launchWhenCreated {
-        model.query.value?.toString()?.let { tag ->
-            val view = QuerySavedBinding.inflate(layoutInflater)
-            val saved = model.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
-            view.input1.hint = tag.takeIf { it.isNotEmpty() } ?: "Newest"
-            view.edit1.setText(saved?.name)
-            view.switch1.isChecked = saved?.pin ?: false
-            MaterialAlertDialogBuilder(requireContext())
+        val tag = model.query.value?.toString() ?: return@launchWhenCreated
+        val view = QuerySavedBinding.inflate(layoutInflater)
+        val saved = model.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
+        view.input1.hint = tag.takeIf { it.isNotEmpty() } ?: "Newest"
+        view.edit1.setText(saved?.name)
+        view.switch1.isChecked = saved?.pin ?: false
+        val ok = suspendCancellableCoroutine<Boolean> { continuation ->
+            val alert = MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.saved_title)
                 .setView(view.root)
                 .setCancelable(false)
-                .setPositiveButton(R.string.app_ok) { _, _ ->
-                    ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-                        Db.db.withTransaction {
-                            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() }
-                                ?: tag.takeIf { it.isNotBlank() }?.toTitleCase()
-                                ?: "Newest"
-                            val pin = view.switch1.isChecked
-                            if (saved != null) {
-                                Db.tags.updateTag(saved.update(tag, name, pin))
-                            } else {
-                                model.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
-                            }
-                            model.name.postValue(name)
-                        }
-                    }
-                }
+                .setPositiveButton(R.string.app_ok) { _, _ -> continuation.resume(true) }
                 .setNegativeButton(R.string.app_cancel, null)
-                .create().show()
+                .setOnDismissListener { if (continuation.isActive) continuation.resume(false) }
+                .show()
+            continuation.invokeOnCancellation { alert.cancel() }
         }
+        if (!ok) return@launchWhenCreated
+        val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() }
+            ?: tag.takeIf { it.isNotBlank() }?.toTitleCase()
+            ?: "Newest"
+        val pin = view.switch1.isChecked
+        if (saved != null) {
+            Db.tags.updateTag(saved.update(tag, name, pin))
+        } else {
+            model.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
+        }
+        model.name.postValue(name)
     }
 
     fun edit(key: String?) {
