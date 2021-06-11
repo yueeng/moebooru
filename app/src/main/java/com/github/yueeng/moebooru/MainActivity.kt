@@ -2,7 +2,6 @@ package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
 import android.app.ActivityOptions
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -337,25 +336,22 @@ class ImageFragment : Fragment() {
                     .setNeutralButton(R.string.app_favorite, null)
                     .setNegativeButton(R.string.app_cancel, null)
                     .create()
-                    .apply {
-                        setOnShowListener {
-                            getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                                (requireActivity() as AppCompatActivity).save(item.id, item.save_url, Save.SO.SAVE, item.author, it)
-                            }
-                            getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                                if (!OAuth.available) {
-                                    OAuth.login(this@ImageFragment) {
-                                        it.performClick()
-                                    }
-                                    return@setOnClickListener
+                    .show {
+                        positiveButton.setOnClickListener {
+                            (requireActivity() as AppCompatActivity).save(item.id, item.save_url, Save.SO.SAVE, item.author, it)
+                        }
+                        neutralButton.setOnClickListener {
+                            if (!OAuth.available) {
+                                OAuth.login(this@ImageFragment) {
+                                    it.performClick()
                                 }
-                                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                                startActivity(Intent(requireContext(), StarActivity::class.java).putExtra("post", item.id), options.toBundle())
-                                dismiss()
+                                return@setOnClickListener
                             }
+                            val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
+                            startActivity(Intent(requireContext(), StarActivity::class.java).putExtra("post", item.id), options.toBundle())
+                            dismiss()
                         }
                     }
-                    .show()
                 true
             }
             binding.text1.setOnClickListener {

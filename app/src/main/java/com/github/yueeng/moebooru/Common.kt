@@ -5,10 +5,7 @@ package com.github.yueeng.moebooru
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.*
-import android.content.ContentValues
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
+import android.content.*
 import android.content.pm.ResolveInfo
 import android.content.res.Resources
 import android.graphics.*
@@ -30,6 +27,7 @@ import android.webkit.WebSettings
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NotificationCompat
@@ -983,3 +981,12 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
         .create()
         .show()
 }
+
+fun <T : Dialog> T.show(call: T.() -> Unit): T = apply {
+    setOnShowListener { call(this) }
+    show()
+}
+
+val <T : AlertDialog>T.positiveButton: Button get() = getButton(AlertDialog.BUTTON_POSITIVE)
+val <T : AlertDialog>T.negativeButton: Button get() = getButton(AlertDialog.BUTTON_NEGATIVE)
+val <T : AlertDialog>T.neutralButton: Button get() = getButton(AlertDialog.BUTTON_NEUTRAL)
