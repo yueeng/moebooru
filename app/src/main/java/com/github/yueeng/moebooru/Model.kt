@@ -4,7 +4,6 @@ package com.github.yueeng.moebooru
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.DialogInterface
 import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
@@ -989,7 +988,7 @@ object OAuth {
         }
     }
 
-    private fun alert(fragment: Fragment, layout: Int, title: Int, subTitle: Int = 0, subCall: (() -> Unit)? = null, call: (AlertDialog, View) -> Unit) = fragment.requireContext().let { context ->
+    private fun alert(fragment: Fragment, layout: Int, title: Int, subTitle: Int = 0, subCall: (() -> Unit)? = null, call: (AlertDialog, View) -> Unit): Unit = fragment.requireContext().let { context ->
         val view = LayoutInflater.from(context).inflate(layout, null)
         MaterialAlertDialogBuilder(context)
             .setTitle(title)
@@ -998,14 +997,11 @@ object OAuth {
             .setNegativeButton(R.string.app_cancel, null)
             .apply { if (subTitle != 0) setNeutralButton(subTitle) { _, _ -> subCall?.invoke() } }
             .create()
-            .apply {
-                setOnShowListener {
-                    getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                        call.invoke(this, view)
-                    }
+            .show {
+                positiveButton.setOnClickListener {
+                    call.invoke(this, view)
                 }
             }
-            .show()
     }
 
     fun logout(fragment: Fragment, call: (() -> Unit)? = null): Unit =
