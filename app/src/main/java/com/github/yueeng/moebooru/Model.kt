@@ -679,7 +679,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
     fun source(source: String) = apply { map["source"] = source }
 
-    fun id(id: Value<Int>) = apply { map["id"] = id }
+    fun id(id: Value<Int>?) = apply { if (id != null) map["id"] = id else map.remove("id") }
     fun id(id: Int, op: Value.Op = Value.Op.eq) = apply { map["id"] = Value(op, id) }
     fun id(id: Int, id2: Int) = apply { map["id"] = Value(Value.Op.bt, id, id2) }
 
@@ -706,6 +706,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     fun order(order: Order) = apply { map["order"] = order }
 
     fun parent(parent: String) = apply { map["parent"] = parent }
+    fun parent(id: Int) = parent("$id")
 
     fun pool(pool: String) = apply { map["pool"] = pool }
 

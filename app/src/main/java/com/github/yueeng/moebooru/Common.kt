@@ -29,9 +29,11 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.core.view.children
@@ -990,3 +992,10 @@ fun <T : Dialog> T.show(call: T.() -> Unit): T = apply {
 val <T : AlertDialog>T.positiveButton: Button get() = getButton(AlertDialog.BUTTON_POSITIVE)
 val <T : AlertDialog>T.negativeButton: Button get() = getButton(AlertDialog.BUTTON_NEGATIVE)
 val <T : AlertDialog>T.neutralButton: Button get() = getButton(AlertDialog.BUTTON_NEUTRAL)
+
+fun AppCompatTextView.setCompoundResourcesDrawables(left: Int? = null, top: Int? = null, right: Int? = null, bottom: Int? = null) = setCompoundDrawables(
+    left?.let { ContextCompat.getDrawable(context, it) }?.apply { setBounds(0, 0, intrinsicWidth, intrinsicHeight) },
+    top?.let { ContextCompat.getDrawable(context, it) }?.apply { setBounds(0, 0, intrinsicWidth, intrinsicHeight) },
+    right?.let { ContextCompat.getDrawable(context, it) }?.apply { setBounds(0, 0, intrinsicWidth, intrinsicHeight) },
+    bottom?.let { ContextCompat.getDrawable(context, it) }?.apply { setBounds(0, 0, intrinsicWidth, intrinsicHeight) }
+)
