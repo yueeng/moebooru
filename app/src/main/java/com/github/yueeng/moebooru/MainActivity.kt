@@ -175,7 +175,10 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
 class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
         val key = params.key ?: begin
-        val posts = Service.instance.post(page = key, Q(query), limit = params.loadSize)
+        val raw = Service.instance.post(page = key, Q(query), limit = params.loadSize)
+        val posts = if (query?.map?.containsKey("id") == true && raw.size == 1 && raw.first().has_children)
+            Service.instance.post(page = key, Q(query).id(null).parent(raw.first().id), limit = params.loadSize)
+        else raw
         call?.invoke(key)
         val prev = if (posts.isNotEmpty()) (key - 1).takeIf { it > 0 } else null
         val next = if (posts.size == params.loadSize) key + (params.loadSize / ImageViewModel.pageSize) else null
@@ -384,6 +387,13 @@ class ImageFragment : Fragment() {
             }
             if (payloads.isNotEmpty()) return
             binding.text1.text = binding.root.resources.getString(R.string.app_resolution, item.width, item.height, item.resolution.title)
+            binding.text1.setCompoundResourcesDrawables(
+                when {
+                    item.has_children -> R.drawable.ic_photo_library
+                    item.parent_id != 0 -> R.drawable.ic_photo_children
+                    else -> null
+                }, null, null, null
+            )
             binding.image1.layoutParams = (binding.image1.layoutParams as? ConstraintLayout.LayoutParams)?.also { params ->
                 params.dimensionRatio = "${item.preview_width}:${item.preview_height}"
             }
