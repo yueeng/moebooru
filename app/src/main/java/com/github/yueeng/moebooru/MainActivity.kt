@@ -143,6 +143,7 @@ class ListActivity : MoeActivity(R.layout.activity_main) {
 
 class ListFragment : Fragment(), SavedFragment.Queryable {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
+    private val artist = MutableLiveData<ItemArtist>()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
@@ -155,6 +156,22 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+        val name = arguments?.getString("artist") ?: return
+        lifecycleScope.launchWhenCreated {
+            artist.postValue(Service.instance.artist(name).firstOrNull())
+        }
+        lifecycleScope.launchWhenCreated {
+            artist.asFlow().filter { it?.urls?.any() == true }.collectLatest {
+                requireActivity().invalidateOptionsMenu()
+            }
+        }
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        menu.clear()
+        requireActivity().menuInflater.inflate(R.menu.main, menu)
+        menu.findItem(R.id.artist).isVisible = artist.value?.urls?.any() == true
+        super.onPrepareOptionsMenu(menu)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -163,6 +180,16 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.artist -> true.also {
+            val value = artist.value ?: return@also
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(value.name.toTitleCase())
+                .setItems(value.urls?.toTypedArray() ?: emptyArray()) { _, w ->
+                    value.urls?.get(w)?.let(requireActivity()::openWeb)
+                }
+                .setPositiveButton(R.string.app_ok, null)
+                .show()
+        }
         R.id.column -> true.also {
             MoeSettings.column()
         }

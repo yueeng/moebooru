@@ -162,6 +162,15 @@ data class ItemUser(
 }
 
 @Parcelize
+data class ItemArtist(
+    @SN("id") val id: Int,
+    @SN("name") val name: String,
+    @SN("alias_id") val aliasID: Int? = null,
+    @SN("group_id") val groupID: Int? = null,
+    @SN("urls") val urls: List<String>? = null
+) : Parcelable
+
+@Parcelize
 data class ItemPool(
     @SN("id") var id: Int,
     @SN("name") var name: String,
@@ -298,6 +307,9 @@ interface MoebooruService {
 
     @GET("post/popular_recent.json")
     suspend fun popular_recent(): List<JImageItem>
+
+    @GET("artist.json")
+    suspend fun artist(@Query("name") name: String? = null): List<ItemArtist>
 
     @FormUrlEncoded
     @POST("post/similar.json")
@@ -522,6 +534,18 @@ interface GithubService {
 
 class Service(private val service: MoebooruService) : MoebooruService by service {
     override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, Q.safe(tags), limit)
+    override suspend fun artist(name: String?): List<ItemArtist> {
+        val artist = runCatching { service.artist(name) }
+            .getOrNull()?.filter { it.name == name }?.takeIf { it.size == 1 } ?: return emptyList()
+        if (artist.first().aliasID == null) return artist
+        val url = "$moeUrl/artist/show?id=${artist.first().aliasID}"
+        val alias = runCatching { okHttp.newCall(Request.Builder().url(url).build()).await { _, response -> response.body?.string() } }.getOrNull() ?: return artist
+        val value = Jsoup.parse(alias, url)
+            .select("h2.title").text().lowercase(Locale.getDefault())
+            .split(':', limit = 2).let { it.first().trim() to it.last().trim() }
+            .takeIf { it.first == "artist" }?.second ?: return artist
+        return artist(value)
+    }
 
     companion object {
         private val intJsonDeserializer = JsonDeserializer { json, _, _ ->

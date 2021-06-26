@@ -11,6 +11,7 @@
     <string name="app_github">GitHub</string>
     <string name="app_go">跳转</string>
     <string name="app_ok">确定</string>
+    <string name="app_artist">艺术家</string>
     <string name="app_page_jump">页码</string>
     <string name="app_page_number">%1$d/%2$d</string>
     <string name="app_pre_release">预发布</string>
