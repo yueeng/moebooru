@@ -143,7 +143,7 @@ class ListActivity : MoeActivity(R.layout.activity_main) {
 
 class ListFragment : Fragment(), SavedFragment.Queryable {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
-    private val artist = MutableLiveData<ItemArtist>()
+    private val artist = MutableLiveData<ItemArtist?>()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
