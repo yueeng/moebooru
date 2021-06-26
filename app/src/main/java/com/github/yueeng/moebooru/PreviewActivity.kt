@@ -379,7 +379,9 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         }
                         else -> if (tag.tag.isNotEmpty()) {
                             val options = ActivityOptions.makeSceneTransitionAnimation(activity, it, "shared_element_container")
-                            activity.startActivity(Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag)), options.toBundle())
+                            val intent = Intent(activity, ListActivity::class.java).putExtra("query", Q(tag.tag))
+                            if (tag.type == Tag.TYPE_ARTIST) intent.putExtra("artist", tag.tag)
+                            activity.startActivity(intent, options.toBundle())
                         }
                     }
                 }
