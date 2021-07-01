@@ -168,9 +168,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {
-        menu.clear()
-        requireActivity().menuInflater.inflate(R.menu.main, menu)
-        menu.findItem(R.id.artist).isVisible = artist.value?.urls?.any() == true
+        menu.findItem(R.id.artist)?.isVisible = artist.value?.urls?.any() == true
         super.onPrepareOptionsMenu(menu)
     }
 
