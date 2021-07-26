@@ -31,6 +31,9 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import java.util.*
 import kotlin.math.max
@@ -198,12 +201,20 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
 }
 
 class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {
+    suspend fun children(q: Set<Q>, raw: List<JImageItem>, data: List<JImageItem> = raw): List<JImageItem> {
+        val children = raw.filter { it.has_children }.map { Q().parent(it.id) }
+        val parent = raw.filter { it.parent_id != 0 }.filter { data.all { i -> i.id != it.parent_id } }.map { Q().id(it.parent_id) }
+        val queries = (children + parent).subtract(q)
+        val subtract = coroutineScope {
+            queries.map { async { Service.instance.post(page = 1, it, limit = 100) } }.awaitAll().flatten().subtract(data).toList()
+        }.takeIf { it.any() } ?: return data
+        return children(q + queries, subtract, data + subtract)
+    }
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, JImageItem> = try {
         val key = params.key ?: begin
         val raw = Service.instance.post(page = key, Q(query), limit = params.loadSize)
-        val posts = if (query?.map?.containsKey("id") == true && raw.size == 1 && raw.first().has_children)
-            Service.instance.post(page = key, Q(query).id(null).parent(raw.first().id), limit = params.loadSize)
-        else raw
+        val posts = if (query?.only("id", "parent") == true) children(setOf(Q(query)), raw) else raw
         call?.invoke(key)
         val prev = if (posts.isNotEmpty()) (key - 1).takeIf { it > 0 } else null
         val next = if (posts.size == params.loadSize) key + (params.loadSize / ImageViewModel.pageSize) else null

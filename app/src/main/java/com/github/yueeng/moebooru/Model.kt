@@ -571,14 +571,14 @@ class Service(private val service: MoebooruService) : MoebooruService by service
 
         suspend fun csrf(): String? = try {
             val home = okHttp.newCall(Request.Builder().url("$moeUrl/user/home").build()).await { _, response -> response.body?.string() }
-            Jsoup.parse(home).select("meta[name=csrf-token]").attr("content")
+            Jsoup.parse(home!!).select("meta[name=csrf-token]").attr("content")
         } catch (e: Exception) {
             null
         }
 
         suspend fun apiKey(): String? = try {
             val home = okHttp.newCall(Request.Builder().url("$moeUrl/settings/api").build()).await { _, response -> response.body?.string() }
-            Jsoup.parse(home).select("h1+div").text().trimStart { it != ':' }.trim().trim(':').trim()
+            Jsoup.parse(home!!).select("h1+div").text().trimStart { it != ':' }.trim().trim(':').trim()
         } catch (e: Exception) {
             null
         }
@@ -693,6 +693,10 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
     val pool: String? by map
     val keyword: String? by map
 
+    fun all(vararg key: String) = key.all(map::containsKey)
+    fun any(vararg key: String) = key.any(map::containsKey)
+    fun only(vararg key: String) = map.size == 1 && any(*key)
+
     fun user(user: String) = apply { map["user"] = user }
 
     fun vote(vote: Value<Int>) = apply { map["vote"] = vote }
@@ -703,7 +707,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 
     fun source(source: String) = apply { map["source"] = source }
 
-    fun id(id: Value<Int>?) = apply { if (id != null) map["id"] = id else map.remove("id") }
+    fun id(id: Value<Int>) = apply { map["id"] = id }
     fun id(id: Int, op: Value.Op = Value.Op.eq) = apply { map["id"] = Value(op, id) }
     fun id(id: Int, id2: Int) = apply { map["id"] = Value(Value.Op.bt, id, id2) }
 
