@@ -31,6 +31,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.appcompat.widget.PopupMenu
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -748,7 +749,7 @@ object Save {
                         return@launchWhenCreated
                     }
                     WorkInfo.State.SUCCEEDED -> {
-                        Snackbar.make(anchor, getString(R.string.download_exists), Snackbar.LENGTH_LONG)
+                        anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
                             .setAnchorView(anchor)
                             .setAction(R.string.app_ok) { download() }
                             .show()
@@ -821,16 +822,6 @@ fun GridLayoutManager.spanSizeLookup(call: (position: Int) -> Int) = this.apply 
         override fun getSpanSize(position: Int): Int = call(position)
     }
 }
-
-val View.childrenRecursively: Sequence<View>
-    get() = sequence {
-        yield(this@childrenRecursively)
-        if (this@childrenRecursively is ViewGroup) {
-            for (child in this@childrenRecursively.children) {
-                yieldAll(child.childrenRecursively)
-            }
-        }
-    }
 
 data class CropImageResult(
     val output: Uri,
@@ -907,6 +898,34 @@ val View.parents: Sequence<View>
 
 inline fun <reified T : View> View.findParents(): Sequence<T> = parents.mapNotNull { it as? T }
 inline fun <reified T : View> View.findParent(): T? = findParents<T>().firstOrNull()
+
+val View.childrenRecursively: Sequence<View>
+    get() = sequence {
+        yield(this@childrenRecursively)
+        if (this@childrenRecursively is ViewGroup) {
+            for (child in this@childrenRecursively.children) {
+                yieldAll(child.childrenRecursively)
+            }
+        }
+    }
+
+fun <V : View> View.findViewByViewType(clazz: Class<V>, id: Int = View.NO_ID): Sequence<View> = if (id != View.NO_ID) {
+    findViewById<V>(id)?.let { sequenceOf(it) } ?: emptySequence()
+} else childrenRecursively.filter { clazz.isInstance(it) }.filter { id == View.NO_ID || id == it.id }
+
+inline fun <reified V : View> View.findViewByViewType(id: Int = View.NO_ID) = findViewByViewType(V::class.java, id)
+
+fun Activity.snack(text: CharSequence, duration: Int = Snackbar.LENGTH_SHORT): Snackbar = window.decorView
+    .let { it.findViewByViewType<CoordinatorLayout>().firstOrNull() ?: it }
+    .let { Snackbar.make(it, text, duration) }
+
+fun Activity.snack(text: Int, duration: Int = Snackbar.LENGTH_SHORT) = snack(getText(text), duration)
+
+fun View.snack(text: CharSequence, duration: Int = Snackbar.LENGTH_SHORT): Snackbar = this
+    .let { it.findParents<CoordinatorLayout>().firstOrNull() ?: it }
+    .let { Snackbar.make(it, text, duration) }
+
+fun View.snack(text: Int, duration: Int = Snackbar.LENGTH_SHORT) = snack(context.getText(text), duration)
 
 @RequiresApi(Build.VERSION_CODES.M)
 fun createProcessTextIntent(): Intent = Intent()
