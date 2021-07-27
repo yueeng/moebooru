@@ -29,6 +29,7 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
@@ -100,6 +101,20 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
         override fun getItemCount(): Int = data.size
         override fun createFragment(position: Int): Fragment = ImageFragment().apply {
             arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
+            if (position != 0) return@apply
+            lifecycleScope.launchWhenCreated {
+                adapter.loadStateFlow.collectLatest {
+                    if (it.refresh !is LoadState.Error) return@collectLatest
+                    if (adapter.itemCount != 0) return@collectLatest
+                    if (MoeSettings.host.value == true) return@collectLatest
+                    requireView().snack(R.string.settings_host_ip_on, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.app_ok) {
+                            MoeSettings.host.setValueToPreferences(true)
+                            adapter.refresh()
+                        }
+                        .show()
+                }
+            }
         }
     }
 
@@ -251,10 +266,10 @@ class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultA
 
 class ImageFragment : Fragment() {
     private val query by lazy { arguments?.getParcelable("query") ?: Q() }
-    private val adapter by lazy { ImageAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     private val offset = MutableLiveData<Int>()
     private val sum = MutableLiveData<Int>()
+    val adapter by lazy { ImageAdapter() }
 
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
