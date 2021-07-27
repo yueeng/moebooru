@@ -32,146 +32,32 @@
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
-    <androidx.constraintlayout.motion.widget.MotionLayout
-        android:id="@+id/motion1"
+    <FrameLayout
+        android:id="@+id/scram"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutDescription="@xml/fragment_main_xml_constraintlayout_scene"
+        android:background="@android:color/transparent"
+        android:visibility="invisible" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/ic_add"
         app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom">
+        app:layout_anchorGravity="bottom|end" />
 
-        <FrameLayout
-            android:id="@+id/scram1"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#4000"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/button5"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_day"
-            android:tag="day"
-            app:fabSize="mini"
-            app:layout_constraintBottom_toTopOf="@+id/button4"
-            app:layout_constraintEnd_toEndOf="@id/button1"
-            app:layout_constraintStart_toStartOf="@id/button1" />
-
-        <TextView
-            android:id="@+id/text5"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/fab_title_background"
-            android:elevation="@dimen/mtrl_fab_elevation"
-            android:maxLines="1"
-            android:text="@string/popular_by_day"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark"
-            app:layout_constraintBottom_toBottomOf="@+id/button5"
-            app:layout_constraintEnd_toStartOf="@+id/button5"
-            app:layout_constraintTop_toTopOf="@+id/button5" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/button4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_week"
-            android:tag="week"
-            app:fabSize="mini"
-            app:layout_constraintBottom_toTopOf="@+id/button3"
-            app:layout_constraintEnd_toEndOf="@id/button1"
-            app:layout_constraintStart_toStartOf="@id/button1" />
-
-        <TextView
-            android:id="@+id/text4"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/fab_title_background"
-            android:elevation="@dimen/mtrl_fab_elevation"
-            android:maxLines="1"
-            android:text="@string/popular_by_week"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark"
-            app:layout_constraintBottom_toBottomOf="@+id/button4"
-            app:layout_constraintEnd_toStartOf="@+id/button4"
-            app:layout_constraintTop_toTopOf="@+id/button4" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/button3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_month"
-            android:tag="month"
-            app:fabSize="mini"
-            app:layout_constraintBottom_toTopOf="@+id/button2"
-            app:layout_constraintEnd_toEndOf="@id/button1"
-            app:layout_constraintStart_toStartOf="@id/button1" />
-
-        <TextView
-            android:id="@+id/text3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/fab_title_background"
-            android:elevation="@dimen/mtrl_fab_elevation"
-            android:maxLines="1"
-            android:text="@string/popular_by_month"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark"
-            app:layout_constraintBottom_toBottomOf="@+id/button3"
-            app:layout_constraintEnd_toStartOf="@+id/button3"
-            app:layout_constraintTop_toTopOf="@+id/button3" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/button2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_year"
-            android:tag="year"
-            app:fabSize="mini"
-            app:layout_constraintBottom_toTopOf="@+id/button1"
-            app:layout_constraintEnd_toEndOf="@id/button1"
-            app:layout_constraintStart_toStartOf="@id/button1" />
-
-        <TextView
-            android:id="@+id/text2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:background="@drawable/fab_title_background"
-            android:elevation="@dimen/mtrl_fab_elevation"
-            android:maxLines="1"
-            android:text="@string/popular_by_year"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:theme="@style/ThemeOverlay.MaterialComponents.Dark"
-            app:layout_constraintBottom_toBottomOf="@+id/button2"
-            app:layout_constraintEnd_toStartOf="@+id/button2"
-            app:layout_constraintTop_toTopOf="@+id/button2" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/button1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_add"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.motion.widget.MotionLayout>
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:maxWidth="200dp"
+        android:visibility="gone"
+        app:layout_anchor="@id/pager"
+        app:layout_anchorGravity="bottom|end"
+        app:menu="@menu/popular"
+        tools:visibility="visible" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

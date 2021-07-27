@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/day"
+        android:icon="@drawable/ic_day"
+        android:title="@string/popular_by_day" />
+    <item
+        android:id="@+id/week"
+        android:icon="@drawable/ic_week"
+        android:title="@string/popular_by_week" />
+    <item
+        android:id="@+id/month"
+        android:icon="@drawable/ic_month"
+        android:title="@string/popular_by_month" />
+    <item
+        android:id="@+id/year"
+        android:icon="@drawable/ic_year"
+        android:title="@string/popular_by_year" />
+</menu>
