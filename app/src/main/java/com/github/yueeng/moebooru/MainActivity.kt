@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +32,7 @@ import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
+import com.google.android.material.transition.MaterialContainerTransform
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -61,6 +63,9 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
             drawer.closeDrawers()
             return
         }
+        if ((supportFragmentManager.findFragmentById(R.id.container) as? MainFragment)?.onBackPressed() == true) {
+            return
+        }
         super.onBackPressed()
     }
 }
@@ -83,16 +88,38 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
                     adapter.notifyDataSetChanged()
                 }
             }
-            binding.scram1.setOnClickListener {
-                binding.motion1.transitionToStart()
-            }
-            listOf(binding.button2, binding.button3, binding.button4, binding.button5).forEach { fab ->
-                fab.setOnClickListener {
-                    val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), fab, "shared_element_container")
-                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", "${it.tag}"), options.toBundle())
+            binding.menu.setNavigationItemSelectedListener {
+                val tag = when (it.itemId) {
+                    R.id.day -> "day"
+                    R.id.week -> "week"
+                    R.id.month -> "month"
+                    R.id.year -> "year"
+                    else -> return@setNavigationItemSelectedListener false
                 }
+                val view = binding.menu.findViewById<View>(it.itemId)
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), view, "shared_element_container")
+                startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag), options.toBundle())
+                true
+            }
+            binding.scram.setOnClickListener { binding.fab.performClick() }
+            binding.fab.setOnClickListener {
+                val visible = binding.fab.isVisible
+                val transform = MaterialContainerTransform().apply {
+                    startView = if (visible) binding.fab else binding.menu
+                    endView = if (visible) binding.menu else binding.fab
+                    addTarget(endView as View)
+                    scrimColor = Color.TRANSPARENT
+                }
+                TransitionManager.beginDelayedTransition(binding.coordinator, transform)
+                binding.scram.isInvisible = !visible
+                binding.fab.isVisible = !visible
+                binding.menu.isVisible = visible
             }
         }.root
+
+    fun onBackPressed(): Boolean = if (binding.fab.isVisible) false else true.also {
+        binding.fab.performClick()
+    }
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         val data = mutableListOf("Popular" to Q().order(Q.Order.score).date(calendar().also { it.add(Calendar.DAY_OF_YEAR, -1) }.time, Q.Value.Op.ge))
