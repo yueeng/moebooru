@@ -296,7 +296,7 @@ fun ImageView.glideUrl(url: String, placeholder: Int? = null): GlideRequest<Draw
     return GlideApp.with(this)
         .load(url)
         .transition(DrawableTransitionOptions.withCrossFade())
-        .apply { if (placeholder != null) placeholder(placeholder) }
+        .run { if (placeholder != null) placeholder(placeholder) else this }
         .onResourceReady { _, _, _, _, _ ->
             setImageDrawable(null)
             scaleType = ImageView.ScaleType.CENTER_CROP
