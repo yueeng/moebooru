@@ -19,13 +19,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ListActivity">
+        <activity android:name=".ListActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="com.github.yueeng.moebooru.${host}.LIST" />
@@ -43,7 +46,8 @@
                     android:scheme="https" />
             </intent-filter>
         </activity>
-        <activity android:name=".PreviewActivity">
+        <activity android:name=".PreviewActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="com.github.yueeng.moebooru.${host}.PREVIEW" />
@@ -67,7 +71,8 @@
         <activity android:name=".PopularActivity" />
         <activity
             android:name=".SimilarActivity"
-            android:label="@string/app_similar">
+            android:label="@string/app_similar"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

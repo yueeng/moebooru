@@ -456,7 +456,7 @@ class ImageFragment : Fragment() {
                 progress.postValue(url)
                 GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                     .apply {
-                        val target = if (sample) GlideApp.with(binding.image1).load(item.preview_url).also { thumbnail(it) } else this
+                        val target = if (sample) thumbnail(GlideApp.with(binding.image1).load(item.preview_url)) else this
                         target.transition(DrawableTransitionOptions.withCrossFade())
                             .onResourceReady { _, _, _, _, _ -> binding.image1.setImageDrawable(null); false }
                     }
