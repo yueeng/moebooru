@@ -47,7 +47,6 @@ import com.github.yueeng.moebooru.databinding.PreviewTagItemBinding
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.gun0912.tedpermission.TedPermission
 import jp.wasabeef.glide.transformations.BlurTransformation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -261,10 +260,10 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 })
             }
             binding.button5.setOnClickListener {
-                TedPermission.with(requireContext()).setPermissions(Manifest.permission.SET_WALLPAPER).onGranted(binding.root) {
-                    val item = adapter.peekSafe(binding.pager.currentItem) ?: return@onGranted
+                checkPermissions(Manifest.permission.SET_WALLPAPER) {
+                    val item = adapter.peekSafe(binding.pager.currentItem) ?: return@checkPermissions
                     (requireActivity() as AppCompatActivity).save(item.id, item.jpeg_url, Save.SO.WALLPAPER)
-                }.check()
+                }
             }
             binding.button6.setOnClickListener {
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener

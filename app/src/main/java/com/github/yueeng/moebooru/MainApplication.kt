@@ -1,5 +1,6 @@
 package com.github.yueeng.moebooru
 
+import android.app.Activity
 import android.app.ActivityOptions
 import android.app.Application
 import android.content.ClipData
@@ -14,9 +15,16 @@ import android.transition.Slide
 import android.transition.TransitionSet
 import android.view.*
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
+import androidx.core.content.PermissionChecker
 import androidx.core.content.res.use
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.commitNow
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.transition.platform.*
@@ -226,5 +234,39 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             startActivity(Intent(this, QueryActivity::class.java).putExtra("query", query), options.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
+    }
+}
+
+class MoePermissionFragment : Fragment() {
+    private lateinit var callback: (Map<String, Boolean>) -> Unit
+    private val requestPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        callback.invoke(permissions)
+    }
+
+    fun request(vararg permissions: String, call: (Map<String, Boolean>) -> Unit) {
+        callback = call
+        requestPermissions.launch(permissions)
+    }
+
+}
+
+class MoePermission(val fragmentManager: FragmentManager) {
+    fun request(vararg permissions: String, call: (Map<String, Boolean>) -> Unit) {
+        val fragment = MoePermissionFragment()
+        fragmentManager.commitNow { add(fragment, MoePermissionFragment::class.java.simpleName) }
+        fragment.request(*permissions) {
+            fragmentManager.commitNow { remove(fragment) }
+            call(it)
+        }
+    }
+
+    companion object {
+        fun with(fragment: Fragment) = MoePermission(fragment.childFragmentManager)
+        fun with(activity: FragmentActivity) = MoePermission(activity.supportFragmentManager)
+        fun Activity.isPermissionGranted(permission: String): Boolean =
+            PermissionChecker.checkSelfPermission(this, permission) == PermissionChecker.PERMISSION_GRANTED
+
+        fun Activity.showRequestPermissionRationale(permission: String) =
+            !isPermissionGranted(permission) && ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
     }
 }
