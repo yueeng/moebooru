@@ -14,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
@@ -42,6 +43,7 @@ import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.createViewModelLazy
 import androidx.lifecycle.*
 import androidx.paging.PagingDataAdapter
@@ -73,14 +75,13 @@ import com.bumptech.glide.request.transition.Transition
 import com.franmontiel.persistentcookiejar.PersistentCookieJar
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
 import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor
+import com.github.yueeng.moebooru.MoePermission.Companion.isPermissionGranted
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.BaseProgressIndicator
 import com.google.android.material.snackbar.Snackbar
-import com.gun0912.tedpermission.PermissionListener
-import com.gun0912.tedpermission.TedPermission
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -517,21 +518,22 @@ class MarginItemDecoration(private val spaceHeight: Int) : RecyclerView.ItemDeco
     }
 }
 
-fun TedPermission.Builder.onGranted(view: View, function: () -> Unit): TedPermission.Builder {
-    setPermissionListener(object : PermissionListener {
-        override fun onPermissionGranted() {
-            function()
-        }
+fun FragmentActivity.checkPermissions(vararg permission: String, granted: () -> Unit) {
+    if (permission.all { isPermissionGranted(it) }) {
+        granted()
+        return
+    }
+    MoePermission.with(this).request(*permission) { permissions ->
+        if (permissions.all { it.value }) granted()
+        else snack(R.string.app_settings, Snackbar.LENGTH_SHORT)
+            .setAction(R.string.app_go) {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }.show()
+    }
+}
 
-        override fun onPermissionDenied(deniedPermissions: MutableList<String>?) {
-            Snackbar.make(view, R.string.tedpermission_setting, Snackbar.LENGTH_SHORT)
-                .setAction(R.string.app_go) {
-                    view.context.startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + view.context.packageName)))
-                }
-                .show()
-        }
-    })
-    return this
+fun Fragment.checkPermissions(vararg permission: String, granted: () -> Unit) {
+    activity?.checkPermissions(*permission, granted = granted)
 }
 
 object Save {
@@ -760,9 +762,9 @@ object Save {
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
-            TedPermission.with(this).setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE).onGranted(anchor ?: window.decorView) {
+            checkPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE) {
                 check()
-            }.check()
+            }
         }
     }
 }
