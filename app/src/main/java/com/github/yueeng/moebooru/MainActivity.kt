@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.findFragment
 import androidx.lifecycle.*
 import androidx.paging.*
+import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import androidx.savedstate.SavedStateRegistryOwner
@@ -83,9 +84,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
             lifecycleScope.launchWhenCreated {
                 Db.tags.tagsWithIndex(true).collectLatest { tags ->
-                    adapter.data.removeAll(adapter.data.drop(1))
-                    adapter.data.addAll(tags.map { it.name to Q(it.tag) })
-                    adapter.notifyDataSetChanged()
+                    adapter.submitList(tags.map { it.name to Q(it.tag) })
                 }
             }
             binding.menu.setNavigationItemSelectedListener {
@@ -122,7 +121,11 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
     }
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
-        val data = mutableListOf("Popular" to Q().order(Q.Order.score).date(calendar().also { it.add(Calendar.DAY_OF_YEAR, -1) }.time, Q.Value.Op.ge))
+        private val differ = AsyncListDiffer<Pair<String, Q>>(this, diffCallback { old, new -> old == new }).apply {
+            submitList(listOf("Popular" to Q().order(Q.Order.score).date(calendar().day(-1, true).time, Q.Value.Op.ge)))
+        }
+        val data get():List<Pair<String, Q>> = differ.currentList
+        fun submitList(list: List<Pair<String, Q>>) = differ.submitList(listOf(data.first()) + list)
         override fun getItemId(position: Int): Long = data[position].hashCode().toLong()
         override fun containsItem(itemId: Long): Boolean = data.map { it.hashCode().toLong() }.contains(itemId)
         override fun getItemCount(): Int = data.size
