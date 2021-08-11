@@ -85,8 +85,8 @@ class QueryFragment : Fragment() {
             binding.bottomAppBar.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.search -> true.also {
-                        val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), requireView().findViewById(item.itemId), "shared_element_container")
-                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", model.query.value), options.toBundle())
+                        val options = requireView().findViewById<View>(item.itemId)?.let { ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container") }
+                        startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", model.query.value), options?.toBundle())
                     }
                     R.id.save -> true.also { save() }
                     else -> super.onOptionsItemSelected(item)
