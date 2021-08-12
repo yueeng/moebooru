@@ -7,8 +7,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.transition.Explode
 import android.transition.Fade
 import android.transition.Slide
@@ -27,6 +30,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.transition.platform.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
@@ -250,6 +254,7 @@ class MoePermissionFragment : Fragment() {
 
 }
 
+@Suppress("MemberVisibilityCanBePrivate")
 class MoePermission(val fragmentManager: FragmentManager) {
     fun request(vararg permissions: String, call: (Map<String, Boolean>) -> Unit) {
         val fragment = MoePermissionFragment()
@@ -263,10 +268,37 @@ class MoePermission(val fragmentManager: FragmentManager) {
     companion object {
         fun with(fragment: Fragment) = MoePermission(fragment.childFragmentManager)
         fun with(activity: FragmentActivity) = MoePermission(activity.supportFragmentManager)
-        fun Activity.isPermissionGranted(permission: String): Boolean =
-            PermissionChecker.checkSelfPermission(this, permission) == PermissionChecker.PERMISSION_GRANTED
+        fun Context.isPermissionGranted(vararg permission: String): Boolean = permission.all {
+            PermissionChecker.checkSelfPermission(this, it) == PermissionChecker.PERMISSION_GRANTED
+        }
 
         fun Activity.showRequestPermissionRationale(permission: String) =
             !isPermissionGranted(permission) && ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
+
+        fun MoePermission.checkPermissions(activity: Activity, vararg permission: String, granted: () -> Unit) = activity.run {
+            if (isPermissionGranted(*permission)) {
+                granted()
+                return@run
+            }
+            request(*permission) { permissions ->
+                if (permissions.all { it.value }) granted()
+                else {
+                    val message = permissions.filter { !it.value }
+                        .map { packageManager.getPermissionInfo(it.key, PackageManager.GET_META_DATA) }
+                        .mapNotNull { it.loadDescription(packageManager) }
+                        .joinToString(",")
+                    activity.snack(message, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.app_go) {
+                            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                        }.show()
+                }
+            }
+        }
+
+        fun FragmentActivity.checkPermissions(vararg permission: String, granted: () -> Unit) =
+            with(this).checkPermissions(this, *permission, granted = granted)
+
+        fun Fragment.checkPermissions(vararg permission: String, granted: () -> Unit) =
+            with(this).checkPermissions(requireActivity(), *permission, granted = granted)
     }
 }

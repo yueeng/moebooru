@@ -40,6 +40,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.alexvasilkov.gestures.GestureController
 import com.bumptech.glide.Priority
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.github.yueeng.moebooru.MoePermission.Companion.checkPermissions
 import com.github.yueeng.moebooru.Save.save
 import com.github.yueeng.moebooru.databinding.FragmentPreviewBinding
 import com.github.yueeng.moebooru.databinding.PreviewItemBinding
