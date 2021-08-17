@@ -128,7 +128,7 @@ dependencies {
     implementation 'com.github.franmontiel:PersistentCookieJar:1.0.1'
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
     implementation 'com.alexvasilkov:gesture-views:2.8.2'
-    implementation 'org.jsoup:jsoup:1.14.1'
+    implementation 'org.jsoup:jsoup:1.14.2'
     implementation 'com.github.yueeng:uCrop:master-non-native-SNAPSHOT'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
