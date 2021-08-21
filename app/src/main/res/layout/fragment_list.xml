@@ -25,4 +25,33 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
+
+    <FrameLayout
+        android:id="@+id/scram"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:visibility="invisible" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/ic_add"
+        app:layout_anchor="@id/container"
+        app:layout_anchorGravity="bottom|end" />
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:maxWidth="200dp"
+        android:visibility="gone"
+        app:layout_anchor="@id/container"
+        app:layout_anchorGravity="bottom|end"
+        app:menu="@menu/popular"
+        tools:visibility="visible" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

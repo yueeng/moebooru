@@ -190,15 +190,45 @@ class ListActivity : MoeActivity(R.layout.activity_main) {
 }
 
 class ListFragment : Fragment(), SavedFragment.Queryable {
-    private val query by lazy { arguments?.getParcelable("query") ?: Q() }
+    private val query by lazy { arguments?.getParcelable<Q>("query") }
     private val artist = MutableLiveData<ItemArtist?>()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
-            arguments?.getParcelable<Q>("query")?.toString()?.let { requireActivity().title = it.toTitleCase() }
+            query?.toString()?.let { requireActivity().title = it.toTitleCase() }
             val fragment = childFragmentManager.findFragmentById(R.id.container) as? ImageFragment
                 ?: ImageFragment().also { it.arguments = arguments }
             childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
+            binding.fab.isVisible = query?.keyword?.isNotEmpty() == true
+            binding.menu.setNavigationItemSelectedListener {
+                val tag = when (it.itemId) {
+                    R.id.day -> "day"
+                    R.id.week -> "week"
+                    R.id.month -> "month"
+                    R.id.year -> "year"
+                    else -> return@setNavigationItemSelectedListener false
+                }
+                val view = binding.menu.findViewById<View>(it.itemId)
+                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), view, "shared_element_container")
+                val intent = Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag)
+                query?.keyword?.let { key -> intent.putExtra("key", key) }
+                startActivity(intent, options.toBundle())
+                true
+            }
+            binding.scram.setOnClickListener { binding.fab.performClick() }
+            binding.fab.setOnClickListener {
+                val visible = binding.fab.isVisible
+                val transform = MaterialContainerTransform().apply {
+                    startView = if (visible) binding.fab else binding.menu
+                    endView = if (visible) binding.menu else binding.fab
+                    addTarget(endView as View)
+                    scrimColor = Color.TRANSPARENT
+                }
+                TransitionManager.beginDelayedTransition(binding.coordinator, transform)
+                binding.scram.isInvisible = !visible
+                binding.fab.isVisible = !visible
+                binding.menu.isVisible = visible
+            }
         }.root
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -242,7 +272,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
         else -> super.onOptionsItemSelected(item)
     }
 
-    override fun query(): Q = query
+    override fun query(): Q = query ?: Q()
 }
 
 class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {

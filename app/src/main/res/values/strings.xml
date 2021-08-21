@@ -34,6 +34,10 @@
     <string name="popular_by_month">Popular by month</string>
     <string name="popular_by_week">Popular by week</string>
     <string name="popular_by_year">Popular by year</string>
+    <string name="popular_by_day_for">Popular %1$s by day</string>
+    <string name="popular_by_month_for">Popular %1$s by month</string>
+    <string name="popular_by_week_for">Popular %1$s by week</string>
+    <string name="popular_by_year_for">Popular %1$s by year</string>
 
     <string name="query_date">Date</string>
     <string name="query_date_desc">Query posts with a certain date of ….</string>

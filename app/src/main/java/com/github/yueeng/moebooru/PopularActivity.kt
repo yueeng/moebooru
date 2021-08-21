@@ -48,6 +48,7 @@ class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundl
 class PopularFragment : Fragment(), SavedFragment.Queryable {
     private val model: PopularViewModel by viewModels { PopularViewModelFactory(this, arguments) }
     private val type by lazy { arguments?.getString("type") ?: "day" }
+    private val key by lazy { arguments?.getString("key")?.takeIf { it.isNotEmpty() } }
     private val adapter by lazy { PopularAdapter(this) }
     private val tabAdapter by lazy { TabAdapter() }
     private lateinit var binding: FragmentPopularBinding
@@ -55,14 +56,17 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         FragmentPopularBinding.inflate(inflater, container, false).also { binding ->
             this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
-            requireActivity().setTitle(
-                when (type) {
-                    "day" -> R.string.popular_by_day
-                    "week" -> R.string.popular_by_week
-                    "month" -> R.string.popular_by_month
-                    else -> R.string.popular_by_year
-                }
-            )
+            requireActivity().title = when (type to key) {
+                "day" to null -> getString(R.string.popular_by_day)
+                "day" to key -> getString(R.string.popular_by_day_for, key)
+                "week" to null -> getString(R.string.popular_by_week)
+                "week" to key -> getString(R.string.popular_by_week_for, key)
+                "month" to null -> getString(R.string.popular_by_month)
+                "month" to key -> getString(R.string.popular_by_month_for, key)
+                "year" to null -> getString(R.string.popular_by_year)
+                "year" to key -> getString(R.string.popular_by_year_for, key)
+                else -> getString(R.string.app_name)
+            }
             binding.pager.adapter = adapter
             tabAdapter.submitList((1..adapter.itemCount).mapNotNull { adapter.getPageTitle(it - 1) })
             binding.tab.adapter = tabAdapter
@@ -119,7 +123,7 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
             arguments = bundleOf("query" to getItem(position))
         }
 
-        fun getItem(position: Int) = Q().popular(type, pos2date(position).time)
+        fun getItem(position: Int) = Q().popular(type, pos2date(position).time).apply { key?.let { keyword(it) } }
         private val dayFormatter get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply { timeZone = utcTimeZone }
         private val monthFormatter get() = SimpleDateFormat("yyyy-MM", Locale.getDefault()).apply { timeZone = utcTimeZone }
         private val yearFormatter get() = SimpleDateFormat("yyyy", Locale.getDefault()).apply { timeZone = utcTimeZone }

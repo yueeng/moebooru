@@ -34,6 +34,10 @@
     <string name="popular_by_month">按月排行</string>
     <string name="popular_by_week">按周排行</string>
     <string name="popular_by_year">按年排行</string>
+    <string name="popular_by_day_for">%1$s 按天排行</string>
+    <string name="popular_by_month_for">%1$s 按月排行</string>
+    <string name="popular_by_week_for">%1$s 按周排行</string>
+    <string name="popular_by_year_for">%1$s 按年排行</string>
 
     <string name="query_date">时间</string>
     <string name="query_date_desc">按创建日期搜索.</string>
