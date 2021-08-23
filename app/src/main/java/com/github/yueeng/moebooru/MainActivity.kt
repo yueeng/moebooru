@@ -211,7 +211,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
                 val view = binding.menu.findViewById<View>(it.itemId)
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), view, "shared_element_container")
                 val intent = Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag)
-                query?.keyword?.let { key -> intent.putExtra("key", key) }
+                query?.keyword?.takeIf { key -> key.isNotEmpty() }?.let { key -> intent.putExtra("key", key) }
                 startActivity(intent, options.toBundle())
                 true
             }

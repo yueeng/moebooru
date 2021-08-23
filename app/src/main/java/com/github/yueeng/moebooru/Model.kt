@@ -677,21 +677,22 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         override fun describeContents(): Int = 0
     }
 
-    val user: String? by map
-    val vote: Value<Int>? by map
-    val md5: String? by map
-    val rating: Rating? by map
-    val source: String? by map
-    val id: Value<Int>? by map
-    val width: Value<Int>? by map
-    val height: Value<Int>? by map
-    val score: Value<Int>? by map
-    val mpixels: Value<Float>? by map
-    val date: Value<Date>? by map
-    val order: Order? by map
-    val parent: String? by map
-    val pool: String? by map
-    val keyword: String? by map
+    private val default = map.withDefault<String, Any?> { null }
+    val user: String? by default
+    val vote: Value<Int>? by default
+    val md5: String? by default
+    val rating: Rating? by default
+    val source: String? by default
+    val id: Value<Int>? by default
+    val width: Value<Int>? by default
+    val height: Value<Int>? by default
+    val score: Value<Int>? by default
+    val mpixels: Value<Float>? by default
+    val date: Value<Date>? by default
+    val order: Order? by default
+    val parent: String? by default
+    val pool: String? by default
+    val keyword: String? by default
 
     fun all(vararg key: String) = key.all(map::containsKey)
     fun any(vararg key: String) = key.any(map::containsKey)
