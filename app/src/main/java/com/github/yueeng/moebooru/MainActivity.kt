@@ -7,6 +7,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.view.*
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
@@ -200,6 +201,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
                 ?: ImageFragment().also { it.arguments = arguments }
             childFragmentManager.beginTransaction().replace(R.id.container, fragment).commit()
             binding.fab.isVisible = query?.keyword?.isNotEmpty() == true
+            binding.menu.getHeaderView(0).findViewById<TextView>(R.id.text1)?.text = query?.keyword?.toTitleCase()
             binding.menu.setNavigationItemSelectedListener {
                 val tag = when (it.itemId) {
                     R.id.day -> "day"
