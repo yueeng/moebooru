@@ -26,12 +26,7 @@ class PopularActivity : MoeActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.run {
             val fragment = findFragmentById(R.id.container) as? PopularFragment ?: PopularFragment().apply { arguments = intent.extras }
-            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
-            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-            beginTransaction().replace(R.id.container, fragment)
-                .replace(R.id.mine, mine)
-                .replace(R.id.saved, saved)
-                .commit()
+            beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
 }

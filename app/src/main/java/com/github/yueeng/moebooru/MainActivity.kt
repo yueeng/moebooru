@@ -11,11 +11,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
-import androidx.core.view.GravityCompat
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.findFragment
 import androidx.lifecycle.*
@@ -49,30 +47,13 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.run {
             val fragment = findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
-            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
-            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-            beginTransaction().replace(R.id.container, fragment)
-                .replace(R.id.mine, mine)
-                .replace(R.id.saved, saved)
-                .commit()
+            beginTransaction().replace(R.id.container, fragment).commit()
         }
         checkAppUpdate(compare = true)
     }
-
-    override fun onBackPressed() {
-        val drawer = findViewById<DrawerLayout>(R.id.drawer)
-        if (drawer.isDrawerOpen(GravityCompat.START) || drawer.isDrawerOpen(GravityCompat.END)) {
-            drawer.closeDrawers()
-            return
-        }
-        if ((supportFragmentManager.findFragmentById(R.id.container) as? MainFragment)?.onBackPressed() == true) {
-            return
-        }
-        super.onBackPressed()
-    }
 }
 
-class MainFragment : Fragment(), SavedFragment.Queryable {
+class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
     private val adapter by lazy { PagerAdapter(this) }
     private lateinit var binding: FragmentMainBinding
 
@@ -117,7 +98,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable {
             }
         }.root
 
-    fun onBackPressed(): Boolean = if (binding.fab.isVisible) false else true.also {
+    override fun onBackPressed(): Boolean = if (binding.fab.isVisible) false else true.also {
         binding.fab.performClick()
     }
 
@@ -180,21 +161,18 @@ class ListActivity : MoeActivity(R.layout.activity_main) {
         supportFragmentManager.run {
             val fragment = findFragmentById(R.id.container) as? ListFragment
                 ?: ListFragment().apply { arguments = intent.extras }
-            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
-            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-            beginTransaction().replace(R.id.container, fragment)
-                .replace(R.id.mine, mine)
-                .replace(R.id.saved, saved)
-                .commit()
+            beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
 }
 
-class ListFragment : Fragment(), SavedFragment.Queryable {
+class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
     private val query by lazy { arguments?.getParcelable<Q>("query") }
     private val artist = MutableLiveData<ItemArtist?>()
+    private lateinit var binding: FragmentListBinding
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentListBinding.inflate(inflater, container, false).also { binding ->
+            this.binding = binding
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             query?.toString()?.let { requireActivity().title = it.toTitleCase() }
             val fragment = childFragmentManager.findFragmentById(R.id.container) as? ImageFragment
@@ -245,6 +223,10 @@ class ListFragment : Fragment(), SavedFragment.Queryable {
                 requireActivity().invalidateOptionsMenu()
             }
         }
+    }
+
+    override fun onBackPressed(): Boolean = if (binding.fab.isVisible) false else true.also {
+        binding.fab.performClick()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu) {

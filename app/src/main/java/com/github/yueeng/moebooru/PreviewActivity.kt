@@ -71,12 +71,7 @@ class PreviewActivity : MoeActivity(R.layout.activity_main) {
         supportFragmentManager.run {
             val fragment = findFragmentById(R.id.container) as? PreviewFragment
                 ?: PreviewFragment().also { it.arguments = intent.extras }
-            val mine = findFragmentById(R.id.mine) as? UserFragment ?: UserFragment()
-            val saved = findFragmentById(R.id.saved) as? SavedFragment ?: SavedFragment()
-            beginTransaction().replace(R.id.container, fragment)
-                .replace(R.id.mine, mine)
-                .replace(R.id.saved, saved)
-                .commit()
+            beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
 

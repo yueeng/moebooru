@@ -24,6 +24,8 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.PermissionChecker
 import androidx.core.content.res.use
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
@@ -106,6 +108,10 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
         }
         else -> super.onOptionsItemSelected(item)
     }
+}
+
+interface IOnBackPressed {
+    fun onBackPressed() = false
 }
 
 open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
@@ -238,6 +244,18 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             startActivity(Intent(this, QueryActivity::class.java).putExtra("query", query), options?.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
+    }
+
+    override fun onBackPressed() {
+        val drawer = findViewById<DrawerLayout>(R.id.drawer)
+        if (drawer?.isDrawerOpen(GravityCompat.START) == true || drawer?.isDrawerOpen(GravityCompat.END) == true) {
+            drawer.closeDrawers()
+            return
+        }
+        if (supportFragmentManager.fragments.mapNotNull { it as? IOnBackPressed }.firstOrNull()?.onBackPressed() == true) {
+            return
+        }
+        super.onBackPressed()
     }
 }
 
