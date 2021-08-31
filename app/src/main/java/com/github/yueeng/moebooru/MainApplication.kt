@@ -272,7 +272,7 @@ class MoePermissionFragment : Fragment() {
 
 }
 
-@Suppress("MemberVisibilityCanBePrivate")
+@Suppress("MemberVisibilityCanBePrivate", "unused")
 class MoePermission(val fragmentManager: FragmentManager) {
     fun request(vararg permissions: String, call: (Map<String, Boolean>) -> Unit) {
         val fragment = MoePermissionFragment()
