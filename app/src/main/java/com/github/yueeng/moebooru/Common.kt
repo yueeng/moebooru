@@ -101,7 +101,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.time.ExperimentalTime
 
 fun debug(call: () -> Unit) {
     if (BuildConfig.DEBUG) call()
@@ -545,7 +544,6 @@ object Save {
 
         @SuppressLint("MissingPermission")
         @OptIn(FlowPreview::class)
-        @ExperimentalTime
         override suspend fun doWork(): Result = try {
             notification.setContentTitle(applicationContext.getString(R.string.app_download, applicationContext.getString(R.string.app_name)))
                 .setProgress(0, 0, true)
@@ -760,12 +758,21 @@ fun Long.sizeString() = when {
     else -> "%.1f EiB".format((this shr 20).toDouble() / (0x1 shl 40))
 }
 
-fun Context.openWeb(uri: String) = startActivity(
-    when (URLUtil.isValidUrl(uri)) {
-        true -> Intent(Intent.ACTION_VIEW, uri.toUri())
-        false -> Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, uri)
-    }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-)
+fun String.fixPixivUrl() =
+    if ("""(pixiv\.net|pximg\.net)/img""".toRegex(RegexOption.IGNORE_CASE).containsMatchIn(this)) {
+        """(\d+)(_s|_m|(_big)?_p\d+)?\.\w+(\?\d+)?\z""".toRegex(RegexOption.IGNORE_CASE).find(this)?.let {
+            "https://www.pixiv.net/artworks/${it.groups[1]!!.value}"
+        } ?: this
+    } else this
+
+fun Context.openWeb(uri: String) = uri.fixPixivUrl().let { url ->
+    startActivity(
+        when (URLUtil.isValidUrl(url)) {
+            true -> Intent(Intent.ACTION_VIEW, url.toUri())
+            false -> Intent(Intent.ACTION_WEB_SEARCH).putExtra(SearchManager.QUERY, url)
+        }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    )
+}
 
 class AlphaBlackBitmapTransformation(val alpha: Int = 0x7F, val color: Int = Color.BLACK) : BitmapTransformation() {
     companion object {
