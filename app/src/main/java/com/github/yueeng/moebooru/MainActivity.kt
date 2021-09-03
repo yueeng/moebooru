@@ -98,9 +98,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
             }
         }.root
 
-    override fun onBackPressed(): Boolean = if (binding.fab.isVisible) false else true.also {
-        binding.fab.performClick()
-    }
+    override fun onBackPressed(): Boolean = if (binding.menu.isVisible) true.also { binding.fab.performClick() } else false
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         private val differ = AsyncListDiffer<Pair<String, Q>>(this, diffCallback { old, new -> old == new }).apply {
@@ -225,9 +223,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
         }
     }
 
-    override fun onBackPressed(): Boolean = if (binding.fab.isVisible) false else true.also {
-        binding.fab.performClick()
-    }
+    override fun onBackPressed(): Boolean = if (binding.menu.isVisible) true.also { binding.fab.performClick() } else false
 
     override fun onPrepareOptionsMenu(menu: Menu) {
         menu.findItem(R.id.artist)?.isVisible = artist.value?.urls?.any() == true
