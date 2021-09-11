@@ -395,11 +395,11 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             this.item = item
 //            if (currentList.size == 0) submitList(listOf(Tag(Tag.TYPE_UNKNOWN, "Waiting...", "")))
             val tags = withContext(Dispatchers.Default) {
-                val common = listOf(
+                val common = mutableListOf(
                     Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
                     Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
                     Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
-                ).toMutableList()
+                )
                 if (item.has_children) {
                     common.add(Tag(Tag.TYPE_CHILDREN, "Children", "parent:${item.id}"))
                 }

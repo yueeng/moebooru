@@ -235,10 +235,10 @@ data class Tag(var type: Int, val name: String, val tag: String) : Parcelable {
         const val TYPE_CHARACTER = 4
         const val TYPE_CIRCLE = 5
         const val TYPE_FAULTS = 6
-        const val TYPE_USER = -2
-        const val TYPE_SIZE = -3
-        const val TYPE_CHILDREN = -4
-        const val TYPE_PARENT = -5
+        const val TYPE_CHILDREN = -2
+        const val TYPE_PARENT = -3
+        const val TYPE_USER = -4
+        const val TYPE_SIZE = -5
         const val TYPE_URL = -6
         const val TYPE_CLIPBOARD = -7
         const val TYPE_SIMILAR = -8
