@@ -410,85 +410,6 @@ interface MoebooruService {
     )
 }
 
-data class JGitHubRelease(
-    @SN("assets") val assets: List<JGitHubReleaseAsset>,
-    @SN("assets_url") val assetsUrl: String,
-    @SN("author") val author: JGitHubReleaseAuthor,
-    @SN("body") val body: String,
-    @SN("created_at") val createdAt: String,
-    @SN("draft") val draft: Boolean,
-    @SN("html_url") val htmlUrl: String,
-    @SN("id") val id: Int,
-    @SN("name") val name: String,
-    @SN("node_id") val nodeId: String,
-    @SN("prerelease") val prerelease: Boolean,
-    @SN("published_at") val publishedAt: String,
-    @SN("tag_name") val tagName: String,
-    @SN("tarball_url") val tarballUrl: String,
-    @SN("target_commitish") val targetCommitish: String,
-    @SN("upload_url") val uploadUrl: String,
-    @SN("url") val url: String,
-    @SN("zipball_url") val zipballUrl: String
-)
-
-data class JGitHubReleaseAsset(
-    @SN("browser_download_url") val browserDownloadUrl: String,
-    @SN("content_type") val contentType: String,
-    @SN("created_at") val createdAt: String,
-    @SN("download_count") val downloadCount: Int,
-    @SN("id") val id: Int,
-    @SN("label") val label: Any,
-    @SN("name") val name: String,
-    @SN("node_id") val nodeId: String,
-    @SN("size") val size: Int,
-    @SN("state") val state: String,
-    @SN("updated_at") val updatedAt: String,
-    @SN("uploader") val uploader: JGitHubReleaseUploader,
-    @SN("url") val url: String
-)
-
-data class JGitHubReleaseAuthor(
-    @SN("avatar_url") val avatarUrl: String,
-    @SN("events_url") val eventsUrl: String,
-    @SN("followers_url") val followersUrl: String,
-    @SN("following_url") val followingUrl: String,
-    @SN("gists_url") val gistsUrl: String,
-    @SN("gravatar_id") val gravatarId: String,
-    @SN("html_url") val htmlUrl: String,
-    @SN("id") val id: Int,
-    @SN("login") val login: String,
-    @SN("node_id") val nodeId: String,
-    @SN("organizations_url") val organizationsUrl: String,
-    @SN("received_events_url") val receivedEventsUrl: String,
-    @SN("repos_url") val reposUrl: String,
-    @SN("site_admin") val siteAdmin: Boolean,
-    @SN("starred_url") val starredUrl: String,
-    @SN("subscriptions_url") val subscriptionsUrl: String,
-    @SN("type") val type: String,
-    @SN("url") val url: String
-)
-
-data class JGitHubReleaseUploader(
-    @SN("avatar_url") val avatarUrl: String,
-    @SN("events_url") val eventsUrl: String,
-    @SN("followers_url") val followersUrl: String,
-    @SN("following_url") val followingUrl: String,
-    @SN("gists_url") val gistsUrl: String,
-    @SN("gravatar_id") val gravatarId: String,
-    @SN("html_url") val htmlUrl: String,
-    @SN("id") val id: Int,
-    @SN("login") val login: String,
-    @SN("node_id") val nodeId: String,
-    @SN("organizations_url") val organizationsUrl: String,
-    @SN("received_events_url") val receivedEventsUrl: String,
-    @SN("repos_url") val reposUrl: String,
-    @SN("site_admin") val siteAdmin: Boolean,
-    @SN("starred_url") val starredUrl: String,
-    @SN("subscriptions_url") val subscriptionsUrl: String,
-    @SN("type") val type: String,
-    @SN("url") val url: String
-)
-
 data class Version(val ver: List<Int>) : Comparable<Version> {
     override operator fun compareTo(other: Version): Int {
         val v1 = ver
@@ -524,14 +445,6 @@ data class Version(val ver: List<Int>) : Comparable<Version> {
     }
 }
 
-interface GithubService {
-    @GET("/repos/yueeng/moebooru/releases")
-    suspend fun releases(): List<JGitHubRelease>
-
-    @GET("/repos/yueeng/moebooru/releases/latest")
-    suspend fun latest(): JGitHubRelease?
-}
-
 class Service(private val service: MoebooruService) : MoebooruService by service {
     override suspend fun post(page: Int, tags: Q, limit: Int): List<JImageItem> = service.post(page, Q.safe(tags), limit)
     override suspend fun artist(name: String?): List<ItemArtist> {
@@ -562,12 +475,6 @@ class Service(private val service: MoebooruService) : MoebooruService by service
             .baseUrl(moeUrl)
             .build()
         val instance: MoebooruService = Service(retrofit.create(MoebooruService::class.java))
-        val github: GithubService = Retrofit.Builder()
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .client(okHttp)
-            .baseUrl("https://api.github.com")
-            .build()
-            .create(GithubService::class.java)
 
         suspend fun csrf(): String? = try {
             val home = okHttp.newCall(Request.Builder().url("$moeUrl/user/home").build()).await { _, response -> response.body?.string() }

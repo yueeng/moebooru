@@ -91,6 +91,7 @@ import okhttp3.*
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
+import org.kohsuke.github.GitHub
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -964,9 +965,12 @@ val Context.appVersion: Version?
 
 fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = lifecycleScope.launchWhenCreated {
     val latest = runCatching {
-        when (pre) {
-            true -> Service.github.releases().firstOrNull()
-            false -> Service.github.latest()
+        withContext(Dispatchers.IO) {
+            val github = GitHub.connectAnonymously().getRepository("yueeng/moebooru")
+            when (pre) {
+                true -> github.listReleases().firstOrNull()
+                false -> github.latestRelease
+            }
         }
     }.getOrNull() ?: return@launchWhenCreated
     val name = if (compare) {
@@ -975,13 +979,15 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
         if (ver >= online) return@launchWhenCreated
         "v$ver > v$online"
     } else latest.name
+    val url = runCatching {
+        withContext(Dispatchers.IO) {
+            latest.listAssets().firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl
+        }
+    }.getOrNull() ?: return@launchWhenCreated
     MaterialAlertDialogBuilder(this@checkAppUpdate)
         .setTitle(name)
         .setMessage(latest.body)
-        .setPositiveButton(getString(R.string.app_download_apk)) { _, _ ->
-            val url = latest.assets.firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl ?: return@setPositiveButton
-            openWeb(url)
-        }
+        .setPositiveButton(getString(R.string.app_download_apk)) { _, _ -> openWeb(url) }
         .setNegativeButton(R.string.app_cancel, null)
         .apply {
             if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
