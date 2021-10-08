@@ -97,7 +97,7 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
             stream.toString()
         }
         val span = SpannableStringBuilder.valueOf(ex)
-        """^\s*at\s+${javaClass.`package`!!.name.replace(".", "\\.")}.*$""".toRegex(RegexOption.MULTILINE).findAll(ex).forEach {
+        """^\s*at\s+${Regex.escape(javaClass.`package`!!.name)}.*$""".toRegex(RegexOption.MULTILINE).findAll(ex).forEach {
             span.setSpan(ForegroundColorSpan(Color.BLUE), it.range.first, it.range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             """\((.*?:\d+)\)""".toRegex().find(it.value)?.groups?.get(1)?.let { sub ->
                 span.setSpan(ForegroundColorSpan(Color.RED), it.range.first + sub.range.first, it.range.first + sub.range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
