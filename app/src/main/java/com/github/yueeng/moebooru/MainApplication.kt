@@ -12,6 +12,9 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.transition.Explode
 import android.transition.Fade
 import android.transition.Slide
@@ -93,7 +96,14 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
             }
             stream.toString()
         }
-        findViewById<TextView>(R.id.text1).text = ex
+        val span = SpannableStringBuilder.valueOf(ex)
+        """^\s*at\s+${javaClass.`package`!!.name.replace(".", "\\.")}.*$""".toRegex(RegexOption.MULTILINE).findAll(ex).forEach {
+            span.setSpan(ForegroundColorSpan(Color.BLUE), it.range.first, it.range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            """\((.*?:\d+)\)""".toRegex().find(it.value)?.groups?.get(1)?.let { sub ->
+                span.setSpan(ForegroundColorSpan(Color.RED), it.range.first + sub.range.first, it.range.first + sub.range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+        findViewById<TextView>(R.id.text1).text = span
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
