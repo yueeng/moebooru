@@ -28,7 +28,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.parcelize.Parcelize
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
@@ -36,6 +36,7 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import retrofit2.http.*
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -325,11 +326,11 @@ interface MoebooruService {
     @GET("user.json")
     suspend fun user(@Query("name") name: String): List<ItemUser>
 
-    @GET("user/logout.json")
-    suspend fun logout(): JResult?
+    @DELETE("session")
+    suspend fun logout(): String?
 
     @FormUrlEncoded
-    @POST("user/authenticate.json")
+    @POST("user/authenticate")
     suspend fun login(
         @Field("user[name]") name: String,
         @Field("user[password]") pwd: String,
@@ -337,7 +338,7 @@ interface MoebooruService {
         @Header("X-CSRF-Token") x_csrf_token: String = authenticity_token,
         @Field("url") url: String = "",
         @Field("commit") commit: String = "Login"
-    ): JResult?
+    ): String?
 
     @FormUrlEncoded
     @POST("user/create.json")
@@ -470,6 +471,7 @@ class Service(private val service: MoebooruService) : MoebooruService by service
         }
         private val gson = GsonBuilder().registerTypeAdapter(Int::class.java, intJsonDeserializer).setLenient().create()
         private val retrofit: Retrofit = Retrofit.Builder()
+            .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(okHttp)
             .baseUrl(moeUrl)
@@ -898,15 +900,14 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
 }
 
 object OAuth {
-    val name: MutableLiveData<String> = MutableLiveData(okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "login" }?.value ?: "")
-    val user = MutableLiveData<Int>()
+    val user: MutableLiveData<Int> = MutableLiveData(okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "user_id" }?.value?.toIntOrNull() ?: 0)
+    val name = MutableLiveData<String>()
     val avatar = MutableLiveData<Int>()
 
     init {
         ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            name.asFlow().filter { it.isNotEmpty() }.collectLatest {
-                runCatching { Service.instance.user(it).firstOrNull()?.id }
-                    .getOrNull()?.let { id -> user.postValue(id) }
+            user.asFlow().distinctUntilChanged().collectLatest {
+                name.postValue(if (it == 0) "" else runCatching { Service.instance.user(it).firstOrNull()?.name }.getOrElse { "" })
             }
         }
     }
@@ -946,7 +947,10 @@ object OAuth {
             .setTitle(R.string.user_logout)
             .setPositiveButton(R.string.user_logout) { _, _ ->
                 fragment.lifecycleScope.launchWhenCreated {
-                    runCatching { Service.instance.logout() }
+//                    runCatching { Service.instance.logout() }
+                    okPersistor.clear()
+                    okCookie.clear()
+                    user.postValue(0)
                     call?.invoke()
                 }
             }
@@ -961,14 +965,15 @@ object OAuth {
             view.indicator.isInvisible = false
             alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
             fragment.lifecycleScope.launchWhenCreated {
-                val result = runCatching { Service.instance.login(name, pass, Service.csrf()!!) }.getOrNull()
+                runCatching { Service.instance.login(name, pass, Service.csrf()!!) }
                 view.indicator.isInvisible = true
                 alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
-                if (result?.success == true) {
+                val id = okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "user_id" }?.value?.toIntOrNull() ?: 0
+                if (id != 0) {
                     alert.dismiss()
                     call?.invoke()
                 } else {
-                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                    val msg = /*result?.reason ?:*/ fragment.getString(R.string.app_failed)
                     Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
                         .setAction(R.string.app_ok) {}.show()
                 }

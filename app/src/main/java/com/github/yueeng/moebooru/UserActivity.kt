@@ -30,8 +30,8 @@ class UserActivity : MoeActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.run {
-            val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserFragment
-                ?: UserFragment().apply { arguments = intent.extras }
+            val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserOtherFragment
+                ?: UserOtherFragment().apply { arguments = intent.extras }
             beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
@@ -50,100 +50,130 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
     override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = UserViewModel(handle, args) as T
 }
 
-class UserFragment : Fragment() {
-    private val busy = MutableLiveData(false)
-    private val mine by lazy { arguments?.containsKey("name") != true }
-    private val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
-    private val adapter by lazy { ImageAdapter() }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(!mine)
+class UserOtherFragment : UserFragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View = super.onCreateView(inflater, container, savedInstanceState).also { view ->
+        val binding = FragmentUserBinding.bind(view)
+        (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
+        lifecycleScope.launchWhenCreated {
+            model.name.asFlow().mapNotNull { it }.distinctUntilChanged().collectLatest { name ->
+                requireActivity().title = name.toTitleCase()
+            }
+        }
+    }
+}
+
+class UserMineFragment : UserFragment() {
+    fun prepareOptionsMenu(menu: Menu) {
+        val auth = OAuth.user.value != null && OAuth.user.value != 0
+        menu.findItem(R.id.userLogin).isVisible = !auth
+        menu.findItem(R.id.userLogout).isVisible = auth
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.user, menu)
-        super.onCreateOptionsMenu(menu, inflater)
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        menu.findItem(R.id.userLogin).isVisible = OAuth.name.value?.isEmpty() ?: true
-        menu.findItem(R.id.userLogout).isVisible = OAuth.name.value?.isNotEmpty() ?: false
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    fun optionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.login -> true.also { OAuth.login(this) }
         R.id.register -> true.also { OAuth.register(this) }
         R.id.reset -> true.also { OAuth.reset(this) }
         R.id.logout -> true.also { OAuth.logout(this) }
         R.id.changeEmail -> true.also { OAuth.changeEmail(this) }
         R.id.changePwd -> true.also { OAuth.changePwd(this) }
-        else -> super.onOptionsItemSelected(item)
+        else -> false
     }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View = super.onCreateView(inflater, container, savedInstanceState).also { view ->
+        val binding = FragmentUserBinding.bind(view)
+        prepareOptionsMenu(binding.toolbar.menu)
+        binding.toolbar.setOnMenuItemClickListener { optionsItemSelected(it) }
+        lifecycleScope.launchWhenCreated {
+            OAuth.user.asFlow().collectLatest {
+                prepareOptionsMenu(binding.toolbar.menu)
+                model.user.postValue(it)
+            }
+        }
+        lifecycleScope.launchWhenCreated {
+            OAuth.name.asFlow().collectLatest {
+                model.name.postValue(it)
+            }
+        }
+        lifecycleScope.launchWhenCreated {
+            model.name.asFlow().mapNotNull { it }.collectLatest { name ->
+                binding.toolbar.title = name.toTitleCase()
+            }
+        }
+        lifecycleScope.launchWhenCreated {
+            OAuth.avatar.asFlow().filter { model.avatar.value != it }.collectLatest {
+                model.avatar.postValue(it)
+            }
+        }
+        lifecycleScope.launchWhenCreated {
+            model.avatar.asFlow().filter { OAuth.avatar.value != it }.collectLatest {
+                OAuth.avatar.postValue(it)
+            }
+        }
+        lifecycleScope.launchWhenCreated {
+            OAuth.timestamp.asFlow().drop(1).collectLatest {
+                face(binding, model.user.value)
+            }
+        }
+    }
+}
+
+open class UserFragment : Fragment() {
+    protected val model: UserViewModel by sharedViewModels({ arguments?.getString("name") ?: "" }) { UserViewModelFactory(this, arguments) }
+    private val adapter by lazy { ImageAdapter() }
+    private val busy = MutableLiveData(false)
 
     @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            if (!mine) (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar) else {
-                binding.toolbar.setOnMenuItemClickListener { onOptionsItemSelected(it) }
-            }
-            lifecycleScope.launchWhenCreated {
-                OAuth.name.asFlow().collectLatest {
-                    if (mine) {
-                        onPrepareOptionsMenu(binding.toolbar.menu)
-                        if (it.isNotEmpty()) model.name.postValue(it)
-                        return@collectLatest
-                    }
-                    requireActivity().invalidateOptionsMenu()
-                }
-            }
-            lifecycleScope.launchWhenCreated {
-                OAuth.user.asFlow().collectLatest {
-                    if (mine && it != 0) model.user.postValue(it)
-                }
-            }
-            lifecycleScope.launchWhenCreated {
-                model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                    binding.toolbar.title = name.toTitleCase()
-                    if (!mine) requireActivity().title = name.toTitleCase()
-                    if (model.user.value == null) {
-                        runCatching { Service.instance.user(name) }.getOrNull()
-                            ?.firstOrNull()?.id?.let { model.user.postValue(it) }
-                    }
-                }
-            }
-            lifecycleScope.launchWhenCreated {
-                val flowUser = model.user.asFlow().mapNotNull { it }
-                val flowTime = OAuth.timestamp.asFlow().drop(1)
-                flowOf(flowUser, flowTime).flattenMerge(2).collectLatest {
-                    if (model.user.value == null) return@collectLatest
-                    GlideApp.with(binding.toolbar)
-                        .load(OAuth.face(model.user.value!!))
-                        .placeholder(R.mipmap.ic_launcher_foreground)
-                        .override(120, 120)
-                        .circleCrop()
-                        .into(binding.toolbar) { view, drawable ->
-                            view.navigationIcon = drawable
-                        }
-                }
-            }
             binding.toolbar.setNavigationOnClickListener {
                 if (model.avatar.value ?: 0 == 0) return@setNavigationOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)), options.toBundle())
             }
-            OAuth.avatar.observe(viewLifecycleOwner, Observer {
-                if (mine && model.avatar.value != it) {
-                    model.avatar.postValue(it)
-                    lifecycleScope.launchWhenCreated { background(it) }
-                }
-            })
-            model.avatar.observe(viewLifecycleOwner, Observer {
-                if (mine && OAuth.avatar.value != it) OAuth.avatar.postValue(it)
-                if (model.background.value != null) return@Observer
-                lifecycleScope.launchWhenCreated { background(it) }
-            })
+            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
+            adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
+            binding.recycler.adapter = adapter
+            binding.swipe.setOnRefreshListener {
+                lifecycleScope.launchWhenCreated { query() }
+            }
             lifecycleScope.launchWhenCreated {
-                model.background.asFlow().mapNotNull { it }.collectLatest { url ->
+                model.user.asFlow().filter { it == 0 }.collectLatest {
+                    model.data.postValue(emptyArray())
+                    model.avatar.postValue(0)
+                    model.background.postValue("")
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                model.user.asFlow().distinctUntilChanged().collectLatest {
+                    face(binding, it)
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                val user = model.user.asFlow().distinctUntilChanged()
+                val name = model.name.asFlow().distinctUntilChanged()
+                flowOf(user, name).flattenMerge(2).collectLatest {
+                    if (model.user.value == 0) return@collectLatest
+                    if (model.name.value == "") return@collectLatest
+                    if (model.data.value?.any() == true) return@collectLatest
+                    query()
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                model.avatar.asFlow().distinctUntilChanged().collectLatest { id ->
+                    if (id == 0) {
+                        binding.toolbar.navigationIcon = null
+                        return@collectLatest
+                    }
+                    val bg = runCatching { Service.instance.post(1, Q().id(id), 1).firstOrNull()?.sample_url }.getOrNull() ?: return@collectLatest
+                    model.background.postValue(bg)
+                }
+            }
+            lifecycleScope.launchWhenCreated {
+                model.background.asFlow().distinctUntilChanged().collectLatest { url ->
+                    if (url.isEmpty()) {
+                        binding.image1.setImageDrawable(null)
+                        return@collectLatest
+                    }
                     GlideApp.with(binding.image1)
                         .load(url)
                         .transform(AlphaBlackBitmapTransformation())
@@ -151,36 +181,32 @@ class UserFragment : Fragment() {
                         .into(binding.image1)
                 }
             }
-            (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
-            adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
-            binding.recycler.adapter = adapter
             lifecycleScope.launchWhenCreated {
-                val flowUser = model.user.asFlow().mapNotNull { it?.takeIf { it != 0 } }
-                val flowName = OAuth.name.asFlow().mapNotNull { it.takeIf { it.isNotEmpty() } }
-                flowOf(flowUser, flowName).flattenMerge(2).collectLatest {
-                    if (model.data.value?.isEmpty() != false) query()
-                }
+                model.data.asFlow().collectLatest { adapter.submitList(it.toList()) }
             }
-            model.data.observe(viewLifecycleOwner, Observer {
-                adapter.submitList(it.toList())
-            })
-            binding.swipe.setOnRefreshListener {
-                lifecycleScope.launchWhenCreated { query() }
+            lifecycleScope.launchWhenCreated {
+                busy.asFlow().collectLatest { binding.swipe.isRefreshing = it }
             }
-            busy.observe(viewLifecycleOwner, Observer { binding.swipe.isRefreshing = it })
         }.root
 
-    private suspend fun background(id: Int) {
-        runCatching { Service.instance.post(1, Q().id(id), 1) }.getOrNull()
-            ?.firstOrNull()?.sample_url?.let { model.background.postValue(it) }
+    protected fun face(binding: FragmentUserBinding, id: Int?) {
+        if (id == null || id == 0) return
+        GlideApp.with(binding.toolbar)
+            .load(OAuth.face(id))
+            .placeholder(R.mipmap.ic_launcher_foreground)
+            .override(120, 120)
+            .circleCrop()
+            .into(binding.toolbar) { view, drawable ->
+                view.navigationIcon = drawable
+            }
     }
 
     private suspend fun query() {
-        if (!OAuth.available) return
-        val name = model.name.value ?: return
-        val user = model.user.value ?: return
-        busy.postValue(true)
         try {
+            if (!OAuth.available) return
+            val name = model.name.value ?: return
+            val user = model.user.value ?: return
+            busy.postValue(true)
             val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
             val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
             val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()

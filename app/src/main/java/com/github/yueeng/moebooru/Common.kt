@@ -115,10 +115,10 @@ val okCookieCache = SetCookieCache()
 val okPersistor = SharedPrefsCookiePersistor(MainApplication.instance())
 val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        super.saveFromResponse(url, cookies)
-        okPersistor.removeAll(cookies.filter { !it.persistent })
-        cookies.filter { it.matches(moeUrl.toHttpUrl()) }.firstOrNull { it.name == "login" }?.value?.let {
-            OAuth.name.postValue(it)
+        okCookieCache.addAll(cookies)
+        okPersistor.saveAll(cookies)
+        cookies.filter { it.matches(moeUrl.toHttpUrl()) }.firstOrNull { it.name == "user_id" }?.value?.toIntOrNull()?.let {
+            OAuth.user.postValue(it)
         }
     }
 }

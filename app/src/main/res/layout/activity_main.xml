@@ -13,13 +13,13 @@
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/mine"
-        android:name="com.github.yueeng.moebooru.UserFragment"
+        android:name="com.github.yueeng.moebooru.UserMineFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="?android:attr/colorBackground"
         android:tag="user"
-        tools:context=".UserFragment" />
+        tools:context=".UserMineFragment" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/saved"
