@@ -57,7 +57,7 @@ class MainApplication : Application(), Thread.UncaughtExceptionHandler {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        Thread.setDefaultUncaughtExceptionHandler(this)
+        release { Thread.setDefaultUncaughtExceptionHandler(this) }
     }
 
     override fun onCreate() {

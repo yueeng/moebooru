@@ -107,6 +107,10 @@ fun debug(call: () -> Unit) {
     if (BuildConfig.DEBUG) call()
 }
 
+fun release(call: () -> Unit) {
+    if (!BuildConfig.DEBUG) call()
+}
+
 val okCookieCache = SetCookieCache()
 val okPersistor = SharedPrefsCookiePersistor(MainApplication.instance())
 val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
