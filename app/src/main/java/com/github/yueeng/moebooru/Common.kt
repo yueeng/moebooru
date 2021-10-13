@@ -92,6 +92,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import org.kohsuke.github.GitHub
+import org.kohsuke.github.GitHubBuilder
+import org.kohsuke.github.extras.okhttp3.OkHttpConnector
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -970,10 +972,13 @@ val Context.appVersion: Version?
 fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = lifecycleScope.launchWhenCreated {
     val latest = runCatching {
         withContext(Dispatchers.IO) {
-            val github = GitHub.connectAnonymously().getRepository("yueeng/moebooru")
+            val gitHub: GitHub = GitHubBuilder.fromEnvironment()
+                .withConnector(OkHttpConnector(okHttp))
+                .build()
+            val repository = gitHub.getRepository("yueeng/moebooru")
             when (pre) {
-                true -> github.listReleases().firstOrNull()
-                false -> github.latestRelease
+                true -> repository.listReleases().firstOrNull()
+                false -> repository.latestRelease
             }
         }
     }.getOrNull() ?: return@launchWhenCreated

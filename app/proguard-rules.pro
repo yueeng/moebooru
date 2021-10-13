@@ -23,6 +23,8 @@
 -keepclassmembers,allowobfuscation class * {
   @com.google.gson.annotations.SerializedName <fields>;
 }
+-keep,allowshrinking class org.kohsuke.github.GH*{*;}
+
 -dontwarn org.conscrypt.Conscrypt$Version
 -dontwarn org.conscrypt.Conscrypt
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
@@ -34,3 +36,10 @@
 -dontwarn org.openjsse.javax.net.ssl.SSLParameters
 -dontwarn org.openjsse.javax.net.ssl.SSLSocket
 -dontwarn org.openjsse.net.ssl.OpenJSSE
+
+-dontwarn com.infradna.tool.bridge_method_injector.BridgeMethodsAdded
+-dontwarn com.infradna.tool.bridge_method_injector.WithBridgeMethods
+-dontwarn edu.umd.cs.findbugs.annotations.NonNull
+-dontwarn edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+-dontwarn java.beans.ConstructorProperties
+-dontwarn java.beans.Transient
