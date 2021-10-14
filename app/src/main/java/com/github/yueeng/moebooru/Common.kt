@@ -545,9 +545,7 @@ object Save {
                 .setOngoing(true)
         }
 
-        init {
-            setForegroundAsync(ForegroundInfo(id, notification.build()))
-        }
+        override suspend fun getForegroundInfo(): ForegroundInfo = ForegroundInfo(id, notification.build())
 
         @SuppressLint("MissingPermission")
         @OptIn(FlowPreview::class)
