@@ -104,7 +104,7 @@ class CropActivity : AppCompatActivity() {
             .setContentText(content)
             .setAutoCancel(true)
             .setSmallIcon(R.drawable.ic_stat_name)
-            .setContentIntent(PendingIntent.getActivity(this, id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntent.FLAG_ONE_SHOT))
+            .setContentIntent(PendingIntent.getActivity(this, id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntentCompat.FLAG_IMMUTABLE))
         GlideApp.with(this).asBitmap().load(uri)
             .diskCacheStrategy(DiskCacheStrategy.NONE)
             .skipMemoryCache(true)

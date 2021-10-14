@@ -650,7 +650,7 @@ object Save {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                val padding = PendingIntent.getActivity(applicationContext, id, Intent.createChooser(intent, applicationContext.getString(R.string.app_share)), PendingIntent.FLAG_UPDATE_CURRENT)
+                val padding = PendingIntent.getActivity(applicationContext, id, Intent.createChooser(intent, applicationContext.getString(R.string.app_share)), PendingIntentCompat.FLAG_IMMUTABLE)
                 notification.setContentText(fileName)
                     .setProgress(0, 0, false)
                     .setOngoing(false)
@@ -720,7 +720,8 @@ object Save {
                 .putString("url", url)
                 .putInt("option", so.ordinal)
             if (author != null) params.putString("author", author)
-            val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params.build()).build()
+            val request = OneTimeWorkRequestBuilder<SaveWorker>().setInputData(params.build())
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build()
             WorkManager.getInstance(MainApplication.instance()).apply {
                 if (so != SO.SAVE) enqueue(request) else enqueueUniqueWork("save-$id", ExistingWorkPolicy.KEEP, request)
             }
@@ -1022,3 +1023,8 @@ fun AppCompatTextView.setCompoundResourcesDrawables(left: Int? = null, top: Int?
     right?.let { ContextCompat.getDrawable(context, it) }?.apply { setBounds(0, 0, intrinsicWidth, intrinsicHeight) },
     bottom?.let { ContextCompat.getDrawable(context, it) }?.apply { setBounds(0, 0, intrinsicWidth, intrinsicHeight) }
 )
+
+object PendingIntentCompat {
+    val FLAG_MUTABLE get() = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_UPDATE_CURRENT)
+    val FLAG_IMMUTABLE get() = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else PendingIntent.FLAG_UPDATE_CURRENT)
+}
