@@ -912,7 +912,7 @@ object OAuth {
         }
     }
 
-    val available: Boolean get() = !name.value.isNullOrEmpty()
+    val available: Boolean get() = user.value != null && user.value != 0
     val timestamp = MutableLiveData(calendar().time.time / 1000)
     fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?${timestamp.value}" else null
     fun avatar(owner: LifecycleOwner, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
@@ -970,6 +970,7 @@ object OAuth {
                 alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
                 val id = okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "user_id" }?.value?.toIntOrNull() ?: 0
                 if (id != 0) {
+
                     alert.dismiss()
                     call?.invoke()
                 } else {
