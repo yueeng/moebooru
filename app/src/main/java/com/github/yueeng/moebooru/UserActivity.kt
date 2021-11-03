@@ -26,7 +26,7 @@ import okhttp3.Request
 import org.jsoup.Jsoup
 
 
-class UserActivity : MoeActivity(R.layout.activity_main) {
+class UserActivity : MoeActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.run {

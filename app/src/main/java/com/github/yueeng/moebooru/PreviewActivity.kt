@@ -58,7 +58,7 @@ import java.util.*
 import kotlin.math.max
 
 
-class PreviewActivity : MoeActivity(R.layout.activity_main) {
+class PreviewActivity : MoeActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent.action == Intent.ACTION_VIEW) {

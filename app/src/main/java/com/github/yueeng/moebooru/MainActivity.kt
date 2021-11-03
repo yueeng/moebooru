@@ -148,7 +148,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
     override fun query(): Q = adapter.data[binding.pager.currentItem].second
 }
 
-class ListActivity : MoeActivity(R.layout.activity_main) {
+class ListActivity : MoeActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent.action == Intent.ACTION_VIEW) {

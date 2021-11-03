@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.net.URL
 
-class SimilarActivity : MoeActivity(R.layout.activity_main) {
+class SimilarActivity : MoeActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         intent.putExtra("action", intent.action)
