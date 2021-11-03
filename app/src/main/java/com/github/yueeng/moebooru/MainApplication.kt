@@ -106,8 +106,8 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
         findViewById<TextView>(R.id.text1).text = span
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menu?.add(Menu.NONE, 0x1000, Menu.NONE, "COPY")?.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add(Menu.NONE, 0x1000, Menu.NONE, "COPY").setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM)
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -238,7 +238,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.app, menu)
         return super.onCreateOptionsMenu(menu)
     }
@@ -277,7 +277,7 @@ class MoePermissionFragment : Fragment() {
 
     fun request(vararg permissions: String, call: (Map<String, Boolean>) -> Unit) {
         callback = call
-        requestPermissions.launch(permissions)
+        requestPermissions.launch(arrayOf(*permissions))
     }
 
 }

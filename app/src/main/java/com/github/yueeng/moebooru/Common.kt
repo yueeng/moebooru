@@ -830,17 +830,17 @@ data class CropImageResult(
 )
 
 class CropImage : ActivityResultContract<UCrop, CropImageResult?>() {
-    override fun createIntent(context: Context, input: UCrop?): Intent = input!!.getIntent(context)
+    override fun createIntent(context: Context, input: UCrop): Intent = input.getIntent(context)
 
-    override fun parseResult(resultCode: Int, data: Intent?): CropImageResult? = if (resultCode == Activity.RESULT_OK) {
-        val uri = UCrop.getOutput(data!!)
-        val ar = data.getFloatExtra(UCrop.EXTRA_OUTPUT_CROP_ASPECT_RATIO, 0F)
-        val w = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_WIDTH, 0)
-        val h = data.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_HEIGHT, 0)
-        val x = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_X, 0)
-        val y = data.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_Y, 0)
-        val ow = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_WIDTH, 0)
-        val oh = data.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_HEIGHT, 0)
+    override fun parseResult(resultCode: Int, intent: Intent?): CropImageResult? = if (resultCode == Activity.RESULT_OK) {
+        val uri = UCrop.getOutput(intent!!)
+        val ar = intent.getFloatExtra(UCrop.EXTRA_OUTPUT_CROP_ASPECT_RATIO, 0F)
+        val w = intent.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_WIDTH, 0)
+        val h = intent.getIntExtra(UCrop.EXTRA_OUTPUT_IMAGE_HEIGHT, 0)
+        val x = intent.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_X, 0)
+        val y = intent.getIntExtra(UCrop.EXTRA_OUTPUT_OFFSET_Y, 0)
+        val ow = intent.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_WIDTH, 0)
+        val oh = intent.getIntExtra(UCrop.EXTRA_OUTPUT_ORIGIN_HEIGHT, 0)
         CropImageResult(uri!!, ar, w, h, x, y, ow, oh)
     } else null
 

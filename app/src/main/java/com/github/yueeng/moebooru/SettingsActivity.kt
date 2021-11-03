@@ -26,7 +26,7 @@ class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
         supportFragmentManager.beginTransaction().replace(R.id.preferences, fragment).commit()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean = false
+    override fun onCreateOptionsMenu(menu: Menu): Boolean = false
 }
 
 class SettingsFragment : PreferenceFragmentCompat() {

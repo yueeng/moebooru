@@ -43,8 +43,8 @@ class QueryActivity : MoeActivity(R.layout.activity_main) {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean = super.onCreateOptionsMenu(menu).also {
-        menu?.findItem(R.id.search)?.isVisible = false
+    override fun onCreateOptionsMenu(menu: Menu): Boolean = super.onCreateOptionsMenu(menu).also {
+        menu.findItem(R.id.search)?.isVisible = false
     }
 }
 
