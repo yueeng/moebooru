@@ -17,8 +17,8 @@ android {
         applicationId "com.github.yueeng.moebooru"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 5
+        versionName "1.0.5"
         resConfigs "zh"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
