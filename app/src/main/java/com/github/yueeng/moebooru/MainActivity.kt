@@ -261,7 +261,7 @@ class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, p
         val parent = raw.filter { it.parent_id != 0 }.filter { data.all { i -> i.id != it.parent_id } }.map { Q().id(it.parent_id) }
         val queries = (children + parent).subtract(q)
         val subtract = coroutineScope {
-            queries.map { async { Service.instance.post(page = 1, it, limit = 100) } }.awaitAll().flatten().subtract(data).toList()
+            queries.map { async { Service.instance.post(page = 1, it, limit = 100) } }.awaitAll().flatten().subtract(data.toSet()).toList()
         }.takeIf { it.any() } ?: return data
         return children(q + queries, subtract, data + subtract)
     }
