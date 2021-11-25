@@ -11,10 +11,10 @@ on:
   workflow_dispatch:
 jobs:
   build:
+    runs-on: ubuntu-latest
     concurrency: 
       group: ${{ github.head_ref }}
       cancel-in-progress: true
-    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
