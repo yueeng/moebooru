@@ -93,7 +93,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import okio.*
 import org.kohsuke.github.GitHub
 import org.kohsuke.github.GitHubBuilder
-import org.kohsuke.github.extras.okhttp3.OkHttpConnector
+import org.kohsuke.github.extras.okhttp3.OkHttpGitHubConnector
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -972,7 +972,7 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
     val latest = runCatching {
         withContext(Dispatchers.IO) {
             val gitHub: GitHub = GitHubBuilder.fromEnvironment()
-                .withConnector(OkHttpConnector(okHttp))
+                .withConnector(OkHttpGitHubConnector(okHttp))
                 .build()
             val repository = gitHub.getRepository("yueeng/moebooru")
             when (pre) {
