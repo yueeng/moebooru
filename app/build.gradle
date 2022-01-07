@@ -129,7 +129,7 @@ dependencies {
     kapt "com.github.bumptech.glide:compiler:$glide_version"
     implementation 'com.github.franmontiel:PersistentCookieJar:1.0.1'
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
-    implementation 'com.alexvasilkov:gesture-views:2.8.2'
+    implementation 'com.alexvasilkov:gesture-views:2.8.3'
     implementation 'org.jsoup:jsoup:1.14.3'
     implementation 'com.github.yueeng:uCrop:master-non-native-SNAPSHOT'
     implementation 'org.kohsuke:github-api:1.301'
