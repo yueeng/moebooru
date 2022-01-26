@@ -71,13 +71,13 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
                 }
             })
             var last = -1
-            model.index.observe(viewLifecycleOwner, { position ->
+            model.index.observe(viewLifecycleOwner) { position ->
                 binding.pager.currentItem = position
                 if (last != position && last != -1) tabAdapter.notifyItemChanged(last, "check")
                 tabAdapter.notifyItemChanged(position, "check")
                 last = position
                 binding.tab.scrollToPosition(position)
-            })
+            }
             binding.button1.setOnClickListener {
                 val constraints = CalendarConstraints.Builder()
                     .setStart(moeCreateTime.timeInMillis)

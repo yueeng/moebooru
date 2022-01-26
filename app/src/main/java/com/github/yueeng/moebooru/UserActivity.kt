@@ -209,7 +209,7 @@ open class UserFragment : Fragment() {
             busy.postValue(true)
             val tags = listOf("vote:3:$name order:vote" to listOf("Favorite Artists", "Favorite Copyrights", "Favorite Characters", "Favorite Styles", "Favorite Circles"), "user:$name" to listOf("Uploaded Tags", "Uploaded Artists", "Uploaded Copyrights", "Uploaded Characters", "Uploaded Styles", "Uploaded Circles"))
             val images = listOf("Favorites" to "vote:3:$name order:vote", "Uploads" to "user:$name")
-            val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).map { it.first to (mutableListOf<Parcelable>() to it.second) }.toMap()
+            val data = (listOf("Common" to null) + tags.flatMap { it.second }.map { it to null } + images).associate { it.first to (mutableListOf<Parcelable>() to it.second) }
             coroutineScope {
                 launch {
                     runCatching {

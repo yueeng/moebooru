@@ -203,8 +203,7 @@ data class ItemVoteBy(
     val v
         get() = listOf(3 to v3, 2 to v2, 1 to v1)
             .filter { it.second?.isNotEmpty() == true }
-            .map { it.first to it.second!! }
-            .toMap()
+            .associate { it.first to it.second!! }
 }
 
 @Parcelize
@@ -694,14 +693,14 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
         }
     }
 
-    constructor(source: Parcel) : this((1..source.readInt()).map { source.readString()!! to source.readValue(Q::class.java.classLoader)!! }.toMap().toMutableMap())
+    constructor(source: Parcel) : this((1..source.readInt()).associate { source.readString()!! to source.readValue(Q::class.java.classLoader)!! }.toMutableMap())
 
     constructor(source: Q?) : this(source?.map)
     constructor(source: String?) : this(source?.takeIf { it.isNotEmpty() }?.split(' ', '+')
         ?.map { it.split(':', limit = 2) }
         ?.let { list -> listOf(listOf(list.filter { it.size == 1 }.flatten().joinToString(" "))) + (list.filter { it.size > 1 }) }
         ?.filter { it.any { i -> i.isNotEmpty() } }
-        ?.map { list ->
+        ?.associate { list ->
             when (list.size) {
                 1 -> "keyword" to list.first()
                 2 -> when (list.first()) {
@@ -724,7 +723,6 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                 else -> throw  IllegalArgumentException()
             }
         }
-        ?.toMap<String, Any>()
     )
 
     fun set(source: Q, reset: Boolean = false) = apply {
@@ -829,8 +827,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable {
                     .map { it.split('`').filter { s -> s.isNotEmpty() } }
                     .filter { it.size >= 2 }
                     .filter { it[0].isDigitsOnly() }
-                    .map { it[1] to it[0].toInt() }
-                    .toMap()
+                    .associate { it[1] to it[0].toInt() }
                 _summary = summary
                 _summaryMap = summaryMap
                 WorkManager.getInstance(this).enqueue(OneTimeWorkRequestBuilder<UpdateWorker>().build())
