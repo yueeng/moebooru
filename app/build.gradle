@@ -19,7 +19,7 @@ android {
         targetSdkVersion 31
         versionCode 5
         versionName "1.0.5"
-        resConfigs "zh"
+        resConfigs 'zh'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         kapt.arguments {
@@ -80,7 +80,9 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     packagingOptions {
-        exclude "DebugProbesKt.bin"
+        resources {
+            excludes += ['DebugProbesKt.bin']
+        }
     }
     kotlinOptions {
         jvmTarget = "1.8"
