@@ -96,7 +96,7 @@ dependencies {
     def okhttp_version = '4.9.3'
     def retrofit_version = '2.9.0'
     def room_version = '2.4.1'
-    def lifecycle_version = '2.4.0'
+    def lifecycle_version = '2.4.1'
     def kotlinx_coroutines_version = '1.6.0-native-mt'
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_coroutines_version"
