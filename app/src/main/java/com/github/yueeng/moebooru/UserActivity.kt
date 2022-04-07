@@ -47,7 +47,7 @@ class UserViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
 
 class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = UserViewModel(handle, args) as T
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = UserViewModel(handle, args) as T
 }
 
 class UserOtherFragment : UserFragment() {
@@ -370,7 +370,7 @@ class StarViewModel(handle: SavedStateHandle) : ViewModel() {
 
 class StarViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = StarViewModel(handle) as T
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = StarViewModel(handle) as T
 }
 
 class StarActivity : MoeActivity(R.layout.activity_container) {

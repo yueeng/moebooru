@@ -278,7 +278,7 @@ fun <TranscodeType> GlideRequest<TranscodeType>.onComplete(call: (model: Any?, t
         call(model, target, isFirstResource, true)
 })
 
-class SimpleCustomTarget<T>(private val call: (T) -> Unit) : CustomTarget<T>() {
+class SimpleCustomTarget<T : Any>(private val call: (T) -> Unit) : CustomTarget<T>() {
     override fun onResourceReady(resource: T, transition: Transition<in T>?) = call(resource)
     override fun onLoadCleared(placeholder: Drawable?) = Unit
 }

@@ -10,13 +10,13 @@ android {
     def config = new File("local.properties").withInputStream { stream ->
         new Properties().tap { load(stream) }
     }
-    compileSdkVersion 31
-    buildToolsVersion '31.0.0'
+    compileSdkVersion 32
+    buildToolsVersion '32.0.0'
 
     defaultConfig {
         applicationId "com.github.yueeng.moebooru"
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 32
         versionCode 5
         versionName "1.0.5"
         resConfigs 'zh'
@@ -86,7 +86,7 @@ android {
     }
     kotlinOptions {
         jvmTarget = "1.8"
-        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+        freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
     }
 //    ndkVersion '23.0.7599858'
 }
@@ -97,7 +97,7 @@ dependencies {
     def retrofit_version = '2.9.0'
     def room_version = '2.4.2'
     def lifecycle_version = '2.4.1'
-    def kotlinx_coroutines_version = '1.6.0-native-mt'
+    def kotlinx_coroutines_version = '1.6.1-native-mt'
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"
@@ -109,7 +109,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
     implementation "androidx.lifecycle:lifecycle-process:$lifecycle_version"
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation 'androidx.paging:paging-runtime-ktx:3.1.0'
+    implementation 'androidx.paging:paging-runtime-ktx:3.1.1'
     implementation 'androidx.activity:activity-ktx:1.4.0'
     implementation 'androidx.fragment:fragment-ktx:1.4.1'
     implementation 'androidx.work:work-runtime-ktx:2.7.1'

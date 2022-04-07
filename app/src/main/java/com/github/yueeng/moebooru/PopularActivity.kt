@@ -37,7 +37,7 @@ class PopularViewModel(handle: SavedStateHandle) : ViewModel() {
 
 class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PopularViewModel(handle) as T
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PopularViewModel(handle) as T
 }
 
 class PopularFragment : Fragment(), SavedFragment.Queryable {

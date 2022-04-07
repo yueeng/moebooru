@@ -64,7 +64,7 @@ class SimilarViewModel(@Suppress("UNUSED_PARAMETER") handle: SavedStateHandle, a
 
 class SimilarViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = SimilarViewModel(handle, defaultArgs) as T
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = SimilarViewModel(handle, defaultArgs) as T
 }
 
 class SimilarFragment : Fragment() {

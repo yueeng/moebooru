@@ -56,7 +56,7 @@ class QueryViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
 
 class QueryViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bundle?) : AbstractSavedStateViewModelFactory(owner, args) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel?> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = QueryViewModel(handle, args) as T
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = QueryViewModel(handle, args) as T
 }
 
 class QueryFragment : Fragment() {
