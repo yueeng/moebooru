@@ -96,7 +96,7 @@ dependencies {
     def okhttp_version = '4.10.0'
     def retrofit_version = '2.9.0'
     def room_version = '2.4.2'
-    def lifecycle_version = '2.4.1'
+    def lifecycle_version = '2.5.0'
     def kotlinx_coroutines_version = '1.6.3-native-mt'
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_coroutines_version"
@@ -110,8 +110,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-process:$lifecycle_version"
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.paging:paging-runtime-ktx:3.1.1'
-    implementation 'androidx.activity:activity-ktx:1.4.0'
-    implementation 'androidx.fragment:fragment-ktx:1.4.1'
+    implementation 'androidx.activity:activity-ktx:1.5.0'
+    implementation 'androidx.fragment:fragment-ktx:1.5.0'
     implementation 'androidx.work:work-runtime-ktx:2.7.1'
     implementation "androidx.room:room-runtime:$room_version"
     implementation 'androidx.palette:palette-ktx:1.0.0'
