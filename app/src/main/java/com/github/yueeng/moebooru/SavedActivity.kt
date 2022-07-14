@@ -88,7 +88,7 @@ class SavedFragment : Fragment() {
                 override fun getMovementFlags(view: RecyclerView, holder: RecyclerView.ViewHolder): Int {
                     val tag = (holder as? SavedHolder)?.tag
                     val move = if (viewModel.edit.value == true && tag?.pin == true) ItemTouchHelper.UP or ItemTouchHelper.DOWN or ItemTouchHelper.START or ItemTouchHelper.END else 0
-                    val swipe = if (viewModel.edit.value == true && tag?.id ?: 0 != 0L) ItemTouchHelper.START or ItemTouchHelper.END else 0
+                    val swipe = if (viewModel.edit.value == true && (tag?.id ?: 0) != 0L) ItemTouchHelper.START or ItemTouchHelper.END else 0
                     return makeMovementFlags(move, swipe)
                 }
 

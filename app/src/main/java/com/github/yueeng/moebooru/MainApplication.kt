@@ -37,7 +37,6 @@ import androidx.lifecycle.asFlow
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.transition.platform.*
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import java.io.PrintWriter
@@ -227,7 +226,6 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
 //        window.allowReturnTransitionOverlap = false
     }
 
-    @OptIn(FlowPreview::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         ensureTransform()
         super.onCreate(savedInstanceState)

@@ -4,9 +4,11 @@ import android.os.Bundle
 import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.ListAdapter
@@ -40,7 +42,7 @@ class PopularViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundl
     override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PopularViewModel(handle) as T
 }
 
-class PopularFragment : Fragment(), SavedFragment.Queryable {
+class PopularFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
     private val model: PopularViewModel by viewModels { PopularViewModelFactory(this, arguments) }
     private val type by lazy { arguments?.getString("type") ?: "day" }
     private val key by lazy { arguments?.getString("key")?.takeIf { it.isNotEmpty() } }
@@ -158,21 +160,20 @@ class PopularFragment : Fragment(), SavedFragment.Queryable {
         override fun onBindViewHolder(holder: TabHolder, position: Int) = Unit
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main, menu)
-        super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    override fun onMenuItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.column -> true.also {
             MoeSettings.column()
         }
-        else -> super.onOptionsItemSelected(item)
+        else -> false
     }
 
     override fun query(): Q = adapter.getItem(binding.pager.currentItem)

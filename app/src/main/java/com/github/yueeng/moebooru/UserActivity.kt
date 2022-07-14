@@ -126,7 +126,7 @@ open class UserFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
             binding.toolbar.setNavigationOnClickListener {
-                if (model.avatar.value ?: 0 == 0) return@setNavigationOnClickListener
+                if ((model.avatar.value ?: 0) == 0) return@setNavigationOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)), options.toBundle())
             }

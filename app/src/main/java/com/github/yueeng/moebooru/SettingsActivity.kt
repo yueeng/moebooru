@@ -12,7 +12,6 @@ import androidx.core.content.edit
 import androidx.lifecycle.*
 import androidx.preference.*
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -66,7 +65,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 object MoeSettings {
     private val context: Context get() = MainApplication.instance()
     private val preferences by lazy { PreferenceManager.getDefaultSharedPreferences(context) }

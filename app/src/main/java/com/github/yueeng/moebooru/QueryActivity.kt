@@ -25,7 +25,6 @@ import com.github.yueeng.moebooru.databinding.*
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.mapNotNull
@@ -84,7 +83,7 @@ class QueryFragment : Fragment() {
                         startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", model.query.value), options?.toBundle())
                     }
                     R.id.save -> true.also { save() }
-                    else -> super.onOptionsItemSelected(item)
+                    else -> false
                 }
             }
             binding.recycler.adapter = adapter.apply { submitList(data.toList()) }
@@ -107,7 +106,6 @@ class QueryFragment : Fragment() {
             }
         }.root
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private fun save() = lifecycleScope.launchWhenCreated {
         val tag = model.query.value?.toString() ?: return@launchWhenCreated
         val view = QuerySavedBinding.inflate(layoutInflater)
@@ -115,7 +113,7 @@ class QueryFragment : Fragment() {
         view.input1.hint = tag.takeIf { it.isNotEmpty() } ?: "Newest"
         view.edit1.setText(saved?.name)
         view.switch1.isChecked = saved?.pin ?: false
-        val ok = suspendCancellableCoroutine<Boolean> { continuation ->
+        val ok = suspendCancellableCoroutine { continuation ->
             val alert = MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.saved_title)
                 .setView(view.root)
@@ -238,7 +236,7 @@ class QueryFragment : Fragment() {
 
     private inline fun <reified T : Number> int(key: String) {
         val view = QuerySheetIntBinding.inflate(layoutInflater)
-        view.chipGroup.setOnCheckedChangeListener { _, _ ->
+        view.chipGroup.setOnCheckedStateChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
         }
@@ -255,7 +253,7 @@ class QueryFragment : Fragment() {
             view.edit2.setText(default.v2string)
             view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
         } else {
-            view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
+            view.chipGroup.children.mapNotNull { it as? Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(key)
@@ -307,7 +305,7 @@ class QueryFragment : Fragment() {
 
     private fun date(key: String) {
         val view = QuerySheetDateBinding.inflate(layoutInflater)
-        view.chipGroup.setOnCheckedChangeListener { _, _ ->
+        view.chipGroup.setOnCheckedStateChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
             view.pick2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
@@ -341,7 +339,7 @@ class QueryFragment : Fragment() {
             view.edit2.setText(default.v2string)
             view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
         } else {
-            view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
+            view.chipGroup.children.mapNotNull { it as? Chip }.firstOrNull()?.isChecked = true
         }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(key)
@@ -381,7 +379,7 @@ class QueryFragment : Fragment() {
 
     private fun vote(key: String) {
         val view = QuerySheetVoteBinding.inflate(layoutInflater)
-        view.chipGroup.setOnCheckedChangeListener { _, _ ->
+        view.chipGroup.setOnCheckedStateChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.chip2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
         }
@@ -393,7 +391,7 @@ class QueryFragment : Fragment() {
             view.chip1.findViewWithTag<Chip>(default.v1string)?.isChecked = true
             view.chip2.findViewWithTag<Chip>(default.v2string)?.isChecked = true
         } else {
-            view.chipGroup.children.mapNotNull { it as Chip }.firstOrNull()?.isChecked = true
+            view.chipGroup.children.mapNotNull { it as? Chip }.firstOrNull()?.isChecked = true
         }
         view.edit1.addTextChangedListener {
             view.input1.isErrorEnabled = it.isNullOrEmpty()

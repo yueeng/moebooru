@@ -226,21 +226,20 @@ object ProgressBehavior {
         data.postValue(progress.toInt())
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun on(url: String) = synchronized(map) {
         sum[url] = (sum[url] ?: 0) + 1
         map.getOrPut(url) { MutableLiveData() }
     }.asFlow().onCompletion {
         synchronized(map) {
             sum[url] = sum[url]!! - 1
-            if (sum[url] ?: 0 != 0) return@synchronized
+            if ((sum[url] ?: 0) != 0) return@synchronized
             sum.remove(url)
             map.remove(url)
 //            Log.i("PBMAPS", "${map.size}")
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    @OptIn(FlowPreview::class)
     fun progress(lifecycleOwner: LifecycleOwner, progressBar: ProgressBar) = MutableLiveData<String>().apply {
         lifecycleOwner.lifecycleScope.launchWhenCreated {
             asFlow().collectLatest { image ->
@@ -309,7 +308,7 @@ fun ImageView.glideUrl(url: String, placeholder: Int? = null): GlideRequest<Draw
         }
 }
 
-val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as Chip }.firstOrNull { it.isChecked }
+val ChipGroup.checkedChip: Chip? get() = this.children.mapNotNull { it as? Chip }.firstOrNull { it.isChecked }
 var <V : View>BottomSheetBehavior<V>.isOpen: Boolean
     get() = state == BottomSheetBehavior.STATE_EXPANDED
     set(value) {
@@ -473,12 +472,12 @@ var DatePicker.date
 inline fun <reified VM : ViewModel> Fragment.sharedViewModels(
     noinline key: () -> String,
     noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
-) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), this).viewModelStore }, factoryProducer)
+) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), this).viewModelStore }, factoryProducer = factoryProducer)
 
 inline fun <reified VM : ViewModel> Fragment.sharedActivityViewModels(
     noinline key: () -> String,
     noinline factoryProducer: (() -> ViewModelProvider.Factory)? = null
-) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), requireActivity()).viewModelStore }, factoryProducer ?: { requireActivity().defaultViewModelProviderFactory })
+) = createViewModelLazy(VM::class, { SharedViewModelStoreOwner(key(), requireActivity()).viewModelStore }, factoryProducer = factoryProducer ?: { requireActivity().defaultViewModelProviderFactory })
 
 class SharedViewModelStoreOwner(private val key: String, life: LifecycleOwner) : ViewModelStoreOwner, LifecycleEventObserver {
     companion object {
@@ -654,7 +653,7 @@ object Save {
                     .setOngoing(false)
                     .setAutoCancel(true)
                     .setContentIntent(padding)
-                suspendCancellableCoroutine<Unit> { continuation ->
+                suspendCancellableCoroutine { continuation ->
                     GlideApp.with(MainApplication.instance()).asBitmap().load(target).override(500, 500)
                         .into(object : CustomTarget<Bitmap>() {
                             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {

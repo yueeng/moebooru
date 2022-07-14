@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.os.bundleOf
+import androidx.core.view.MenuProvider
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -52,7 +53,7 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
     }
 }
 
-class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
+class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuProvider {
     private val adapter by lazy { PagerAdapter(this) }
     private lateinit var binding: FragmentMainBinding
 
@@ -127,21 +128,20 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
+    override fun onViewCreated(view: View, state: Bundle?) {
+        super.onViewCreated(view, state)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main, menu)
-        super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    override fun onMenuItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.column -> true.also {
             MoeSettings.column()
         }
-        else -> super.onOptionsItemSelected(item)
+        else -> false
     }
 
     override fun query(): Q = adapter.data[binding.pager.currentItem].second
@@ -163,7 +163,7 @@ class ListActivity : MoeActivity(R.layout.activity_container) {
     }
 }
 
-class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
+class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuProvider {
     private val query by lazy { arguments?.getParcelable<Q>("query") }
     private val artist = MutableLiveData<ItemArtist?>()
     private lateinit var binding: FragmentListBinding
@@ -210,7 +210,6 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
         val name = arguments?.getString("artist") ?: return
         lifecycleScope.launchWhenCreated {
             artist.postValue(Service.instance.artist(name).firstOrNull())
@@ -222,19 +221,22 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
         }
     }
 
+    override fun onViewCreated(view: View, state: Bundle?) {
+        super.onViewCreated(view, state)
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
     override fun onBackPressed(): Boolean = if (binding.menu.isVisible) true.also { binding.fab.performClick() } else false
 
-    override fun onPrepareOptionsMenu(menu: Menu) {
+    override fun onPrepareMenu(menu: Menu) {
         menu.findItem(R.id.artist)?.isVisible = artist.value?.urls?.any() == true
-        super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main, menu)
-        super.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    override fun onMenuItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.artist -> true.also {
             val value = artist.value ?: return@also
             MaterialAlertDialogBuilder(requireContext())
@@ -248,7 +250,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed {
         R.id.column -> true.also {
             MoeSettings.column()
         }
-        else -> super.onOptionsItemSelected(item)
+        else -> false
     }
 
     override fun query(): Q = query ?: Q()
@@ -288,7 +290,7 @@ class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel
     val index = handle.getLiveData<Int>("index")
     val min = handle.getLiveData("min", 1)
     val max = handle.getLiveData<Int>("max")
-    val query = handle.getLiveData<Q>("query", defaultArgs?.getParcelable("query"))
+    val query = handle.getLiveData<Q?>("query", defaultArgs?.getParcelable("query"))
     val posts = Pager(PagingConfig(pageSize, initialLoadSize = pageSize * 2)) {
         max.postValue(0)
         ImageDataSource(query.value, min.value ?: 1) {
