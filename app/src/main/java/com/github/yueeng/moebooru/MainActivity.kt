@@ -128,8 +128,8 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
         }
     }
 
-    override fun onViewCreated(view: View, state: Bundle?) {
-        super.onViewCreated(view, state)
+    override fun onStart() {
+        super.onStart()
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
@@ -221,8 +221,8 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
         }
     }
 
-    override fun onViewCreated(view: View, state: Bundle?) {
-        super.onViewCreated(view, state)
+    override fun onStart() {
+        super.onStart()
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 

@@ -160,8 +160,8 @@ class PopularFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
         override fun onBindViewHolder(holder: TabHolder, position: Int) = Unit
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onStart() {
+        super.onStart()
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
