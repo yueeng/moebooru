@@ -75,11 +75,16 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
                     R.id.week -> "week"
                     R.id.month -> "month"
                     R.id.year -> "year"
+                    R.id.all -> "all"
                     else -> return@setNavigationItemSelectedListener false
                 }
                 val view = binding.menu.findViewById<View>(it.itemId)
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), view, "shared_element_container")
-                startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag), options.toBundle())
+                if (tag == "all") {
+                    startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q().order(Q.Order.score)), options.toBundle())
+                } else {
+                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag), options.toBundle())
+                }
                 true
             }
             binding.scram.setOnClickListener { binding.fab.performClick() }
@@ -183,12 +188,16 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
                     R.id.week -> "week"
                     R.id.month -> "month"
                     R.id.year -> "year"
+                    R.id.all -> "all"
                     else -> return@setNavigationItemSelectedListener false
                 }
                 val view = binding.menu.findViewById<View>(it.itemId)
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), view, "shared_element_container")
-                val intent = Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag)
-                query?.keyword?.takeIf { key -> key.isNotEmpty() }?.let { key -> intent.putExtra("key", key) }
+                val intent = if (tag == "all") {
+                    Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(query?.keyword).order(Q.Order.score))
+                } else {
+                    Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag).putExtra("key", query?.keyword)
+                }
                 startActivity(intent, options.toBundle())
                 true
             }

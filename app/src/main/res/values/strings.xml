@@ -34,6 +34,7 @@
     <string name="popular_by_month">Popular by month</string>
     <string name="popular_by_week">Popular by week</string>
     <string name="popular_by_year">Popular by year</string>
+    <string name="popular_by_all">Popular of all</string>
     <string name="popular_by_day_for">Popular %1$s by day</string>
     <string name="popular_by_month_for">Popular %1$s by month</string>
     <string name="popular_by_week_for">Popular %1$s by week</string>

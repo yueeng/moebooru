@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-
     <item
         android:id="@+id/day"
         android:icon="@drawable/ic_day"
@@ -17,4 +16,8 @@
         android:id="@+id/year"
         android:icon="@drawable/ic_year"
         android:title="@string/popular_by_year" />
+    <item
+        android:id="@+id/all"
+        android:icon="@drawable/ic_all"
+        android:title="@string/popular_by_all" />
 </menu>
