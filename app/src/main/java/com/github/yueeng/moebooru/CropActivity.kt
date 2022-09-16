@@ -32,7 +32,7 @@ class CropActivity : AppCompatActivity() {
     private val op: Int by lazy { intent.getIntExtra("op", 0) }
     private val id: Int by lazy { intent.getIntExtra("id", 0) }
     private val name: String by lazy { intent.getStringExtra("name") ?: getString(R.string.app_name) }
-    private val source: Uri by lazy { intent.getParcelableExtra("source")!! }
+    private val source: Uri by lazy { intent.getParcelableExtraCompat("source")!! }
     private val cropShare = registerForActivityResult(CropImage()) { result ->
         try {
             if (result == null) return@registerForActivityResult

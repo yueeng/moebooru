@@ -53,7 +53,7 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
     }
 }
 
-class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuProvider {
+class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
     private val adapter by lazy { PagerAdapter(this) }
     private lateinit var binding: FragmentMainBinding
 
@@ -101,9 +101,14 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
                 binding.fab.isVisible = !visible
                 binding.menu.isVisible = visible
             }
+            requireActivity().addOnBackPressedCallback(viewLifecycleOwner) {
+                if (binding.menu.isVisible) {
+                    binding.fab.performClick()
+                    return@addOnBackPressedCallback true
+                }
+                false
+            }
         }.root
-
-    override fun onBackPressed(): Boolean = if (binding.menu.isVisible) true.also { binding.fab.performClick() } else false
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         private val differ = AsyncListDiffer<Pair<String, Q>>(this, diffCallback { old, new -> old == new }).apply {
@@ -122,12 +127,10 @@ class MainFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
                     if (it.refresh !is LoadState.Error) return@collectLatest
                     if (adapter.itemCount != 0) return@collectLatest
                     if (MoeSettings.host.value == true) return@collectLatest
-                    requireView().snack(R.string.settings_host_ip_on, Snackbar.LENGTH_LONG)
-                        .setAction(R.string.app_ok) {
-                            MoeSettings.host.setValueToPreferences(true)
-                            adapter.refresh()
-                        }
-                        .show()
+                    requireView().snack(R.string.settings_host_ip_on, Snackbar.LENGTH_LONG).setAction(R.string.app_ok) {
+                        MoeSettings.host.setValueToPreferences(true)
+                        adapter.refresh()
+                    }.show()
                 }
             }
         }
@@ -168,8 +171,8 @@ class ListActivity : MoeActivity(R.layout.activity_container) {
     }
 }
 
-class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuProvider {
-    private val query by lazy { arguments?.getParcelable<Q>("query") }
+class ListFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
+    private val query by lazy { arguments?.getParcelableCompat<Q>("query") }
     private val artist = MutableLiveData<ItemArtist?>()
     private lateinit var binding: FragmentListBinding
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -215,6 +218,13 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
                 binding.fab.isVisible = !visible
                 binding.menu.isVisible = visible
             }
+            requireActivity().addOnBackPressedCallback(viewLifecycleOwner) {
+                if (binding.menu.isVisible) {
+                    binding.fab.performClick()
+                    return@addOnBackPressedCallback true
+                }
+                false
+            }
         }.root
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -234,8 +244,6 @@ class ListFragment : Fragment(), SavedFragment.Queryable, IOnBackPressed, MenuPr
         super.onStart()
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
-
-    override fun onBackPressed(): Boolean = if (binding.menu.isVisible) true.also { binding.fab.performClick() } else false
 
     override fun onPrepareMenu(menu: Menu) {
         menu.findItem(R.id.artist)?.isVisible = artist.value?.urls?.any() == true
@@ -299,7 +307,7 @@ class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel
     val index = handle.getLiveData<Int>("index")
     val min = handle.getLiveData("min", 1)
     val max = handle.getLiveData<Int>("max")
-    val query = handle.getLiveData<Q?>("query", defaultArgs?.getParcelable("query"))
+    val query = handle.getLiveData<Q?>("query", defaultArgs?.getParcelableCompat("query"))
     val posts = Pager(PagingConfig(pageSize, initialLoadSize = pageSize * 2)) {
         max.postValue(0)
         ImageDataSource(query.value, min.value ?: 1) {
@@ -315,7 +323,7 @@ class ImageViewModelFactory(owner: SavedStateRegistryOwner, private val defaultA
 }
 
 class ImageFragment : Fragment() {
-    private val query by lazy { arguments?.getParcelable("query") ?: Q() }
+    private val query by lazy { arguments?.getParcelableCompat("query") ?: Q() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
     private val offset = MutableLiveData<Int>()
     private val sum = MutableLiveData<Int>()
@@ -405,8 +413,7 @@ class ImageFragment : Fragment() {
                                 binding.recycler.scrollToPosition((it - model.min.value!!) * ImageViewModel.pageSize)
                             }
                         }
-                    }
-                    .create().show()
+                    }.create().show()
             }
         }.root
 
@@ -414,7 +421,7 @@ class ImageFragment : Fragment() {
         init {
             binding.text1.backgroundTintList = ColorStateList.valueOf(randomColor(0x80))
             binding.root.setOnClickListener {
-                val query = binding.root.findFragment<Fragment>().arguments?.getParcelable<Q>("query") ?: return@setOnClickListener
+                val query = binding.root.findFragment<Fragment>().arguments?.getParcelableCompat<Q>("query") ?: return@setOnClickListener
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
                 requireActivity().startActivity(
                     Intent(context, PreviewActivity::class.java).putExtra("query", query).putExtra("index", bindingAdapterPosition),

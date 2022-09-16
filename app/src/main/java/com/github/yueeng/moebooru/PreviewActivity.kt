@@ -74,11 +74,6 @@ class PreviewActivity : MoeActivity(R.layout.activity_container) {
             beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
-
-    override fun onBackPressed() {
-        if ((supportFragmentManager.findFragmentById(R.id.container) as? PreviewFragment)?.onBackPressed() == true) return
-        super.onBackPressed()
-    }
 }
 
 class PreviewViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
@@ -92,7 +87,7 @@ class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaul
 
 class PreviewFragment : Fragment(), SavedFragment.Queryable {
     private val previewModel: PreviewViewModel by viewModels { PreviewViewModelFactory(this, arguments) }
-    private val query by lazy { arguments?.getParcelable("query") ?: Q() }
+    private val query by lazy { arguments?.getParcelableCompat("query") ?: Q() }
     private val binding by lazy { FragmentPreviewBinding.bind(requireView()) }
     private val adapter by lazy { ImageAdapter() }
     private val tagAdapter by lazy { TagAdapter() }
@@ -276,14 +271,14 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
                 startActivity(Intent(requireContext(), UserActivity::class.java).putExtras(bundleOf("user" to model.creator_id, "name" to model.author)), options.toBundle())
             }
+            requireActivity().addOnBackPressedCallback(viewLifecycleOwner) {
+                if (bottomSheetBehavior.isOpen) {
+                    bottomSheetBehavior.close()
+                    return@addOnBackPressedCallback true
+                }
+                false
+            }
         }.root
-
-    fun onBackPressed(): Boolean {
-        val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
-        val open = bottomSheetBehavior.isOpen
-        if (open) bottomSheetBehavior.close()
-        return open
-    }
 
     inner class ImageHolder(private val binding: PreviewItemBinding) : RecyclerView.ViewHolder(binding.root) {
         init {

@@ -5,13 +5,18 @@ package com.github.yueeng.moebooru
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.*
-import android.content.*
+import android.content.ContentValues
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.SpannableString
@@ -25,6 +30,10 @@ import android.webkit.MimeTypeMap
 import android.webkit.URLUtil
 import android.webkit.WebSettings
 import android.widget.*
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
@@ -97,6 +106,7 @@ import org.kohsuke.github.extras.okhttp3.OkHttpGitHubConnector
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.Serializable
 import java.net.InetAddress
 import java.security.MessageDigest
 import java.text.DateFormat
@@ -235,7 +245,6 @@ object ProgressBehavior {
             if ((sum[url] ?: 0) != 0) return@synchronized
             sum.remove(url)
             map.remove(url)
-//            Log.i("PBMAPS", "${map.size}")
         }
     }
 
@@ -701,8 +710,7 @@ object Save {
     }
 
     fun AppCompatActivity.save(
-        id: Int, url: String, so: SO,
-        author: String? = null, anchor: View? = null
+        id: Int, url: String, so: SO, author: String? = null, anchor: View? = null
     ) {
         fun download() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -860,7 +868,7 @@ fun ProgressBar.setIndeterminateSafe(indeterminate: Boolean) {
     }
     if (indeterminate && isVisible) {
         isInvisible = true
-        isIndeterminate = indeterminate
+        isIndeterminate = true
         isInvisible = false
     } else {
         isIndeterminate = indeterminate
@@ -904,7 +912,7 @@ val View.childrenRecursively: Sequence<View>
 
 fun <V : View> View.findViewByViewType(clazz: Class<V>, id: Int = View.NO_ID): Sequence<View> = if (id != View.NO_ID) {
     findViewById<V>(id)?.let { sequenceOf(it) } ?: emptySequence()
-} else childrenRecursively.filter { clazz.isInstance(it) }.filter { id == View.NO_ID || id == it.id }
+} else childrenRecursively.filter { clazz.isInstance(it) }.filter { id == it.id }
 
 inline fun <reified V : View> View.findViewByViewType(id: Int = View.NO_ID) = findViewByViewType(V::class.java, id)
 
@@ -926,8 +934,11 @@ fun createProcessTextIntent(): Intent = Intent()
     .setType("text/plain")
 
 @RequiresApi(Build.VERSION_CODES.M)
-fun Context.getSupportedActivities(): List<ResolveInfo> = packageManager
-    .queryIntentActivities(createProcessTextIntent(), 0)
+fun Context.getSupportedActivities(): List<ResolveInfo> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    packageManager.queryIntentActivities(createProcessTextIntent(), PackageManager.ResolveInfoFlags.of(0))
+} else {
+    @Suppress("DEPRECATION") packageManager.queryIntentActivities(createProcessTextIntent(), 0)
+}
 
 @RequiresApi(Build.VERSION_CODES.M)
 fun createProcessTextIntentForResolveInfo(info: ResolveInfo): Intent = createProcessTextIntent()
@@ -959,13 +970,6 @@ fun View.showSupportedActivitiesMenu(tag: String) = PopupMenu(context, this).als
 fun <T : Any, VH : RecyclerView.ViewHolder> PagingDataAdapter<T, VH>.peekSafe(index: Int): T? =
     if (index in 0 until itemCount) peek(index) else null
 
-val Context.appVersion: Version?
-    get() = try {
-        Version(packageManager.getPackageInfo(packageName, 0).versionName)
-    } catch (e: Exception) {
-        e.printStackTrace(); null
-    }
-
 fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = lifecycleScope.launchWhenCreated {
     val latest = runCatching {
         withContext(Dispatchers.IO) {
@@ -980,7 +984,7 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
         }
     }.getOrNull() ?: return@launchWhenCreated
     val name = if (compare) {
-        val ver = appVersion ?: return@launchWhenCreated
+        val ver = runCatching { Version(BuildConfig.VERSION_NAME) }.getOrNull() ?: return@launchWhenCreated
         val online = Version.from(latest.tagName) ?: return@launchWhenCreated
         if (ver >= online) return@launchWhenCreated
         "v$ver > v$online"
@@ -1023,4 +1027,30 @@ fun AppCompatTextView.setCompoundResourcesDrawables(left: Int? = null, top: Int?
 object PendingIntentCompat {
     val FLAG_MUTABLE get() = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_UPDATE_CURRENT)
     val FLAG_IMMUTABLE get() = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else PendingIntent.FLAG_UPDATE_CURRENT)
+}
+
+inline fun <reified T> Intent.getParcelableExtraCompat(key: String): T? = when {
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableExtra(key, T::class.java)
+    else -> @Suppress("DEPRECATION") getParcelableExtra(key) as? T?
+}
+
+inline fun <reified T : Serializable> Intent.getSerializableExtraCompat(key: String): T? = when {
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getSerializableExtra(key, T::class.java)
+    else -> @Suppress("DEPRECATION") getSerializableExtra(key) as? T?
+}
+
+inline fun <reified T> Bundle.getParcelableCompat(key: String): T? = when {
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelable(key, T::class.java)
+    else -> @Suppress("DEPRECATION") getParcelable(key) as? T?
+}
+
+fun OnBackPressedDispatcher.bubbleOnBackPressed(callback: OnBackPressedCallback) {
+    callback.isEnabled = false
+    onBackPressed()
+    callback.isEnabled = true
+}
+
+fun ComponentActivity.addOnBackPressedCallback(owner: LifecycleOwner? = this, callback: OnBackPressedCallback.() -> Boolean): OnBackPressedCallback = onBackPressedDispatcher.addCallback(owner) {
+    if (callback(this)) return@addCallback
+    onBackPressedDispatcher.bubbleOnBackPressed(this)
 }

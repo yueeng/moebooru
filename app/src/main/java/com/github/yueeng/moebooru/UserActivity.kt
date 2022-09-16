@@ -298,7 +298,7 @@ open class UserFragment : Fragment() {
             (binding.root.layoutParams as? FlexboxLayoutManager.LayoutParams)?.flexGrow = 1.0f
             binding.root.setOnClickListener {
                 val adapter = bindingAdapter as ImageAdapter
-                val title = adapter.currentList.reversed().dropWhile { it != tag }.mapNotNull { it as? Title }.firstOrNull()!!
+                val title = adapter.currentList.reversed().dropWhile { it != tag }.firstNotNullOfOrNull { it as? Title }!!
                 val options = ActivityOptions.makeSceneTransitionAnimation(activity, binding.root, "shared_element_container")
                 requireActivity().startActivity(
                     Intent(context, PreviewActivity::class.java).putExtra("query", Q(title.query)).putExtra("id", tag!!.id),
@@ -489,7 +489,6 @@ class StarFragment : Fragment() {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     inner class StarAdapter : ListAdapter<Any, RecyclerView.ViewHolder>(diffCallback { old, new -> old == new }) {
         override fun getItemViewType(position: Int): Int = when (getItem(position)) {
             is Title -> 0

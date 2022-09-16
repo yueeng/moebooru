@@ -75,7 +75,7 @@ class SimilarFragment : Fragment() {
         lifecycleScope.launchWhenCreated {
             if (arguments?.getString("action") != Intent.ACTION_SEND) return@launchWhenCreated
             if (arguments?.containsKey("url") == true) return@launchWhenCreated
-            val image: Uri = arguments?.getParcelable(Intent.EXTRA_STREAM) ?: return@launchWhenCreated
+            val image: Uri = arguments?.getParcelableCompat(Intent.EXTRA_STREAM) ?: return@launchWhenCreated
             runCatching {
                 requireContext().contentResolver.openInputStream(image).use {
                     val base64 = withContext(Dispatchers.IO) {

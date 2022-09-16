@@ -78,7 +78,7 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setSupportActionBar(findViewById(R.id.toolbar))
-        val e = intent.getSerializableExtra("e") as Throwable
+        val e = intent.getSerializableExtraCompat("e") as? Throwable
         val seq = generateSequence(e) { it.cause }
         val ex = StringWriter().use { stream ->
             PrintWriter(stream).use { writer ->
@@ -117,10 +117,6 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
         }
         else -> super.onOptionsItemSelected(item)
     }
-}
-
-interface IOnBackPressed {
-    fun onBackPressed() = false
 }
 
 open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId) {
@@ -234,6 +230,14 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 recreate()
             }
         }
+        this.addOnBackPressedCallback {
+            val drawer = findViewById<DrawerLayout>(R.id.drawer)
+            if (drawer?.isDrawerOpen(GravityCompat.START) == true || drawer?.isDrawerOpen(GravityCompat.END) == true) {
+                drawer.closeDrawers()
+                return@addOnBackPressedCallback true
+            }
+            false
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -252,18 +256,6 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             startActivity(Intent(this, QueryActivity::class.java).putExtra("query", query), options?.toBundle())
         }
         else -> super.onOptionsItemSelected(item)
-    }
-
-    override fun onBackPressed() {
-        val drawer = findViewById<DrawerLayout>(R.id.drawer)
-        if (drawer?.isDrawerOpen(GravityCompat.START) == true || drawer?.isDrawerOpen(GravityCompat.END) == true) {
-            drawer.closeDrawers()
-            return
-        }
-        if (supportFragmentManager.fragments.mapNotNull { it as? IOnBackPressed }.firstOrNull()?.onBackPressed() == true) {
-            return
-        }
-        super.onBackPressed()
     }
 }
 

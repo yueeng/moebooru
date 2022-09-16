@@ -48,7 +48,7 @@ class QueryActivity : MoeActivity(R.layout.activity_container) {
 }
 
 class QueryViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
-    val query = handle.getLiveData("query", args?.getParcelable("query") ?: Q())
+    val query = handle.getLiveData("query", args?.getParcelableCompat("query") ?: Q())
     val id = handle.getLiveData("id", args?.getLong("id"))
     val name = handle.getLiveData<String>("name")
 }
