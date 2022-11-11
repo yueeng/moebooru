@@ -308,10 +308,9 @@ class QueryFragment : Fragment() {
         view.chipGroup.setOnCheckedStateChangeListener { _, _ ->
             TransitionManager.beginDelayedTransition(view.root)
             view.input2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
-            view.pick2.isVisible = view.chipGroup.checkedChip?.tag == Q.Value.Op.bt.value
         }
-        listOf(view.pick1 to view.edit1, view.pick2 to view.edit2).forEach { pe ->
-            pe.first.setOnClickListener {
+        listOf(view.input1 to view.edit1, view.input2 to view.edit2).forEach { pe ->
+            pe.first.setEndIconOnClickListener {
                 val current = Q.formatter.tryParse(pe.second.text.toString()) ?: Date()
                 val pick = DatePicker(requireContext()).apply {
                     minDate = moeCreateTime.milliseconds
@@ -325,12 +324,13 @@ class QueryFragment : Fragment() {
                     .setNegativeButton(R.string.app_cancel, null)
                     .create().show()
             }
-        }
-        view.edit1.addTextChangedListener {
-            view.input1.isErrorEnabled = Q.formatter.tryParse(it.toString()) == null
-        }
-        view.edit2.addTextChangedListener {
-            view.input1.isErrorEnabled = Q.formatter.tryParse(it.toString()) == null
+
+            pe.second.addTextChangedListener {
+                pe.first.isErrorEnabled = false
+            }
+            pe.second.setOnFocusChangeListener { _, _ ->
+                pe.first.isErrorEnabled = false
+            }
         }
         @Suppress("UNCHECKED_CAST")
         val default = data[key] as? Q.Value<Date>
