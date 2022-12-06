@@ -61,6 +61,15 @@
                 android:text="@string/query_value_ge" />
         </com.google.android.material.chip.ChipGroup>
 
+        <CheckBox
+            android:id="@+id/check1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/query_date_countdown"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/chipGroup" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/input1"
             android:layout_width="0dp"
@@ -71,7 +80,7 @@
             app:endIconMode="custom"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/chipGroup">
+            app:layout_constraintTop_toBottomOf="@+id/check1">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edit1"

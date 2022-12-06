@@ -90,6 +90,7 @@
     <string name="query_value_gt">Greater than</string>
     <string name="query_value_le">Less than or equal</string>
     <string name="query_value_lt">Less than</string>
+    <string name="query_date_countdown">Use countdown time</string>
     <string name="query_vote">Vote</string>
     <string name="query_vote_desc">Query posts favored by the user ….</string>
     <string name="query_vote_star_1">★</string>

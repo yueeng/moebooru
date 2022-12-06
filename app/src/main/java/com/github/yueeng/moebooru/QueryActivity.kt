@@ -333,10 +333,11 @@ class QueryFragment : Fragment() {
             }
         }
         @Suppress("UNCHECKED_CAST")
-        val default = data[key] as? Q.Value<Date>
+        val default = data[key] as? Q.Value<Q.ValueDate>
         if (default != null) {
-            view.edit1.setText(default.v1string)
-            view.edit2.setText(default.v2string)
+            view.edit1.setText(default.v1.toQuery())
+            view.edit2.setText(default.v2?.toQuery())
+            view.check1.isChecked = default.v1.cd != null
             view.chipGroup.findViewWithTag<Chip>(default.op.value)?.isChecked = true
         } else {
             view.chipGroup.children.mapNotNull { it as? Chip }.firstOrNull()?.isChecked = true
@@ -370,7 +371,12 @@ class QueryFragment : Fragment() {
                         view.input2.error = getString(R.string.query_empty)
                         return@setOnClickListener
                     }
-                    val value = Q.Value(op, v1, v2)
+                    val cd = view.check1.isChecked
+                    val value = Q.Value(
+                        op,
+                        Q.ValueDate(if (cd) (calendar() - v1.toCalendar()).days else null, v1),
+                        v2?.let { Q.ValueDate(if (cd) (calendar() - v2.toCalendar()).days else null, v2) }
+                    )
                     adapter.add(key, value)
                     dismiss()
                 }

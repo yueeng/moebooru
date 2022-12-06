@@ -112,7 +112,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
 
     class PagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         private val differ = AsyncListDiffer<Pair<String, Q>>(this, diffCallback { old, new -> old == new }).apply {
-            submitList(listOf("Popular" to Q().order(Q.Order.score).date(calendar().day(-1, true).time, Q.Value.Op.ge)))
+            submitList(listOf("Popular" to Q().order(Q.Order.score).date(1, Q.Value.Op.ge)))
         }
         val data get():List<Pair<String, Q>> = differ.currentList
         fun submitList(list: List<Pair<String, Q>>) = differ.submitList(listOf(data.first()) + list)

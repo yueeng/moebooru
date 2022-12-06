@@ -369,6 +369,7 @@ fun String.toTitleCase(vararg delimiters: String = arrayOf("_")) = delimiters.fo
     }
 }
 
+fun Date.toCalendar(zone: TimeZone? = null): Calendar = calendar(zone).apply { time = this@toCalendar }
 fun Date.firstDayOfWeek(index: Int = 1, firstOfWeek: Int = Calendar.MONDAY): Date = calendar().let { calendar ->
     calendar.firstDayOfWeek = firstOfWeek
     calendar.time = this

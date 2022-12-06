@@ -90,6 +90,7 @@
     <string name="query_value_gt">大于</string>
     <string name="query_value_le">小于等于</string>
     <string name="query_value_lt">小于</string>
+    <string name="query_date_countdown">使用倒数时间</string>
     <string name="query_vote">投票</string>
     <string name="query_vote_desc">按指定用户评分搜索.</string>
     <string name="query_vote_star_1">1星</string>
