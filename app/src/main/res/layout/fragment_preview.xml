@@ -28,10 +28,11 @@
         android:background="@drawable/background_toolbar_translucent"
         android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar" />
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
+    <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/busy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:indeterminate="true"
         app:layout_anchor="@id/pager"
         app:layout_anchorGravity="center" />
 

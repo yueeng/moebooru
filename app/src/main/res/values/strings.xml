@@ -145,8 +145,8 @@
     <string name="settings_list_page_off">Enable</string>
     <string name="settings_list_page_on">Disable</string>
     <string name="settings_list_quality">Auto choose high quality image in image list</string>
-    <string name="settings_list_quality_off">Sample (small &amp; fast)</string>
-    <string name="settings_list_quality_on">High quality (clear &amp; slow)</string>
+    <string name="settings_list_quality_off">Sample (fast)</string>
+    <string name="settings_list_quality_on">High quality (slow)</string>
     <string name="settings_preview_color">Dynamic preview background color</string>
     <string name="settings_preview_color_off">Default</string>
     <string name="settings_preview_color_on">With image tint</string>

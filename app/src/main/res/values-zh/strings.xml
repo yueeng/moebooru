@@ -145,8 +145,8 @@
     <string name="settings_list_page_off">显示</string>
     <string name="settings_list_page_on">禁用</string>
     <string name="settings_list_quality">列表加载时选择更清晰的图片</string>
-    <string name="settings_list_quality_off">预览图 (小、快)</string>
-    <string name="settings_list_quality_on">清晰图 (清晰、慢)</string>
+    <string name="settings_list_quality_off">预览图 (快)</string>
+    <string name="settings_list_quality_on">清晰图 (慢)</string>
     <string name="settings_preview_color">动态预览页背景颜色</string>
     <string name="settings_preview_color_off">默认</string>
     <string name="settings_preview_color_on">跟随图片色调</string>
