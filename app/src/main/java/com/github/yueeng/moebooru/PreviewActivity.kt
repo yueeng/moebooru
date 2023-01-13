@@ -391,7 +391,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
 //            if (currentList.size == 0) submitList(listOf(Tag(Tag.TYPE_UNKNOWN, "Waiting...", "")))
             val tags = withContext(Dispatchers.Default) {
                 val common = mutableListOf(
-                    Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${item.author}"),
+                    Tag(Tag.TYPE_USER, item.author.toTitleCase(), "user:${Uri.encode(item.author)}"),
                     Tag(Tag.TYPE_SIZE, "${item.width}x${item.height}", "width:${item.width} height:${item.height}"),
                     Tag(Tag.TYPE_SIZE, item.resolution.title, Q().mpixels(item.resolution.mpixels, Q.Value.Op.ge).toString())
                 )
@@ -413,7 +413,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         common.add(Tag(Tag.TYPE_DOWNLOAD, name, i.first))
                     }
                 val tags = item.tags.split(' ').map { Q.summaryMap[it] to it }
-                    .map { Tag(it.first ?: Tag.TYPE_UNKNOWN, it.second.toTitleCase(), it.second) }
+                    .map { Tag(it.first ?: Tag.TYPE_UNKNOWN, it.second.toTitleCase(), Uri.encode(it.second)) }
                 (common + tags).sortedWith(compareBy({ -it.type }, Tag::name, Tag::tag))
             }
             submitList(tags)

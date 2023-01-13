@@ -727,6 +727,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable, IQ {
 
     constructor(source: Q?) : this(source?.map)
     constructor(source: String?) : this(source?.takeIf { it.isNotEmpty() }?.split(' ', '+')
+        ?.map { Uri.decode(it) }
         ?.map { it.split(':', limit = 2) }
         ?.let { list -> listOf(listOf(list.filter { it.size == 1 }.flatten().joinToString(" "))) + (list.filter { it.size > 1 }) }
         ?.filter { it.any { i -> i.isNotEmpty() } }
