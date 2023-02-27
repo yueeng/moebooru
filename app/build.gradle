@@ -133,7 +133,7 @@ dependencies {
     implementation 'com.github.franmontiel:PersistentCookieJar:1.0.1'
     implementation 'jp.wasabeef:glide-transformations:4.3.0'
     implementation 'com.alexvasilkov:gesture-views:2.8.3'
-    implementation 'org.jsoup:jsoup:1.15.3'
+    implementation 'org.jsoup:jsoup:1.15.4'
     implementation 'com.github.yueeng:uCrop:2020.09.28'
     implementation 'org.kohsuke:github-api:1.313'
     testImplementation 'junit:junit:4.13.2'
