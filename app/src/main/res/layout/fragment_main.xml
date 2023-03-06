@@ -56,6 +56,7 @@
         android:layout_margin="16dp"
         android:maxWidth="200dp"
         android:visibility="gone"
+        app:headerLayout="@layout/list_menu_header"
         app:layout_anchor="@id/pager"
         app:layout_anchorGravity="bottom|end"
         app:menu="@menu/popular"

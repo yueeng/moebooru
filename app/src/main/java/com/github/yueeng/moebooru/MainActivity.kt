@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.TransitionManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.Save.save
 import com.github.yueeng.moebooru.databinding.*
@@ -64,6 +65,13 @@ class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.pager.adapter = adapter
             TabLayoutMediator(binding.tab, binding.pager) { tab, position -> tab.text = adapter.data[position].first }.attach()
+            binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    val current = adapter.data[binding.pager.currentItem]
+                    binding.menu.getHeaderView(0)?.findViewById<TextView>(R.id.text1)?.text = current.second.keyword?.toTitleCase()
+                    binding.menu.getHeaderView(0).isVisible = current.second.keyword?.isNotEmpty() == true
+                }
+            })
             lifecycleScope.launchWhenCreated {
                 Db.tags.tagsWithIndex(true).collectLatest { tags ->
                     adapter.submitList(tags.map { it.name to Q(it.tag) })
@@ -80,11 +88,13 @@ class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
                 }
                 val view = binding.menu.findViewById<View>(it.itemId)
                 val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), view, "shared_element_container")
-                if (tag == "all") {
-                    startActivity(Intent(requireContext(), ListActivity::class.java).putExtra("query", Q().order(Q.Order.score)), options.toBundle())
+                val query = adapter.data[binding.pager.currentItem].second
+                val intent = if (tag == "all") {
+                    Intent(requireContext(), ListActivity::class.java).putExtra("query", Q(query.keyword).order(Q.Order.score))
                 } else {
-                    startActivity(Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag), options.toBundle())
+                    Intent(requireContext(), PopularActivity::class.java).putExtra("type", tag).putExtra("key", query.keyword)
                 }
+                startActivity(intent, options.toBundle())
                 true
             }
             binding.scram.setOnClickListener { binding.fab.performClick() }
