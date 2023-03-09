@@ -54,9 +54,11 @@ class UserOtherFragment : UserFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View = super.onCreateView(inflater, container, savedInstanceState).also { view ->
         val binding = FragmentUserBinding.bind(view)
         (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
-        lifecycleScope.launchWhenCreated {
-            model.name.asFlow().mapNotNull { it }.distinctUntilChanged().collectLatest { name ->
-                requireActivity().title = name.toTitleCase()
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                model.name.asFlow().mapNotNull { it }.distinctUntilChanged().collectLatest { name ->
+                    requireActivity().title = name.toTitleCase()
+                }
             }
         }
     }
@@ -83,35 +85,53 @@ class UserMineFragment : UserFragment() {
         val binding = FragmentUserBinding.bind(view)
         prepareOptionsMenu(binding.toolbar.menu)
         binding.toolbar.setOnMenuItemClickListener { optionsItemSelected(it) }
-        lifecycleScope.launchWhenCreated {
-            OAuth.user.asFlow().collectLatest {
-                prepareOptionsMenu(binding.toolbar.menu)
-                model.user.postValue(it)
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                OAuth.user.asFlow().collectLatest {
+                    prepareOptionsMenu(binding.toolbar.menu)
+                    model.user.postValue(it)
+                }
             }
         }
-        lifecycleScope.launchWhenCreated {
-            OAuth.name.asFlow().collectLatest {
-                model.name.postValue(it)
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                OAuth.name.asFlow().collectLatest {
+                    model.name.postValue(it)
+                }
             }
         }
-        lifecycleScope.launchWhenCreated {
-            model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                binding.toolbar.title = name.toTitleCase()
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                model.name.asFlow().mapNotNull { it }.collectLatest { name ->
+                    binding.toolbar.title = name.toTitleCase()
+                }
             }
         }
-        lifecycleScope.launchWhenCreated {
-            OAuth.avatar.asFlow().filter { model.avatar.value != it }.collectLatest {
-                model.avatar.postValue(it)
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                OAuth.avatar.asFlow().filter { model.avatar.value != it }.collectLatest {
+                    model.avatar.postValue(it)
+                }
             }
         }
-        lifecycleScope.launchWhenCreated {
-            model.avatar.asFlow().filter { OAuth.avatar.value != it }.collectLatest {
-                OAuth.avatar.postValue(it)
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                model.avatar.asFlow().filter { OAuth.avatar.value != it }.collectLatest {
+                    OAuth.avatar.postValue(it)
+                }
             }
         }
-        lifecycleScope.launchWhenCreated {
-            OAuth.timestamp.asFlow().drop(1).collectLatest {
-                face(binding, model.user.value)
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                OAuth.timestamp.asFlow().drop(1).collectLatest {
+                    face(binding, model.user.value)
+                }
             }
         }
     }
@@ -134,58 +154,74 @@ open class UserFragment : Fragment() {
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter
             binding.swipe.setOnRefreshListener {
-                lifecycleScope.launchWhenCreated { query() }
-            }
-            lifecycleScope.launchWhenCreated {
-                model.user.asFlow().filter { it == 0 }.collectLatest {
-                    model.data.postValue(emptyArray())
-                    model.avatar.postValue(0)
-                    model.background.postValue("")
+                lifecycleScope.launch {
+                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) { query() }
                 }
             }
-            lifecycleScope.launchWhenCreated {
-                model.user.asFlow().distinctUntilChanged().collectLatest {
-                    face(binding, it)
-                }
-            }
-            lifecycleScope.launchWhenCreated {
-                val user = model.user.asFlow().distinctUntilChanged()
-                val name = model.name.asFlow().distinctUntilChanged()
-                flowOf(user, name).flattenMerge(2).collectLatest {
-                    if (model.user.value == 0) return@collectLatest
-                    if (model.name.value == "") return@collectLatest
-                    if (model.data.value?.any() == true) return@collectLatest
-                    query()
-                }
-            }
-            lifecycleScope.launchWhenCreated {
-                model.avatar.asFlow().distinctUntilChanged().collectLatest { id ->
-                    if (id == 0) {
-                        binding.toolbar.navigationIcon = null
-                        return@collectLatest
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.user.asFlow().filter { it == 0 }.collectLatest {
+                        model.data.postValue(emptyArray())
+                        model.avatar.postValue(0)
+                        model.background.postValue("")
                     }
-                    val bg = runCatching { Service.instance.post(1, Q().id(id), 1).firstOrNull()?.sample_url }.getOrNull() ?: return@collectLatest
-                    model.background.postValue(bg)
                 }
             }
-            lifecycleScope.launchWhenCreated {
-                model.background.asFlow().distinctUntilChanged().collectLatest { url ->
-                    if (url.isEmpty()) {
-                        binding.image1.setImageDrawable(null)
-                        return@collectLatest
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.user.asFlow().distinctUntilChanged().collectLatest {
+                        face(binding, it)
                     }
-                    GlideApp.with(binding.image1)
-                        .load(url)
-                        .transform(AlphaBlackBitmapTransformation())
-                        .transition(DrawableTransitionOptions.withCrossFade())
-                        .into(binding.image1)
                 }
             }
-            lifecycleScope.launchWhenCreated {
-                model.data.asFlow().collectLatest { adapter.submitList(it.toList()) }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    val user = model.user.asFlow().distinctUntilChanged()
+                    val name = model.name.asFlow().distinctUntilChanged()
+                    flowOf(user, name).flattenMerge(2).collectLatest {
+                        if (model.user.value == 0) return@collectLatest
+                        if (model.name.value == "") return@collectLatest
+                        if (model.data.value?.any() == true) return@collectLatest
+                        query()
+                    }
+                }
             }
-            lifecycleScope.launchWhenCreated {
-                busy.asFlow().collectLatest { binding.swipe.isRefreshing = it }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.avatar.asFlow().distinctUntilChanged().collectLatest { id ->
+                        if (id == 0) {
+                            binding.toolbar.navigationIcon = null
+                            return@collectLatest
+                        }
+                        val bg = runCatching { Service.instance.post(1, Q().id(id), 1).firstOrNull()?.sample_url }.getOrNull() ?: return@collectLatest
+                        model.background.postValue(bg)
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.background.asFlow().distinctUntilChanged().collectLatest { url ->
+                        if (url.isEmpty()) {
+                            binding.image1.setImageDrawable(null)
+                            return@collectLatest
+                        }
+                        GlideApp.with(binding.image1)
+                            .load(url)
+                            .transform(AlphaBlackBitmapTransformation())
+                            .transition(DrawableTransitionOptions.withCrossFade())
+                            .into(binding.image1)
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.data.asFlow().collectLatest { adapter.submitList(it.toList()) }
+                }
+            }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    busy.asFlow().collectLatest { binding.swipe.isRefreshing = it }
+                }
             }
         }.root
 
@@ -390,8 +426,10 @@ class StarFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (model.data.value == null) {
-            lifecycleScope.launchWhenCreated {
-                model.data(post)?.let { model.data.postValue(it) }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.data(post)?.let { model.data.postValue(it) }
+                }
             }
         }
     }
@@ -399,31 +437,37 @@ class StarFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentStarBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
-            model.star.observe(viewLifecycleOwner, Observer {
+            model.star.observe(viewLifecycleOwner) {
                 binding.rating.rating = it.toFloat()
                 requireActivity().title = getString(R.string.query_vote_star_yours, it)
-            })
-            lifecycleScope.launchWhenCreated {
-                adapter.changedFlow.collectLatest {
-                    adapter.currentList.mapIndexedNotNull { index, any -> (any as? Title)?.let { index } }
-                        .forEach { adapter.notifyItemChanged(it, "count") }
+            }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    adapter.changedFlow.collectLatest {
+                        adapter.currentList.mapIndexedNotNull { index, any -> (any as? Title)?.let { index } }
+                            .forEach { adapter.notifyItemChanged(it, "count") }
+                    }
                 }
             }
             binding.rating.setOnRatingBarChangeListener { _, rating, fromUser ->
                 if (!fromUser) return@setOnRatingBarChangeListener
-                lifecycleScope.launchWhenCreated {
-                    model.vote(post, rating.toInt())?.let {
-                        model.data.postValue(it)
-                        model.star.postValue(rating.toInt())
+                lifecycleScope.launch {
+                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                        model.vote(post, rating.toInt())?.let {
+                            model.data.postValue(it)
+                            model.star.postValue(rating.toInt())
+                        }
                     }
                 }
             }
             binding.button1.setOnClickListener {
-                lifecycleScope.launchWhenCreated {
-                    model.vote(post, 0)?.let {
-                        model.data.postValue(it)
-                        binding.rating.rating = 0F
-                        model.star.postValue(0)
+                lifecycleScope.launch {
+                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                        model.vote(post, 0)?.let {
+                            model.data.postValue(it)
+                            binding.rating.rating = 0F
+                            model.star.postValue(0)
+                        }
                     }
                 }
             }
@@ -436,17 +480,19 @@ class StarFragment : Fragment() {
                 }
             }
             binding.recycler.adapter = adapter
-            model.data.observe(viewLifecycleOwner, Observer { score ->
+            model.data.observe(viewLifecycleOwner) { score ->
                 adapter.submitList(score.voted_by.v.flatMap { listOf(Title(it.key, it.value.size)) + it.value })
-            })
+            }
             binding.swipe.setOnRefreshListener {
-                lifecycleScope.launchWhenCreated {
-                    model.data(post)?.let { model.data.postValue(it) }
+                lifecycleScope.launch {
+                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                        model.data(post)?.let { model.data.postValue(it) }
+                    }
                 }
             }
-            model.busy.observe(viewLifecycleOwner, Observer {
+            model.busy.observe(viewLifecycleOwner) {
                 binding.swipe.isRefreshing = it
-            })
+            }
         }.root
 
     data class Title(val star: Int, val count: Int) {

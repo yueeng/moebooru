@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.net.URL
@@ -72,22 +73,24 @@ class SimilarFragment : Fragment() {
     private val adapter = SimilarAdapter()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launchWhenCreated {
-            if (arguments?.getString("action") != Intent.ACTION_SEND) return@launchWhenCreated
-            if (arguments?.containsKey("url") == true) return@launchWhenCreated
-            val image: Uri = arguments?.getParcelableCompat(Intent.EXTRA_STREAM) ?: return@launchWhenCreated
-            runCatching {
-                requireContext().contentResolver.openInputStream(image).use {
-                    val base64 = withContext(Dispatchers.IO) {
-                        val bitmap = GlideApp.with(this@SimilarFragment).asBitmap()
-                            .load(image).submit(150, 150).get()
-                        ByteArrayOutputStream().use { stream ->
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream)
-                            Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                if (arguments?.getString("action") != Intent.ACTION_SEND) return@repeatOnLifecycle
+                if (arguments?.containsKey("url") == true) return@repeatOnLifecycle
+                val image: Uri = arguments?.getParcelableCompat(Intent.EXTRA_STREAM) ?: return@repeatOnLifecycle
+                runCatching {
+                    requireContext().contentResolver.openInputStream(image).use {
+                        val base64 = withContext(Dispatchers.IO) {
+                            val bitmap = GlideApp.with(this@SimilarFragment).asBitmap()
+                                .load(image).submit(150, 150).get()
+                            ByteArrayOutputStream().use { stream ->
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream)
+                                Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+                            }
                         }
+                        arguments?.putString("url", "data:image/jpg;base64,$base64")
+                        adapter.refresh()
                     }
-                    arguments?.putString("url", "data:image/jpg;base64,$base64")
-                    adapter.refresh()
                 }
             }
         }
@@ -97,18 +100,24 @@ class SimilarFragment : Fragment() {
         FragmentSimilarBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             binding.recycler.adapter = adapter
-            lifecycleScope.launchWhenCreated {
-                model.posts.collectLatest { adapter.submitData(it) }
-            }
-            binding.swipe.setOnRefreshListener { adapter.refresh() }
-            lifecycleScope.launchWhenCreated {
-                adapter.loadStateFlow.collectLatest {
-                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.posts.collectLatest { adapter.submitData(it) }
                 }
             }
-            lifecycleScope.launchWhenCreated {
-                MoeSettings.safe.asFlow().drop(1).distinctUntilChanged().collectLatest {
-                    adapter.refresh()
+            binding.swipe.setOnRefreshListener { adapter.refresh() }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    adapter.loadStateFlow.collectLatest {
+                        binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    MoeSettings.safe.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                        adapter.refresh()
+                    }
                 }
             }
         }.root

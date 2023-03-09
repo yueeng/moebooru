@@ -1,9 +1,11 @@
 package com.github.yueeng.moebooru
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -12,6 +14,7 @@ import android.os.Bundle
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
@@ -112,11 +115,16 @@ class CropActivity : AppCompatActivity() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                     builder.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
                         .setLargeIcon(resource)
-                    NotificationManagerCompat.from(this@CropActivity).notify(id, builder.build())
+                    if (ActivityCompat.checkSelfPermission(this@CropActivity, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                        NotificationManagerCompat.from(this@CropActivity).notify(id, builder.build())
+                    }
                 }
 
-                override fun onLoadFailed(errorDrawable: Drawable?) =
-                    NotificationManagerCompat.from(this@CropActivity).notify(id, builder.build())
+                override fun onLoadFailed(errorDrawable: Drawable?) {
+                    if (ActivityCompat.checkSelfPermission(this@CropActivity, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                        NotificationManagerCompat.from(this@CropActivity).notify(id, builder.build())
+                    }
+                }
 
                 override fun onLoadCleared(placeholder: Drawable?) = Unit
             })

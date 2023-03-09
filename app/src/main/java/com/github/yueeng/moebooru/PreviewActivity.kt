@@ -49,11 +49,8 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import jp.wasabeef.glide.transformations.BlurTransformation
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.withContext
 import java.util.*
 import kotlin.math.max
 
@@ -98,110 +95,124 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
             (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
             activity?.title = query.toString().toTitleCase()
-            lifecycleScope.launchWhenCreated {
-                model.posts.collectLatest { adapter.submitData(it) }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.posts.collectLatest { adapter.submitData(it) }
+                }
             }
             binding.pager.offscreenPageLimit = 1
             binding.pager.adapter = adapter
             binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) = previewModel.index.postValue(position)
             })
-            lifecycleScope.launchWhenCreated {
-                adapter.loadStateFlow
-                    .distinctUntilChangedBy { it.refresh }
-                    .filter { it.refresh is LoadState.NotLoading }
-                    .collect {
-                        val index = when (previewModel.index.value) {
-                            -1 -> arguments?.getInt("id")?.let { id ->
-                                adapter.snapshot().indexOfFirst { it?.id == id }
-                            }?.also(previewModel.index::postValue)
-                            else -> null
-                        } ?: previewModel.index.value!!
-                        if (index >= 0) binding.pager.post {
-                            binding.pager.setCurrentItem(index, false)
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    adapter.loadStateFlow
+                        .distinctUntilChangedBy { it.refresh }
+                        .filter { it.refresh is LoadState.NotLoading }
+                        .collect {
+                            val index = when (previewModel.index.value) {
+                                -1 -> arguments?.getInt("id")?.let { id ->
+                                    adapter.snapshot().indexOfFirst { it?.id == id }
+                                }?.also(previewModel.index::postValue)
+                                else -> null
+                            } ?: previewModel.index.value!!
+                            if (index >= 0) binding.pager.post {
+                                binding.pager.setCurrentItem(index, false)
+                            }
                         }
-                    }
+                }
             }
-            lifecycleScope.launchWhenCreated {
-                previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
-                    ProgressBehavior.on(item.sample_url).onCompletion {
-                        binding.progress1.isInvisible = true
-                        binding.progress1.progress = 0
-                        binding.progress1.alpha = 1F
-                        binding.progress1.setIndeterminateSafe(true)
-                        (binding.progress1.tag as? ObjectAnimator)?.cancel()
-                    }.sample(500).collectLatest {
-                        binding.progress1.setIndeterminateSafe(it == -1)
-                        binding.progress1.setProgressCompat(max(0, it))
-                        if (it != 100) binding.progress1.isInvisible = false else {
-                            binding.progress1.tag = ObjectAnimator.ofFloat(binding.progress1, "alpha", 1F, 0F)
-                                .setDuration(2000)
-                                .apply {
-                                    doOnEnd { binding.progress1.isInvisible = true }
-                                    start()
-                                }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
+                        ProgressBehavior.on(item.sample_url).onCompletion {
+                            binding.progress1.isInvisible = true
+                            binding.progress1.progress = 0
+                            binding.progress1.alpha = 1F
+                            binding.progress1.setIndeterminateSafe(true)
+                            (binding.progress1.tag as? ObjectAnimator)?.cancel()
+                        }.sample(500).collectLatest {
+                            binding.progress1.setIndeterminateSafe(it == -1)
+                            binding.progress1.setProgressCompat(max(0, it))
+                            if (it != 100) binding.progress1.isInvisible = false else {
+                                binding.progress1.tag = ObjectAnimator.ofFloat(binding.progress1, "alpha", 1F, 0F)
+                                    .setDuration(2000)
+                                    .apply {
+                                        doOnEnd { binding.progress1.isInvisible = true }
+                                        start()
+                                    }
+                            }
                         }
                     }
                 }
             }
             val background = MutableLiveData<Bitmap?>()
-            lifecycleScope.launchWhenCreated {
-                var anim: ObjectAnimator? = null
-                fun trans(to: Int) {
-                    val from = (binding.root.background as? ColorDrawable)?.color ?: 0
-                    val target = if (to != 0) to else requireActivity().theme.obtainStyledAttributes(intArrayOf(R.attr.colorSurface)).use {
-                        it.getColor(0, Color.WHITE)
-                    }
-                    anim = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), from, target).apply {
-                        duration = 300
-                        start()
-                    }
-                }
-                MoeSettings.previewColor.asFlow().distinctUntilChanged().collectLatest {
-                    if (!it) {
-                        trans(0)
-                        binding.background.setImageBitmap(null)
-                        return@collectLatest
-                    }
-                    background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
-                        if (bitmap == null) return@collect
-                        GlideApp.with(binding.background)
-                            .load(bitmap)
-                            .transform(BlurTransformation(5))
-                            .transition(DrawableTransitionOptions.withCrossFade())
-                            .into(binding.background)
-                        val palette = withContext(Dispatchers.Default) {
-                            Palette.from(bitmap).clearTargets()/*.addTarget(Target.VIBRANT).addTarget(Target.MUTED)*/.generate()
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    var anim: ObjectAnimator? = null
+                    fun trans(to: Int) {
+                        val from = (binding.root.background as? ColorDrawable)?.color ?: 0
+                        val target = if (to != 0) to else requireActivity().theme.obtainStyledAttributes(intArrayOf(R.attr.colorSurface)).use {
+                            it.getColor(0, Color.WHITE)
                         }
-                        val swatch = palette.dominantSwatch// ?: palette.vibrantSwatch ?: palette.mutedSwatch
-                        trans(swatch?.rgb ?: 0)
+                        anim = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), from, target).apply {
+                            duration = 300
+                            start()
+                        }
+                    }
+                    MoeSettings.previewColor.asFlow().distinctUntilChanged().collectLatest {
+                        if (!it) {
+                            trans(0)
+                            binding.background.setImageBitmap(null)
+                            return@collectLatest
+                        }
+                        background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
+                            if (bitmap == null) return@collect
+                            GlideApp.with(binding.background)
+                                .load(bitmap)
+                                .transform(BlurTransformation(5))
+                                .transition(DrawableTransitionOptions.withCrossFade())
+                                .into(binding.background)
+                            val palette = withContext(Dispatchers.Default) {
+                                Palette.from(bitmap).clearTargets()/*.addTarget(Target.VIBRANT).addTarget(Target.MUTED)*/.generate()
+                            }
+                            val swatch = palette.dominantSwatch// ?: palette.vibrantSwatch ?: palette.mutedSwatch
+                            trans(swatch?.rgb ?: 0)
+                        }
                     }
                 }
             }
             val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
             val tagItem = MutableLiveData<JImageItem>()
-            lifecycleScope.launchWhenCreated {
-                tagItem.asFlow().filter { bottomSheetBehavior.isOpen }.distinctUntilChanged().collectLatest {
-                    tagAdapter.submit(it)
-                    TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    tagItem.asFlow().filter { bottomSheetBehavior.isOpen }.distinctUntilChanged().collectLatest {
+                        tagAdapter.submit(it)
+                        TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
+                    }
                 }
             }
-            lifecycleScope.launchWhenCreated {
-                previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
-                    GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
-                        .placeholder(R.mipmap.ic_launcher)
-                        .transition(DrawableTransitionOptions.withCrossFade())
-                        .into(binding.button7)
-                    GlideApp.with(this@PreviewFragment).asBitmap().load(item.preview_url)
-                        .into(SimpleCustomTarget<Bitmap> { background.postValue(it) })
-                    tagItem.postValue(item)
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
+                        GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
+                            .placeholder(R.mipmap.ic_launcher)
+                            .transition(DrawableTransitionOptions.withCrossFade())
+                            .into(binding.button7)
+                        GlideApp.with(this@PreviewFragment).asBitmap().load(item.preview_url)
+                            .into(SimpleCustomTarget<Bitmap> { background.postValue(it) })
+                        tagItem.postValue(item)
+                    }
                 }
             }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             binding.recycler.adapter = tagAdapter
-            lifecycleScope.launchWhenCreated {
-                adapter.loadStateFlow.collectLatest {
-                    binding.busy.isVisible = it.refresh is LoadState.Loading
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    adapter.loadStateFlow.collectLatest {
+                        binding.busy.isVisible = it.refresh is LoadState.Loading
+                    }
                 }
             }
             binding.button1.setOnClickListener {

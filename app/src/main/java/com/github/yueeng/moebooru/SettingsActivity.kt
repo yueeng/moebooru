@@ -15,6 +15,7 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 
 
 class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
@@ -32,16 +33,20 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
         findPreference<SeekBarPreference>("app.cache_size")?.let { seek ->
-            lifecycleScope.launchWhenCreated {
-                MoeSettings.cache.asFlow().collectLatest {
-                    seek.summary = (it * (1L shl 20)).sizeString()
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    MoeSettings.cache.asFlow().collectLatest {
+                        seek.summary = (it * (1L shl 20)).sizeString()
+                    }
                 }
             }
         }
         val address = findPreference<EditTextPreference>("app.host_ip_address")
-        lifecycleScope.launchWhenCreated {
-            MoeSettings.host.asFlow().collectLatest {
-                address?.isVisible = it
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                MoeSettings.host.asFlow().collectLatest {
+                    address?.isVisible = it
+                }
             }
         }
         address?.setOnBindEditTextListener {
@@ -118,15 +123,19 @@ object MoeSettings {
     }
 
     init {
-        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            animation.asFlow().distinctUntilChanged().drop(1).collectLatest {
-                recreate.postValue(Unit)
+        ProcessLifecycleOwner.get().lifecycleScope.launch {
+            ProcessLifecycleOwner.get().repeatOnLifecycle(Lifecycle.State.CREATED) {
+                animation.asFlow().distinctUntilChanged().drop(1).collectLatest {
+                    recreate.postValue(Unit)
+                }
             }
         }
-        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            daynight.asFlow().distinctUntilChanged().drop(1).collectLatest {
-                AppCompatDelegate.setDefaultNightMode(it)
-                recreate.postValue(Unit)
+        ProcessLifecycleOwner.get().lifecycleScope.launch {
+            ProcessLifecycleOwner.get().repeatOnLifecycle(Lifecycle.State.CREATED) {
+                daynight.asFlow().distinctUntilChanged().drop(1).collectLatest {
+                    AppCompatDelegate.setDefaultNightMode(it)
+                    recreate.postValue(Unit)
+                }
             }
         }
     }

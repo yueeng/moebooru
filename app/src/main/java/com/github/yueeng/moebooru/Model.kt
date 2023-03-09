@@ -29,6 +29,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
@@ -752,7 +753,7 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable, IQ {
                     }
                     else -> list.first() to list.last()
                 }
-                else -> throw  IllegalArgumentException()
+                else -> throw IllegalArgumentException()
             }
         }
     )
@@ -934,9 +935,11 @@ object OAuth {
     val avatar = MutableLiveData<Int>()
 
     init {
-        ProcessLifecycleOwner.get().lifecycleScope.launchWhenCreated {
-            user.asFlow().distinctUntilChanged().collectLatest {
-                name.postValue(if (it == 0) "" else runCatching { Service.instance.user(it).firstOrNull()?.name }.getOrElse { "" })
+        ProcessLifecycleOwner.get().lifecycleScope.launch {
+            ProcessLifecycleOwner.get().repeatOnLifecycle(Lifecycle.State.CREATED) {
+                user.asFlow().distinctUntilChanged().collectLatest {
+                    name.postValue(if (it == 0) "" else runCatching { Service.instance.user(it).firstOrNull()?.name }.getOrElse { "" })
+                }
             }
         }
     }
@@ -945,13 +948,15 @@ object OAuth {
     val timestamp = MutableLiveData(calendar().time.time / 1000)
     fun face(id: Int) = if (id > 0) "$moeUrl/data/avatars/$id.jpg?${timestamp.value}" else null
     fun avatar(owner: LifecycleOwner, id: Int, post_id: Int, left: Float, right: Float, top: Float, bottom: Float, fn: (Int) -> Unit) {
-        owner.lifecycleScope.launchWhenCreated {
-            runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
-                .onSuccess {
-                    timestamp.postValue(calendar().time.time / 1000)
-                    avatar.postValue(post_id)
-                    fn(post_id)
-                }
+        owner.lifecycleScope.launch {
+            owner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                runCatching { Service.instance.avatar(id, post_id, left, right, top, bottom, Service.csrf()!!) }
+                    .onSuccess {
+                        timestamp.postValue(calendar().time.time / 1000)
+                        avatar.postValue(post_id)
+                        fn(post_id)
+                    }
+            }
         }
     }
 
@@ -975,12 +980,14 @@ object OAuth {
         MaterialAlertDialogBuilder(fragment.requireContext())
             .setTitle(R.string.user_logout)
             .setPositiveButton(R.string.user_logout) { _, _ ->
-                fragment.lifecycleScope.launchWhenCreated {
+                fragment.lifecycleScope.launch {
+                    fragment.repeatOnLifecycle(Lifecycle.State.CREATED) {
 //                    runCatching { Service.instance.logout() }
-                    okPersistor.clear()
-                    okCookie.clear()
-                    user.postValue(0)
-                    call?.invoke()
+                        okPersistor.clear()
+                        okCookie.clear()
+                        user.postValue(0)
+                        call?.invoke()
+                    }
                 }
             }
             .setNeutralButton(R.string.app_cancel, null)
@@ -993,19 +1000,21 @@ object OAuth {
             val pass = view.edit2.text.toString()
             view.indicator.isInvisible = false
             alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
-            fragment.lifecycleScope.launchWhenCreated {
-                runCatching { Service.instance.login(name, pass, Service.csrf()!!) }
-                view.indicator.isInvisible = true
-                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
-                val id = okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "user_id" }?.value?.toIntOrNull() ?: 0
-                if (id != 0) {
+            fragment.lifecycleScope.launch {
+                fragment.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    runCatching { Service.instance.login(name, pass, Service.csrf()!!) }
+                    view.indicator.isInvisible = true
+                    alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
+                    val id = okCookie.loadForRequest(moeUrl.toHttpUrl()).firstOrNull { it.name == "user_id" }?.value?.toIntOrNull() ?: 0
+                    if (id != 0) {
 
-                    alert.dismiss()
-                    call?.invoke()
-                } else {
-                    val msg = /*result?.reason ?:*/ fragment.getString(R.string.app_failed)
-                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.app_ok) {}.show()
+                        alert.dismiss()
+                        call?.invoke()
+                    } else {
+                        val msg = /*result?.reason ?:*/ fragment.getString(R.string.app_failed)
+                        Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                            .setAction(R.string.app_ok) {}.show()
+                    }
                 }
             }
         }
@@ -1024,17 +1033,19 @@ object OAuth {
             }
             view.indicator.isInvisible = false
             alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
-            fragment.lifecycleScope.launchWhenCreated {
-                val result = runCatching { Service.instance.register(name, pwd, email, Service.csrf()!!) }.getOrNull()
-                view.indicator.isInvisible = true
-                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
-                if (result?.success == true) {
-                    alert.dismiss()
-                    call?.invoke()
-                } else {
-                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
-                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.app_ok) {}.show()
+            fragment.lifecycleScope.launch {
+                fragment.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    val result = runCatching { Service.instance.register(name, pwd, email, Service.csrf()!!) }.getOrNull()
+                    view.indicator.isInvisible = true
+                    alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
+                    if (result?.success == true) {
+                        alert.dismiss()
+                        call?.invoke()
+                    } else {
+                        val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                        Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                            .setAction(R.string.app_ok) {}.show()
+                    }
                 }
             }
         }
@@ -1046,17 +1057,19 @@ object OAuth {
             val email = view.editEmail.text.toString()
             view.indicator.isInvisible = false
             alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
-            fragment.lifecycleScope.launchWhenCreated {
-                val result = runCatching { Service.instance.reset(name, email, Service.csrf()!!) }.getOrNull()
-                view.indicator.isInvisible = true
-                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
-                if (result?.success == true) {
-                    alert.dismiss()
-                    call?.invoke()
-                } else {
-                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
-                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.app_ok) {}.show()
+            fragment.lifecycleScope.launch {
+                fragment.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    val result = runCatching { Service.instance.reset(name, email, Service.csrf()!!) }.getOrNull()
+                    view.indicator.isInvisible = true
+                    alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
+                    if (result?.success == true) {
+                        alert.dismiss()
+                        call?.invoke()
+                    } else {
+                        val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                        Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                            .setAction(R.string.app_ok) {}.show()
+                    }
                 }
             }
         }
@@ -1068,17 +1081,19 @@ object OAuth {
             val pwd = view.editPwd.text.toString()
             view.indicator.isInvisible = false
             alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
-            fragment.lifecycleScope.launchWhenCreated {
-                val result = runCatching { Service.instance.change_email(pwd, email, Service.csrf()!!) }.getOrNull()
-                view.indicator.isInvisible = true
-                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
-                if (result?.success == true) {
-                    alert.dismiss()
-                    call?.invoke()
-                } else {
-                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
-                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.app_ok) {}.show()
+            fragment.lifecycleScope.launch {
+                fragment.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    val result = runCatching { Service.instance.change_email(pwd, email, Service.csrf()!!) }.getOrNull()
+                    view.indicator.isInvisible = true
+                    alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
+                    if (result?.success == true) {
+                        alert.dismiss()
+                        call?.invoke()
+                    } else {
+                        val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                        Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                            .setAction(R.string.app_ok) {}.show()
+                    }
                 }
             }
         }
@@ -1096,17 +1111,19 @@ object OAuth {
             }
             view.indicator.isInvisible = false
             alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = false }
-            fragment.lifecycleScope.launchWhenCreated {
-                val result = runCatching { Service.instance.change_pwd(old, pwd, Service.csrf()!!) }.getOrNull()
-                view.indicator.isInvisible = true
-                alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
-                if (result?.success == true) {
-                    alert.dismiss()
-                    call?.invoke()
-                } else {
-                    val msg = result?.reason ?: fragment.getString(R.string.app_failed)
-                    Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.app_ok) {}.show()
+            fragment.lifecycleScope.launch {
+                fragment.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    val result = runCatching { Service.instance.change_pwd(old, pwd, Service.csrf()!!) }.getOrNull()
+                    view.indicator.isInvisible = true
+                    alert.window?.decorView?.childrenRecursively?.mapNotNull { it as? TextView }?.forEach { it.isEnabled = true }
+                    if (result?.success == true) {
+                        alert.dismiss()
+                        call?.invoke()
+                    } else {
+                        val msg = result?.reason ?: fragment.getString(R.string.app_failed)
+                        Snackbar.make(view.root, msg, Snackbar.LENGTH_SHORT)
+                            .setAction(R.string.app_ok) {}.show()
+                    }
                 }
             }
         }

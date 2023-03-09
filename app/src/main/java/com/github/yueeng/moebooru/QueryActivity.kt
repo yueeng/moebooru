@@ -28,6 +28,7 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.*
 import kotlin.coroutines.resume
@@ -68,12 +69,16 @@ class QueryFragment : Fragment() {
         FragmentQueryBinding.inflate(inflater, container, false).also { binding ->
             (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
             requireActivity().title = getString(R.string.app_name)
-            lifecycleScope.launchWhenCreated {
-                model.name.asFlow().mapNotNull { it }.collectLatest { requireActivity().title = it }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.name.asFlow().mapNotNull { it }.collectLatest { requireActivity().title = it }
+                }
             }
-            lifecycleScope.launchWhenCreated {
-                model.id.asFlow().mapNotNull { it }.filter { it != 0L }.collectLatest { id ->
-                    Db.tags.tag(id)?.let { model.name.postValue(it.name) }
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.id.asFlow().mapNotNull { it }.filter { it != 0L }.collectLatest { id ->
+                        Db.tags.tag(id)?.let { model.name.postValue(it.name) }
+                    }
                 }
             }
             binding.bottomAppBar.setOnMenuItemClickListener { item ->
@@ -106,35 +111,37 @@ class QueryFragment : Fragment() {
             }
         }.root
 
-    private fun save() = lifecycleScope.launchWhenCreated {
-        val tag = model.query.value?.toString() ?: return@launchWhenCreated
-        val view = QuerySavedBinding.inflate(layoutInflater)
-        val saved = model.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
-        view.input1.hint = tag.takeIf { it.isNotEmpty() } ?: "Newest"
-        view.edit1.setText(saved?.name)
-        view.switch1.isChecked = saved?.pin ?: false
-        val ok = suspendCancellableCoroutine { continuation ->
-            val alert = MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.saved_title)
-                .setView(view.root)
-                .setCancelable(false)
-                .setPositiveButton(R.string.app_ok) { _, _ -> continuation.resume(true) }
-                .setNegativeButton(R.string.app_cancel, null)
-                .setOnDismissListener { if (continuation.isActive) continuation.resume(false) }
-                .show()
-            continuation.invokeOnCancellation { alert.cancel() }
+    private fun save() = lifecycleScope.launch {
+        repeatOnLifecycle(Lifecycle.State.CREATED) {
+            val tag = model.query.value?.toString() ?: return@repeatOnLifecycle
+            val view = QuerySavedBinding.inflate(layoutInflater)
+            val saved = model.id.value?.takeIf { it != 0L }?.let { Db.tags.tag(it) }
+            view.input1.hint = tag.takeIf { it.isNotEmpty() } ?: "Newest"
+            view.edit1.setText(saved?.name)
+            view.switch1.isChecked = saved?.pin ?: false
+            val ok = suspendCancellableCoroutine { continuation ->
+                val alert = MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.saved_title)
+                    .setView(view.root)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.app_ok) { _, _ -> continuation.resume(true) }
+                    .setNegativeButton(R.string.app_cancel, null)
+                    .setOnDismissListener { if (continuation.isActive) continuation.resume(false) }
+                    .show()
+                continuation.invokeOnCancellation { alert.cancel() }
+            }
+            if (!ok) return@repeatOnLifecycle
+            val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() }
+                ?: tag.takeIf { it.isNotBlank() }?.toTitleCase()
+                ?: "Newest"
+            val pin = view.switch1.isChecked
+            if (saved != null) {
+                Db.tags.updateTag(saved.update(tag, name, pin))
+            } else {
+                model.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
+            }
+            model.name.postValue(name)
         }
-        if (!ok) return@launchWhenCreated
-        val name = view.edit1.text?.toString()?.takeIf { it.isNotBlank() }
-            ?: tag.takeIf { it.isNotBlank() }?.toTitleCase()
-            ?: "Newest"
-        val pin = view.switch1.isChecked
-        if (saved != null) {
-            Db.tags.updateTag(saved.update(tag, name, pin))
-        } else {
-            model.id.postValue(Db.tags.insertTag(DbTag(0, tag, name, pin)))
-        }
-        model.name.postValue(name)
     }
 
     fun edit(key: String?) {
