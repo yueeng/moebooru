@@ -284,7 +284,7 @@ class ListFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
 }
 
 class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, private val call: ((Int) -> Unit)? = null) : PagingSource<Int, JImageItem>() {
-    suspend fun children(q: Set<Q>, raw: List<JImageItem>, data: List<JImageItem> = raw): List<JImageItem> {
+    private suspend fun children(q: Set<Q>, raw: List<JImageItem>, data: List<JImageItem> = raw): List<JImageItem> {
         val children = raw.filter { it.has_children }.map { Q().parent(it.id) }
         val parent = raw.filter { it.parent_id != 0 }.filter { data.all { i -> i.id != it.parent_id } }.map { Q().id(it.parent_id) }
         val queries = (children + parent).subtract(q)

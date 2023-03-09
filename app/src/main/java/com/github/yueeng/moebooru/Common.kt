@@ -509,7 +509,7 @@ class SharedViewModelStoreOwner(private val key: String, life: LifecycleOwner) :
         life.lifecycle.addObserver(this)
     }
 
-    override fun getViewModelStore(): ViewModelStore = map[key]?.store?.value ?: throw IllegalArgumentException("ViewModelStore lazy error.")
+    override val viewModelStore: ViewModelStore get() = map[key]?.store?.value ?: throw IllegalArgumentException("ViewModelStore lazy error.")
 
     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
         if (event == Lifecycle.Event.ON_CREATE) add(key)
@@ -698,8 +698,8 @@ object Save {
         val data = manager.getWorkInfosForUniqueWorkLiveData(key)
         suspendCancellableCoroutine { continuation ->
             val observer = object : androidx.lifecycle.Observer<List<WorkInfo>> {
-                override fun onChanged(it: List<WorkInfo>?) {
-                    continuation.resume(it?.firstOrNull()?.state)
+                override fun onChanged(value: List<WorkInfo>) {
+                    continuation.resume(value.firstOrNull()?.state)
                     data.removeObserver(this)
                 }
             }

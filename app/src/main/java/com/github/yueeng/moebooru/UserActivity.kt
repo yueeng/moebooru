@@ -63,13 +63,13 @@ class UserOtherFragment : UserFragment() {
 }
 
 class UserMineFragment : UserFragment() {
-    fun prepareOptionsMenu(menu: Menu) {
+    private fun prepareOptionsMenu(menu: Menu) {
         val auth = OAuth.user.value != null && OAuth.user.value != 0
         menu.findItem(R.id.userLogin).isVisible = !auth
         menu.findItem(R.id.userLogout).isVisible = auth
     }
 
-    fun optionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    private fun optionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.login -> true.also { OAuth.login(this) }
         R.id.register -> true.also { OAuth.register(this) }
         R.id.reset -> true.also { OAuth.reset(this) }
