@@ -356,7 +356,7 @@ class ImageFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     adapter.loadStateFlow.collectLatest {
                         binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                         sum.postValue(adapter.itemCount)
@@ -364,7 +364,7 @@ class ImageFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     val flow1 = model.index.asFlow().distinctUntilChanged()
                     val flow2 = model.min.asFlow().distinctUntilChanged()
                     val flow3 = model.max.asFlow().distinctUntilChanged()
@@ -378,21 +378,21 @@ class ImageFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     sum.asFlow().distinctUntilChanged().collectLatest {
                         binding.progress.max = it
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     offset.asFlow().distinctUntilChanged().collectLatest {
                         binding.progress.setProgressCompat(it)
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     MoeSettings.column.asFlow().drop(1).distinctUntilChanged().collectLatest {
                         TransitionManager.beginDelayedTransition(binding.swipe)
                         (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = it
@@ -400,21 +400,21 @@ class ImageFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     MoeSettings.info.asFlow().drop(1).distinctUntilChanged().collectLatest {
                         adapter.notifyItemRangeChanged(0, adapter.itemCount, "info")
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     MoeSettings.preview.asFlow().drop(1).distinctUntilChanged().collectLatest {
                         adapter.notifyItemRangeChanged(0, adapter.itemCount, "preview")
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     MoeSettings.page.asFlow().drop(1).distinctUntilChanged().collectLatest {
                         val max = model.max.value ?: 0
                         binding.layout1.isInvisible = max == 0 || it

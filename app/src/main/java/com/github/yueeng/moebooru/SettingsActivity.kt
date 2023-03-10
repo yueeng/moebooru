@@ -34,7 +34,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setPreferencesFromResource(R.xml.preferences, rootKey)
         findPreference<SeekBarPreference>("app.cache_size")?.let { seek ->
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     MoeSettings.cache.asFlow().collectLatest {
                         seek.summary = (it * (1L shl 20)).sizeString()
                     }
@@ -43,7 +43,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         val address = findPreference<EditTextPreference>("app.host_ip_address")
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 MoeSettings.host.asFlow().collectLatest {
                     address?.isVisible = it
                 }

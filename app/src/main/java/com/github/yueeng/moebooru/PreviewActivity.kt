@@ -96,7 +96,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
             activity?.title = query.toString().toTitleCase()
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.posts.collectLatest { adapter.submitData(it) }
                 }
             }
@@ -106,7 +106,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 override fun onPageSelected(position: Int) = previewModel.index.postValue(position)
             })
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     adapter.loadStateFlow
                         .distinctUntilChangedBy { it.refresh }
                         .filter { it.refresh is LoadState.NotLoading }
@@ -124,7 +124,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
                         ProgressBehavior.on(item.sample_url).onCompletion {
                             binding.progress1.isInvisible = true
@@ -149,7 +149,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
             val background = MutableLiveData<Bitmap?>()
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     var anim: ObjectAnimator? = null
                     fun trans(to: Int) {
                         val from = (binding.root.background as? ColorDrawable)?.color ?: 0
@@ -186,7 +186,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             val bottomSheetBehavior = BottomSheetBehavior.from(binding.sliding)
             val tagItem = MutableLiveData<JImageItem>()
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     tagItem.asFlow().filter { bottomSheetBehavior.isOpen }.distinctUntilChanged().collectLatest {
                         tagAdapter.submit(it)
                         TransitionManager.beginDelayedTransition(binding.sliding, ChangeBounds())
@@ -194,7 +194,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
                         GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
                             .placeholder(R.mipmap.ic_launcher)
@@ -209,7 +209,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             binding.recycler.adapter = tagAdapter
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     adapter.loadStateFlow.collectLatest {
                         binding.busy.isVisible = it.refresh is LoadState.Loading
                     }

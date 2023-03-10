@@ -75,7 +75,7 @@ class QueryFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.id.asFlow().mapNotNull { it }.filter { it != 0L }.collectLatest { id ->
                         Db.tags.tag(id)?.let { model.name.postValue(it.name) }
                     }

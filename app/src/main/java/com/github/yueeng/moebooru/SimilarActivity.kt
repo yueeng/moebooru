@@ -74,7 +74,7 @@ class SimilarFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 if (arguments?.getString("action") != Intent.ACTION_SEND) return@repeatOnLifecycle
                 if (arguments?.containsKey("url") == true) return@repeatOnLifecycle
                 val image: Uri = arguments?.getParcelableCompat(Intent.EXTRA_STREAM) ?: return@repeatOnLifecycle
@@ -107,14 +107,14 @@ class SimilarFragment : Fragment() {
             }
             binding.swipe.setOnRefreshListener { adapter.refresh() }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     adapter.loadStateFlow.collectLatest {
                         binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     MoeSettings.safe.asFlow().drop(1).distinctUntilChanged().collectLatest {
                         adapter.refresh()
                     }

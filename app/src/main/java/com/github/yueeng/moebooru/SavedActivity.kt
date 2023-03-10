@@ -70,14 +70,14 @@ class SavedFragment : Fragment() {
                 adapter.refresh()
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     pinAdapter.loadStateFlow.collectLatest {
                         binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     adapter.loadStateFlow.collectLatest {
                         binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                     }
@@ -86,12 +86,12 @@ class SavedFragment : Fragment() {
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             binding.recycler.adapter = ConcatAdapter(pinAdapter, adapter)
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     viewModel.pinned.collectLatest { pinAdapter.submitData(it) }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     viewModel.saved.collectLatest { adapter.submitData(it) }
                 }
             }
@@ -106,7 +106,7 @@ class SavedFragment : Fragment() {
                 override fun onMove(view: RecyclerView, holder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean =
                     (holder as? SavedHolder)?.tag?.takeIf { it.pin }?.let {
                         lifecycleScope.launch {
-                            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                            repeatOnLifecycle(Lifecycle.State.CREATED) {
                                 Db.db.withTransaction {
                                     pinAdapter.snapshot().toMutableList().apply {
                                         removeAt(holder.bindingAdapterPosition)
@@ -123,7 +123,7 @@ class SavedFragment : Fragment() {
                 override fun onSwiped(holder: RecyclerView.ViewHolder, direction: Int) {
                     (holder as? SavedHolder)?.tag?.takeIf { it.id != 0L }?.let {
                         lifecycleScope.launch {
-                            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                            repeatOnLifecycle(Lifecycle.State.CREATED) {
                                 Db.db.withTransaction {
                                     Db.tags.deleteTag(it)
                                     Db.tags.deleteOrder(it.tag)
@@ -162,7 +162,7 @@ class SavedFragment : Fragment() {
             }
             binding.button1.setOnClickListener {
                 lifecycleScope.launch {
-                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    repeatOnLifecycle(Lifecycle.State.CREATED) {
                         tag.pin = !tag.pin
                         tag.create = Date()
                         Db.db.withTransaction {

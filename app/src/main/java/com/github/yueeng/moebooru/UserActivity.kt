@@ -96,7 +96,7 @@ class UserMineFragment : UserFragment() {
         }
 
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 OAuth.name.asFlow().collectLatest {
                     model.name.postValue(it)
                 }
@@ -104,7 +104,7 @@ class UserMineFragment : UserFragment() {
         }
 
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 model.name.asFlow().mapNotNull { it }.collectLatest { name ->
                     binding.toolbar.title = name.toTitleCase()
                 }
@@ -112,7 +112,7 @@ class UserMineFragment : UserFragment() {
         }
 
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 OAuth.avatar.asFlow().filter { model.avatar.value != it }.collectLatest {
                     model.avatar.postValue(it)
                 }
@@ -120,7 +120,7 @@ class UserMineFragment : UserFragment() {
         }
 
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 model.avatar.asFlow().filter { OAuth.avatar.value != it }.collectLatest {
                     OAuth.avatar.postValue(it)
                 }
@@ -128,7 +128,7 @@ class UserMineFragment : UserFragment() {
         }
 
         lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
                 OAuth.timestamp.asFlow().drop(1).collectLatest {
                     face(binding, model.user.value)
                 }
@@ -159,7 +159,7 @@ open class UserFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.user.asFlow().filter { it == 0 }.collectLatest {
                         model.data.postValue(emptyArray())
                         model.avatar.postValue(0)
@@ -168,14 +168,14 @@ open class UserFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.user.asFlow().distinctUntilChanged().collectLatest {
                         face(binding, it)
                     }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     val user = model.user.asFlow().distinctUntilChanged()
                     val name = model.name.asFlow().distinctUntilChanged()
                     flowOf(user, name).flattenMerge(2).collectLatest {
@@ -187,7 +187,7 @@ open class UserFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.avatar.asFlow().distinctUntilChanged().collectLatest { id ->
                         if (id == 0) {
                             binding.toolbar.navigationIcon = null
@@ -199,7 +199,7 @@ open class UserFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.background.asFlow().distinctUntilChanged().collectLatest { url ->
                         if (url.isEmpty()) {
                             binding.image1.setImageDrawable(null)
@@ -214,12 +214,12 @@ open class UserFragment : Fragment() {
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.data.asFlow().collectLatest { adapter.submitList(it.toList()) }
                 }
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     busy.asFlow().collectLatest { binding.swipe.isRefreshing = it }
                 }
             }
@@ -427,7 +427,7 @@ class StarFragment : Fragment() {
         super.onCreate(savedInstanceState)
         if (model.data.value == null) {
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.data(post)?.let { model.data.postValue(it) }
                 }
             }
@@ -442,7 +442,7 @@ class StarFragment : Fragment() {
                 requireActivity().title = getString(R.string.query_vote_star_yours, it)
             }
             lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
                     adapter.changedFlow.collectLatest {
                         adapter.currentList.mapIndexedNotNull { index, any -> (any as? Title)?.let { index } }
                             .forEach { adapter.notifyItemChanged(it, "count") }
@@ -452,7 +452,7 @@ class StarFragment : Fragment() {
             binding.rating.setOnRatingBarChangeListener { _, rating, fromUser ->
                 if (!fromUser) return@setOnRatingBarChangeListener
                 lifecycleScope.launch {
-                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    repeatOnLifecycle(Lifecycle.State.CREATED) {
                         model.vote(post, rating.toInt())?.let {
                             model.data.postValue(it)
                             model.star.postValue(rating.toInt())
@@ -462,7 +462,7 @@ class StarFragment : Fragment() {
             }
             binding.button1.setOnClickListener {
                 lifecycleScope.launch {
-                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    repeatOnLifecycle(Lifecycle.State.CREATED) {
                         model.vote(post, 0)?.let {
                             model.data.postValue(it)
                             binding.rating.rating = 0F
@@ -485,7 +485,7 @@ class StarFragment : Fragment() {
             }
             binding.swipe.setOnRefreshListener {
                 lifecycleScope.launch {
-                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    repeatOnLifecycle(Lifecycle.State.CREATED) {
                         model.data(post)?.let { model.data.postValue(it) }
                     }
                 }
