@@ -40,6 +40,7 @@
 -dontwarn com.infradna.tool.bridge_method_injector.BridgeMethodsAdded
 -dontwarn com.infradna.tool.bridge_method_injector.WithBridgeMethods
 -dontwarn edu.umd.cs.findbugs.annotations.NonNull
+-dontwarn edu.umd.cs.findbugs.annotations.CheckForNull
 -dontwarn edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 -dontwarn java.beans.ConstructorProperties
 -dontwarn java.beans.Transient
