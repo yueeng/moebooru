@@ -38,6 +38,7 @@ import androidx.transition.Explode
 import androidx.transition.TransitionManager
 import androidx.viewpager2.widget.ViewPager2
 import com.alexvasilkov.gestures.GestureController
+import com.bumptech.glide.Glide
 import com.bumptech.glide.Priority
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.MoePermission.Companion.checkPermissions
@@ -90,7 +91,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
     private val tagAdapter by lazy { TagAdapter() }
     private val model: ImageViewModel by sharedViewModels({ query.toString() }) { ImageViewModelFactory(this, arguments) }
 
-    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+    @OptIn(FlowPreview::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentPreviewBinding.inflate(inflater, container, false).also { binding ->
             (activity as AppCompatActivity).setSupportActionBar(binding.toolbar)
@@ -169,7 +170,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         }
                         background.asFlow().onCompletion { anim?.cancel() }.collectLatest collect@{ bitmap ->
                             if (bitmap == null) return@collect
-                            GlideApp.with(binding.background)
+                            Glide.with(binding.background)
                                 .load(bitmap)
                                 .transform(BlurTransformation(5))
                                 .transition(DrawableTransitionOptions.withCrossFade())
@@ -196,11 +197,11 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             lifecycleScope.launch {
                 repeatOnLifecycle(Lifecycle.State.CREATED) {
                     previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
-                        GlideApp.with(binding.button7).load(OAuth.face(item.creator_id))
+                        Glide.with(binding.button7).load(OAuth.face(item.creator_id))
                             .placeholder(R.mipmap.ic_launcher)
                             .transition(DrawableTransitionOptions.withCrossFade())
                             .into(binding.button7)
-                        GlideApp.with(this@PreviewFragment).asBitmap().load(item.preview_url)
+                        Glide.with(this@PreviewFragment).asBitmap().load(item.preview_url)
                             .into(SimpleCustomTarget<Bitmap> { background.postValue(it) })
                         tagItem.postValue(item)
                     }
@@ -251,7 +252,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     return@setOnClickListener
                 }
                 val item = adapter.peekSafe(binding.pager.currentItem) ?: return@setOnClickListener
-                GlideApp.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
+                Glide.with(it).asFile().load(item.sample_url).into(SimpleCustomTarget { file ->
                     startActivity(
                         Intent(requireContext(), CropActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -323,7 +324,6 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
 
         private val progress = ProgressBehavior.progress(viewLifecycleOwner, binding.progress)
 
-        @OptIn(FlowPreview::class)
         fun bind(item: JImageItem) {
             val priority = when {
                 this@PreviewFragment.binding.pager.currentItem == bindingAdapterPosition -> Priority.IMMEDIATE
@@ -331,10 +331,10 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 else -> Priority.NORMAL
             }
             progress.postValue(item.sample_url)
-            GlideApp.with(binding.image1).load(item.sample_url)
+            Glide.with(binding.image1).load(item.sample_url)
                 .priority(priority)
                 .placeholder(R.mipmap.ic_launcher_foreground)
-                .thumbnail(GlideApp.with(binding.image1).load(item.preview_url).transition(DrawableTransitionOptions.withCrossFade()).onResourceReady { _, _, _, _, _ ->
+                .thumbnail(Glide.with(binding.image1).load(item.preview_url).transition(DrawableTransitionOptions.withCrossFade()).onResourceReady { _, _, _, _, _ ->
                     binding.image1.setImageDrawable(null)
                     false
                 })

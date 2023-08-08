@@ -18,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -107,7 +108,7 @@ class CropActivity : AppCompatActivity() {
             .setAutoCancel(true)
             .setSmallIcon(R.drawable.ic_stat_name)
             .setContentIntent(PendingIntent.getActivity(this, id, Intent.createChooser(intent, getString(R.string.app_share)), PendingIntentCompat.FLAG_IMMUTABLE))
-        GlideApp.with(this).asBitmap().load(uri)
+        Glide.with(this).asBitmap().load(uri)
             .diskCacheStrategy(DiskCacheStrategy.NONE)
             .skipMemoryCache(true)
             .override(500, 500)

@@ -35,14 +35,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:host="${host}"
-                    android:path="/post"
-                    android:scheme="http" />
-                <data
-                    android:host="${host}"
-                    android:path="/post"
-                    android:scheme="https" />
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:host="@string/app_host"/>
+                <data android:path="/post"/>
             </intent-filter>
         </activity>
         <activity android:name=".PreviewActivity"
@@ -54,14 +50,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:host="@string/app_host"
-                    android:pathPrefix="/post/show/"
-                    android:scheme="http" />
-                <data
-                    android:host="@string/app_host"
-                    android:pathPrefix="/post/show/"
-                    android:scheme="https" />
+                <data android:scheme="http"/>
+                <data android:scheme="https"/>
+                <data android:host="@string/app_host"/>
+                <data android:pathPrefix="/post/show/"/>
             </intent-filter>
         </activity>
         <activity android:name=".QueryActivity" />

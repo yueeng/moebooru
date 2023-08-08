@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.databinding.*
 import com.google.android.flexbox.FlexDirection
@@ -205,7 +206,7 @@ open class UserFragment : Fragment() {
                             binding.image1.setImageDrawable(null)
                             return@collectLatest
                         }
-                        GlideApp.with(binding.image1)
+                        Glide.with(binding.image1)
                             .load(url)
                             .transform(AlphaBlackBitmapTransformation())
                             .transition(DrawableTransitionOptions.withCrossFade())
@@ -227,7 +228,7 @@ open class UserFragment : Fragment() {
 
     protected fun face(binding: FragmentUserBinding, id: Int?) {
         if (id == null || id == 0) return
-        GlideApp.with(binding.toolbar)
+        Glide.with(binding.toolbar)
             .load(OAuth.face(id))
             .placeholder(R.mipmap.ic_launcher_foreground)
             .override(120, 120)
@@ -527,7 +528,7 @@ class StarFragment : Fragment() {
         fun bind(value: ItemUser) {
             progress.postValue(value.face)
             this.value = value
-            GlideApp.with(binding.image1).load(value.face)
+            Glide.with(binding.image1).load(value.face)
                 .error(R.mipmap.ic_launcher)
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)

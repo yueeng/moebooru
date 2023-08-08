@@ -26,6 +26,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.transition.TransitionManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.github.yueeng.moebooru.Save.save
 import com.github.yueeng.moebooru.databinding.*
@@ -519,9 +520,9 @@ class ImageFragment : Fragment() {
                 val sample = MoeSettings.preview.value == true
                 val url = if (sample) item.sample_url else item.preview_url
                 progress.postValue(url)
-                GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
+                Glide.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                     .run {
-                        val target = if (sample) GlideApp.with(binding.image1).load(item.preview_url) else this
+                        val target = if (sample) Glide.with(binding.image1).load(item.preview_url) else this
                         target.transition(DrawableTransitionOptions.withCrossFade())
                             .onResourceReady { _, _, _, _, _ -> binding.image1.setImageDrawable(null); false }
                         if (sample) thumbnail(target) else this

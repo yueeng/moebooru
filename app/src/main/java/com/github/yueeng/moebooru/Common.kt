@@ -62,6 +62,7 @@ import androidx.work.*
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
+import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.annotation.Excludes
 import com.bumptech.glide.annotation.GlideModule
 import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
@@ -136,8 +137,7 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
 }
 val okDns = object : Dns {
     override fun lookup(hostname: String): List<InetAddress> = when {
-        MoeSettings.host.value == true && hostname.endsWith(moeHost) ->
-            runCatching { listOf(InetAddress.getByName(MoeSettings.ip.value)) }.getOrNull()
+        MoeSettings.host.value == true && hostname.endsWith(moeHost) -> runCatching { listOf(InetAddress.getByName(MoeSettings.ip.value)) }.getOrNull()
         else -> null
     } ?: Dns.SYSTEM.lookup(hostname)
 }
@@ -267,20 +267,20 @@ object ProgressBehavior {
     }
 }
 
-fun <TranscodeType> GlideRequest<TranscodeType>.onResourceReady(call: (resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
+fun <TranscodeType> RequestBuilder<TranscodeType>.onResourceReady(call: (resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
     override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean = false
     override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean =
         call(resource, model, target, dataSource, isFirstResource)
 })
 
-fun <TranscodeType> GlideRequest<TranscodeType>.onLoadFailed(call: (e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
+fun <TranscodeType> RequestBuilder<TranscodeType>.onLoadFailed(call: (e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
     override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean =
         call(e, model, target, isFirstResource)
 
     override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false
 })
 
-fun <TranscodeType> GlideRequest<TranscodeType>.onComplete(call: (model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean, succeeded: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
+fun <TranscodeType> RequestBuilder<TranscodeType>.onComplete(call: (model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean, succeeded: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
     override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean =
         call(model, target, isFirstResource, false)
 
@@ -299,16 +299,16 @@ class SimpleDrawableCustomViewTarget<T : View>(view: T, private val call: (view:
     override fun onResourceCleared(placeholder: Drawable?) = call(view, placeholder)
 }
 
-fun <T : View> GlideRequest<Drawable>.into(view: T, call: (view: T, drawable: Drawable?) -> Unit) = into(SimpleDrawableCustomViewTarget(view, call))
+fun <T : View> RequestBuilder<Drawable>.into(view: T, call: (view: T, drawable: Drawable?) -> Unit) = into(SimpleDrawableCustomViewTarget(view, call))
 
 val random = Random(System.currentTimeMillis())
 
 fun randomColor(alpha: Int = 0xFF, saturation: Float = 1F, value: Float = 0.5F) =
     Color.HSVToColor(alpha, arrayOf(random.nextInt(360).toFloat(), saturation, value).toFloatArray())
 
-fun ImageView.glideUrl(url: String, placeholder: Int? = null): GlideRequest<Drawable> {
+fun ImageView.glideUrl(url: String, placeholder: Int? = null): RequestBuilder<Drawable> {
     scaleType = ImageView.ScaleType.CENTER
-    return GlideApp.with(this)
+    return Glide.with(this)
         .load(url)
         .transition(DrawableTransitionOptions.withCrossFade())
         .run { if (placeholder != null) placeholder(placeholder) else this }
@@ -359,6 +359,7 @@ class SymbolsTokenizer(private val symbols: Set<Char>) : MultiAutoCompleteTextVi
                 copySpansFrom(text, 0, text.length, Any::class.java, sp, 0)
                 sp
             }
+
             else -> "$text "
         }
     }
@@ -425,6 +426,7 @@ class TimeSpan(val end: Calendar, val begin: Calendar) {
                 end.millisecondOfDay > begin.millisecondOfDay -> -2
                 else -> -1
             }
+
             end.millisecondOfDay < begin.millisecondOfDay -> 2
             else -> 1
         }
@@ -434,6 +436,7 @@ class TimeSpan(val end: Calendar, val begin: Calendar) {
                 end.dayOfWeek > begin.dayOfWeek -> -2
                 else -> -1
             }
+
             end.dayOfWeek < begin.dayOfWeek -> 2
             else -> 1
         }
@@ -603,7 +606,7 @@ object Save {
                         val del = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                             put(MediaStore.Images.ImageColumns.RELATIVE_PATH, "Pictures/$moeHost")
                             MediaStore.Images.ImageColumns.RELATIVE_PATH to "Pictures/$moeHost"
-                        } else @Suppress("DEPRECATION") {
+                        } else {
                             val picture = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                             val folder = File(picture, moeHost).apply { mkdirs() }
                             val file = File(folder, fileName)
@@ -623,21 +626,22 @@ object Save {
                         }
                     }
                     applicationContext.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)?.also { uri ->
-                        @Suppress("BlockingMethodInNonBlockingContext")
                         applicationContext.contentResolver.openOutputStream(uri)?.use { output ->
                             target.inputStream().use { it.copyTo(output) }
                         }
                     }
                 }
+
                 SO.SHARE -> {
                     val file = File(File(applicationContext.cacheDir, "shared").apply { mkdirs() }, fileName).also(target::renameTo)
                     FileProvider.getUriForFile(applicationContext, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
                 }
+
                 SO.WALLPAPER -> target.inputStream().use { stream ->
-                    @Suppress("BlockingMethodInNonBlockingContext")
                     WallpaperManager.getInstance(applicationContext).setStream(stream)
                     null
                 }
+
                 SO.CROP -> {
                     applicationContext.startActivity(
                         Intent(applicationContext, CropActivity::class.java)
@@ -665,7 +669,7 @@ object Save {
                     .setAutoCancel(true)
                     .setContentIntent(padding)
                 suspendCancellableCoroutine { continuation ->
-                    GlideApp.with(MainApplication.instance()).asBitmap().load(target).override(500, 500)
+                    Glide.with(MainApplication.instance()).asBitmap().load(target).override(500, 500)
                         .into(object : CustomTarget<Bitmap>() {
                             override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
                                 notification.setStyle(NotificationCompat.BigPictureStyle().bigPicture(resource))
@@ -742,6 +746,7 @@ object Save {
                             Toast.makeText(this@save, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
                             return@repeatOnLifecycle
                         }
+
                         WorkInfo.State.SUCCEEDED -> {
                             anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
                                 .setAnchorView(anchor)
@@ -749,6 +754,7 @@ object Save {
                                 .show()
                             return@repeatOnLifecycle
                         }
+
                         else -> download()
                     }
                 }

@@ -18,6 +18,7 @@ import androidx.lifecycle.*
 import androidx.paging.*
 import androidx.recyclerview.widget.RecyclerView
 import androidx.savedstate.SavedStateRegistryOwner
+import com.bumptech.glide.Glide
 import com.github.yueeng.moebooru.databinding.FragmentSimilarBinding
 import com.github.yueeng.moebooru.databinding.ImageItemBinding
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +82,7 @@ class SimilarFragment : Fragment() {
                 runCatching {
                     requireContext().contentResolver.openInputStream(image).use {
                         val base64 = withContext(Dispatchers.IO) {
-                            val bitmap = GlideApp.with(this@SimilarFragment).asBitmap()
+                            val bitmap = Glide.with(this@SimilarFragment).asBitmap()
                                 .load(image).submit(150, 150).get()
                             ByteArrayOutputStream().use { stream ->
                                 bitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream)
@@ -131,7 +132,7 @@ class SimilarFragment : Fragment() {
         fun bind(item: JImageItem) {
             val url = URL(URL(moeUrl), item.preview_url).toString()
             progress.postValue(url)
-            GlideApp.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
+            Glide.with(binding.image1).load(url).placeholder(R.mipmap.ic_launcher_foreground)
                 .onComplete { _, _, _, _ -> progress.postValue(""); false }
                 .into(binding.image1)
             binding.text1.text = when (item.service) {
