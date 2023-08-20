@@ -139,7 +139,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 findViewById<View>(android.R.id.content).transitionName = "shared_element_container"
                 setEnterSharedElementCallback(MaterialContainerTransformSharedElementCallback())
                 setExitSharedElementCallback(MaterialContainerTransformSharedElementCallback())
-                val background = theme.obtainStyledAttributes(intArrayOf(R.attr.colorSurface)).use {
+                val background = theme.obtainStyledAttributes(intArrayOf(com.google.android.material.R.attr.colorSurface)).use {
                     it.getColor(0, Color.WHITE)
                 }
                 window.sharedElementEnterTransition = MaterialContainerTransform().apply {

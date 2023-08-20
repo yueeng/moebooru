@@ -154,7 +154,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     var anim: ObjectAnimator? = null
                     fun trans(to: Int) {
                         val from = (binding.root.background as? ColorDrawable)?.color ?: 0
-                        val target = if (to != 0) to else requireActivity().theme.obtainStyledAttributes(intArrayOf(R.attr.colorSurface)).use {
+                        val target = if (to != 0) to else requireActivity().theme.obtainStyledAttributes(intArrayOf(com.google.android.material.R.attr.colorSurface)).use {
                             it.getColor(0, Color.WHITE)
                         }
                         anim = ObjectAnimator.ofObject(binding.root, "backgroundColor", ArgbEvaluator(), from, target).apply {
