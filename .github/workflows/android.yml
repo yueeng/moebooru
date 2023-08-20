@@ -60,34 +60,17 @@ jobs:
           path: ${{ github.workspace }}/app/build/outputs/**
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
           tag_name: ${{ env.time_tick }}
-          release_name: pre-release ${{ env.time_tick }}
+          name: pre-release ${{ env.time_tick }}
           body: |
             - ${{ github.ref }}
             - ${{ github.sha }}
           draft: false
           prerelease: true
-      - name: Upload Release Konachan Apk
-        id: upload-konachan-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ${{ github.workspace }}/app/build/outputs/apk/konachan/app-konachan-release.apk
-          asset_name: app-konachan-release.apk
-          asset_content_type: application/apk
-      - name: Upload Release Yande Apk
-        id: upload-yande-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ${{ github.workspace }}/app/build/outputs/apk/yande/app-yande-release.apk
-          asset_name: app-yande-release.apk
-          asset_content_type: application/apk
+          files: |
+            ${{ github.workspace }}/app/build/outputs/apk/konachan/app-konachan-release.apk
+            ${{ github.workspace }}/app/build/outputs/apk/yande/app-yande-release.apk
