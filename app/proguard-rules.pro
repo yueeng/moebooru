@@ -23,7 +23,7 @@
 -keepclassmembers,allowobfuscation class * {
   @com.google.gson.annotations.SerializedName <fields>;
 }
--keep,allowshrinking class org.kohsuke.github.GH*{*;}
+-keep class org.kohsuke.github.GH*{*;}
 
 -dontwarn org.conscrypt.Conscrypt$Version
 -dontwarn org.conscrypt.Conscrypt
