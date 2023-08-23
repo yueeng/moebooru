@@ -268,23 +268,23 @@ object ProgressBehavior {
 }
 
 fun <TranscodeType> RequestBuilder<TranscodeType>.onResourceReady(call: (resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
-    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean = false
-    override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean =
+    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>, isFirstResource: Boolean): Boolean = false
+    override fun onResourceReady(resource: TranscodeType & Any, model: Any, target: Target<TranscodeType>?, dataSource: DataSource, isFirstResource: Boolean): Boolean =
         call(resource, model, target, dataSource, isFirstResource)
 })
 
 fun <TranscodeType> RequestBuilder<TranscodeType>.onLoadFailed(call: (e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
-    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean =
+    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>, isFirstResource: Boolean): Boolean =
         call(e, model, target, isFirstResource)
 
-    override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean = false
+    override fun onResourceReady(resource: TranscodeType & Any, model: Any, target: Target<TranscodeType>?, dataSource: DataSource, isFirstResource: Boolean): Boolean = false
 })
 
 fun <TranscodeType> RequestBuilder<TranscodeType>.onComplete(call: (model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean, succeeded: Boolean) -> Boolean) = addListener(object : RequestListener<TranscodeType> {
-    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>?, isFirstResource: Boolean): Boolean =
+    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<TranscodeType>, isFirstResource: Boolean): Boolean =
         call(model, target, isFirstResource, false)
 
-    override fun onResourceReady(resource: TranscodeType, model: Any?, target: Target<TranscodeType>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean =
+    override fun onResourceReady(resource: TranscodeType & Any, model: Any, target: Target<TranscodeType>?, dataSource: DataSource, isFirstResource: Boolean): Boolean =
         call(model, target, isFirstResource, true)
 })
 

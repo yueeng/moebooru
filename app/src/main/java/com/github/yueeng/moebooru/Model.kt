@@ -1,4 +1,4 @@
-@file:Suppress("EnumEntryName", "MemberVisibilityCanBePrivate", "unused", "FunctionName", "ObjectPropertyName", "LocalVariableName", "PropertyName")
+@file:Suppress("EnumEntryName", "MemberVisibilityCanBePrivate", "unused", "FunctionName", "LocalVariableName", "PropertyName")
 
 package com.github.yueeng.moebooru
 
