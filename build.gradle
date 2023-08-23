@@ -5,11 +5,11 @@ plugins {
     id("com.google.devtools.ksp") version "1.9.0-1.0.13" apply false
 }
 
-task clean(type: Delete) {
+tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
 
-task summary {
+tasks.register('summary') {
     def download = { name, host ->
         println "==========$name summary==========="
         def folder = new File("app/src/$name/assets")
@@ -45,7 +45,7 @@ task summary {
     }
 }
 
-task publish {
+tasks.register('publish') {
     dependsOn 'app:assembleRelease'
     doLast {
         println 'publish'
