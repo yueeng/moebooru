@@ -946,7 +946,7 @@ fun createProcessTextIntent(): Intent = Intent()
 fun Context.getSupportedActivities(): List<ResolveInfo> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
     packageManager.queryIntentActivities(createProcessTextIntent(), PackageManager.ResolveInfoFlags.of(0))
 } else {
-    @Suppress("DEPRECATION") packageManager.queryIntentActivities(createProcessTextIntent(), 0)
+    packageManager.queryIntentActivities(createProcessTextIntent(), 0)
 }
 
 @RequiresApi(Build.VERSION_CODES.M)
