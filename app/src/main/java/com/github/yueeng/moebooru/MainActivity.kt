@@ -345,7 +345,7 @@ class ImageFragment : Fragment() {
     private val sum = MutableLiveData<Int>()
     val adapter by lazy { ImageAdapter() }
 
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentImageBinding.inflate(inflater, container, false).also { binding ->
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY

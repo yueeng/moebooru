@@ -143,7 +143,7 @@ open class UserFragment : Fragment() {
     private val adapter by lazy { ImageAdapter() }
     private val busy = MutableLiveData(false)
 
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
             binding.toolbar.setNavigationOnClickListener {
