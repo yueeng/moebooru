@@ -548,7 +548,7 @@ object Save {
     class SaveWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
         val id by lazy { inputData.getInt("id", 0) }
         val url by lazy { inputData.getString("url")!! }
-        val option by lazy { inputData.getInt("option", 0).let { SO.values()[it] } }
+        val option by lazy { inputData.getInt("option", 0).let { SO.entries[it] } }
         val fileName get() = fileNameEncode(url.toHttpUrl().pathSegments.last())
         val target by lazy { File(applicationContext.cacheDir, UUID.randomUUID().toString()) }
         val notification: NotificationCompat.Builder by lazy {

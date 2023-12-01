@@ -272,7 +272,7 @@ class QueryFragment : Fragment() {
             .show {
                 positiveButton.setOnClickListener {
                     val chip = view.chipGroup.checkedChip
-                    val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
+                    val op = Q.Value.Op.entries.firstOrNull { it.value == chip?.tag }
                     if (op == null) {
                         Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
                             .setAction(R.string.app_ok) {}
@@ -359,7 +359,7 @@ class QueryFragment : Fragment() {
             .show {
                 positiveButton.setOnClickListener {
                     val chip = view.chipGroup.checkedChip
-                    val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
+                    val op = Q.Value.Op.entries.firstOrNull { it.value == chip?.tag }
                     if (op == null) {
                         Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
                             .setAction(R.string.app_ok) {}
@@ -419,7 +419,7 @@ class QueryFragment : Fragment() {
             .show {
                 positiveButton.setOnClickListener {
                     val chip = view.chipGroup.checkedChip
-                    val op = Q.Value.Op.values().firstOrNull { it.value == chip?.tag }
+                    val op = Q.Value.Op.entries.firstOrNull { it.value == chip?.tag }
                     if (op == null) {
                         Snackbar.make(view.root, R.string.query_empty, Snackbar.LENGTH_SHORT)
                             .setAction(R.string.app_ok) {}
@@ -497,8 +497,8 @@ class QueryFragment : Fragment() {
                     }
                     val selected = data[adapter.checked]["n"]
                     val choice = when (key) {
-                        "order" -> Q.Order.values().first { it.value == selected }
-                        "rating" -> Q.Rating.values().first { it.value == selected }
+                        "order" -> Q.Order.entries.first { it.value == selected }
+                        "rating" -> Q.Rating.entries.first { it.value == selected }
                         else -> null
                     }
                     this@QueryFragment.adapter.add(key, choice!!)

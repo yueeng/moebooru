@@ -73,7 +73,7 @@ enum class Resolution(val title: String, val resolution: Int) {
     val mpixels get() = resolution / 1000000F
 
     companion object {
-        fun match(mpixels: Float) = values().reversed().firstOrNull { mpixels >= it.mpixels } ?: ZERO
+        fun match(mpixels: Float) = entries.reversed().firstOrNull { mpixels >= it.mpixels } ?: ZERO
     }
 }
 
@@ -736,9 +736,9 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable, IQ {
             when (list.size) {
                 1 -> "keyword" to list.first()
                 2 -> when (list.first()) {
-                    "order" -> list.first() to list.last().let { v -> Order.values().single { it.value == v } }
-                    "rating" -> list.first() to list.last().let { v -> Rating.values().single { it.value == v } }
-                    "-rating" -> list.first() to "-${list.last()}".let { v -> Rating.values().single { it.value == v } }
+                    "order" -> list.first() to list.last().let { v -> Order.entries.single { it.value == v } }
+                    "rating" -> list.first() to list.last().let { v -> Rating.entries.single { it.value == v } }
+                    "-rating" -> list.first() to "-${list.last()}".let { v -> Rating.entries.single { it.value == v } }
                     "id", "width", "height", "score" -> list.first() to list.last().let { v ->
                         Value.from(v) { it.toIntOrNull() ?: 0 }
                     }
