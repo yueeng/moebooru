@@ -54,7 +54,7 @@ jobs:
           mv yande/release/* yande/
           rm -fr yande/release
       - name: Artifact Apk
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: outputs
           path: ${{ github.workspace }}/app/build/outputs/**
