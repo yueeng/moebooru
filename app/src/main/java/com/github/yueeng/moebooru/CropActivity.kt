@@ -25,7 +25,7 @@ import com.bumptech.glide.request.transition.Transition
 import com.yalantis.ucrop.UCrop
 import com.yalantis.ucrop.UCropActivity
 import java.io.File
-import java.util.*
+import java.util.UUID
 
 class CropActivity : AppCompatActivity() {
     companion object {

@@ -1,7 +1,12 @@
 package com.github.yueeng.moebooru
 
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.bundleOf
 import androidx.core.view.MenuProvider
@@ -21,7 +26,9 @@ import com.github.yueeng.moebooru.databinding.PopularTabItemBinding
 import com.google.android.material.datepicker.CalendarConstraints
 import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class PopularActivity : MoeActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
