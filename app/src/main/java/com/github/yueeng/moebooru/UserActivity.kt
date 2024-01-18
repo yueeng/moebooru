@@ -31,8 +31,7 @@ class UserActivity : MoeActivity(R.layout.activity_container) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportFragmentManager.run {
-            val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserOtherFragment
-                ?: UserOtherFragment().apply { arguments = intent.extras }
+            val fragment = supportFragmentManager.findFragmentById(R.id.container) as? UserFragment ?: UserFragment().apply { arguments = intent.extras }
             beginTransaction().replace(R.id.container, fragment).commit()
         }
     }
@@ -51,20 +50,6 @@ class UserViewModelFactory(owner: SavedStateRegistryOwner, private val args: Bun
     override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = UserViewModel(handle, args) as T
 }
 
-class UserOtherFragment : UserFragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View = super.onCreateView(inflater, container, savedInstanceState).also { view ->
-        val binding = FragmentUserBinding.bind(view)
-        (requireActivity() as AppCompatActivity).setSupportActionBar(binding.toolbar)
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-                model.name.asFlow().mapNotNull { it }.distinctUntilChanged().collectLatest { name ->
-                    requireActivity().title = name.toTitleCase()
-                }
-            }
-        }
-    }
-}
-
 class UserMineFragment : UserFragment() {
     private fun prepareOptionsMenu(menu: Menu) {
         val auth = OAuth.user.value != null && OAuth.user.value != 0
@@ -72,20 +57,10 @@ class UserMineFragment : UserFragment() {
         menu.findItem(R.id.userLogout).isVisible = auth
     }
 
-    private fun optionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.login -> true.also { OAuth.login(this) }
-        R.id.register -> true.also { OAuth.register(this) }
-        R.id.reset -> true.also { OAuth.reset(this) }
-        R.id.logout -> true.also { OAuth.logout(this) }
-        R.id.changeEmail -> true.also { OAuth.changeEmail(this) }
-        R.id.changePwd -> true.also { OAuth.changePwd(this) }
-        else -> false
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View = super.onCreateView(inflater, container, savedInstanceState).also { view ->
         val binding = FragmentUserBinding.bind(view)
         prepareOptionsMenu(binding.toolbar.menu)
-        binding.toolbar.setOnMenuItemClickListener { optionsItemSelected(it) }
 
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
@@ -100,14 +75,6 @@ class UserMineFragment : UserFragment() {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 OAuth.name.asFlow().collectLatest {
                     model.name.postValue(it)
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                    binding.toolbar.title = name.toTitleCase()
                 }
             }
         }
@@ -143,14 +110,29 @@ open class UserFragment : Fragment() {
     private val adapter by lazy { ImageAdapter() }
     private val busy = MutableLiveData(false)
 
+    private fun optionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.login -> true.also { OAuth.login(this) }
+        R.id.register -> true.also { OAuth.register(this) }
+        R.id.reset -> true.also { OAuth.reset(this) }
+        R.id.logout -> true.also { OAuth.logout(this) }
+        R.id.changeEmail -> true.also { OAuth.changeEmail(this) }
+        R.id.changePwd -> true.also { OAuth.changePwd(this) }
+        R.id.userAvatar -> true.also {
+            if ((model.avatar.value ?: 0) == 0) return@also
+            val binding = FragmentUserBinding.bind(requireView())
+            val options = binding.toolbar.findViewById<View>(item.itemId)?.let { ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container") }
+            startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)), options?.toBundle())
+        }
+
+        else -> false
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FragmentUserBinding.inflate(inflater, container, false).also { binding ->
-            binding.toolbar.setNavigationOnClickListener {
-                if ((model.avatar.value ?: 0) == 0) return@setNavigationOnClickListener
-                val options = ActivityOptions.makeSceneTransitionAnimation(requireActivity(), it, "shared_element_container")
-                startActivity(Intent(requireContext(), PreviewActivity::class.java).putExtra("query", Q().id(model.avatar.value!!)), options.toBundle())
-            }
+            binding.toolbar.menu.findItem(R.id.userLogin).isVisible = false
+            binding.toolbar.menu.findItem(R.id.userLogout).isVisible = false
+            binding.toolbar.setOnMenuItemClickListener { optionsItemSelected(it) }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter
@@ -172,6 +154,14 @@ open class UserFragment : Fragment() {
                 repeatOnLifecycle(Lifecycle.State.CREATED) {
                     model.user.asFlow().distinctUntilChanged().collectLatest {
                         face(binding, it)
+                    }
+                }
+            }
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.CREATED) {
+                    model.name.asFlow().mapNotNull { it }.collectLatest { name ->
+                        binding.collapsing.title = name.toTitleCase()
+                        binding.toolbar.title = name.toTitleCase()
                     }
                 }
             }

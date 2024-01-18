@@ -154,6 +154,7 @@
     <string name="settings_safe_turn_off">安全</string>
     <string name="settings_safe_turn_on">全部</string>
 
+    <string name="user_avatar">头像</string>
     <string name="user_change_email">变更邮箱</string>
     <string name="user_change_pwd">变更密码</string>
     <string name="user_email">邮箱</string>
