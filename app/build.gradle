@@ -17,8 +17,8 @@ android {
         applicationId "com.github.yueeng.moebooru"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 7
-        versionName "1.0.7"
+        versionCode 8
+        versionName "1.0.8"
         resourceConfigurations += ['zh']
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -58,7 +58,7 @@ android {
             applicationIdSuffix '.yande'
             resValue 'string', 'app_name', 'Yande'
             resValue 'string', 'app_host', 'yande.re'
-            resValue 'string', 'app_ip', '198.98.54.92'
+            resValue 'string', 'app_ip', '198.98.58.238'
             resValue 'string', 'app_create_time', '2006-8-13'
             manifestPlaceholders.host = "yande.re"
         }
@@ -67,7 +67,7 @@ android {
             applicationIdSuffix '.konachan'
             resValue "string", "app_name", "Konachan"
             resValue 'string', 'app_host', 'konachan.com'
-            resValue 'string', 'app_ip', '104.28.10.64'
+            resValue 'string', 'app_ip', '104.21.4.105'
             resValue 'string', 'app_create_time', '2008-1-13'
             manifestPlaceholders.host = "konachan.com"
         }
