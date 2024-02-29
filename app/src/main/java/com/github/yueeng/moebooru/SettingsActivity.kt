@@ -3,6 +3,7 @@
 package com.github.yueeng.moebooru
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.Menu
@@ -77,6 +78,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         findPreference<Preference>("about")?.let {
             it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
+            it.setOnPreferenceClickListener {
+                requireContext().startActivity(Intent(requireContext(), CrashActivity::class.java))
+                true
+            }
         }
     }
 }
@@ -112,6 +117,7 @@ object MoeSettings {
                 AppCompatDelegate.MODE_NIGHT_NO,
                 AppCompatDelegate.MODE_NIGHT_YES,
                 AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY -> v
+
                 else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
             }
         }

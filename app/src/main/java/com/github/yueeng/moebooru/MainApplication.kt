@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Spannable
@@ -48,6 +49,7 @@ import com.google.android.material.transition.platform.MaterialContainerTransfor
 import com.google.android.material.transition.platform.MaterialElevationScale
 import com.google.android.material.transition.platform.MaterialFadeThrough
 import com.google.android.material.transition.platform.MaterialSharedAxis
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -92,18 +94,22 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
         setSupportActionBar(findViewById(R.id.toolbar))
         val e = intent.getSerializableExtraCompat("e") as? Throwable
         val seq = generateSequence(e) { it.cause }
+        if (!seq.any()) supportActionBar?.title = "Info"
         val ex = StringWriter().use { stream ->
             PrintWriter(stream).use { writer ->
-                writer.println("=====BuildConfig=====")
-                BuildConfig::class.java.declaredFields.filter { Modifier.isStatic(it.modifiers) }.forEach {
-                    writer.println("${it.name}: ${it.get(null)}")
+                val gson = GsonBuilder().create();
+                val info = listOf(BuildConfig::class, Build::class, Build.VERSION::class)
+                info.forEach { i ->
+                    writer.println("===== ${i.simpleName} =====")
+                    i.java.declaredFields.filter { Modifier.isStatic(it.modifiers) }.forEach {
+                        writer.println("${it.name}: ${gson.toJson(it.get(null))}")
+                    }
+                    writer.println()
                 }
-                writer.println()
-                writer.println("=====Exception=====")
-                seq.forEach {
-                    it.printStackTrace(writer)
+                if (seq.any()) {
+                    writer.println("===== Exception =====")
+                    seq.forEach { it.printStackTrace(writer) }
                 }
-                writer.println("-------------------")
             }
             stream.toString()
         }
@@ -127,6 +133,7 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
             val manager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             manager.setPrimaryClip(ClipData.newPlainText("ERROR", findViewById<TextView>(R.id.text1).text))
         }
+
         else -> super.onOptionsItemSelected(item)
     }
 }
@@ -167,6 +174,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 }
                 window.allowEnterTransitionOverlap = true
             }
+
             "scale" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val growingUp = MaterialElevationScale(true)
@@ -176,6 +184,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.reenterTransition = growingUp
                 window.returnTransition = growingDown
             }
+
             "fade" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val fade = MaterialFadeThrough()
@@ -184,6 +193,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.reenterTransition = fade
                 window.returnTransition = fade
             }
+
             "axis_x" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val forward = MaterialSharedAxis(MaterialSharedAxis.X, true)
@@ -193,6 +203,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.enterTransition = forward
                 window.returnTransition = backward
             }
+
             "axis_y" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val forward = MaterialSharedAxis(MaterialSharedAxis.Y, true)
@@ -202,6 +213,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.enterTransition = forward
                 window.returnTransition = backward
             }
+
             "axis_z" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val forward = MaterialSharedAxis(MaterialSharedAxis.Z, true)
@@ -211,6 +223,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.enterTransition = forward
                 window.returnTransition = backward
             }
+
             "explode" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val explodeFade = TransitionSet().addTransition(Explode()).addTransition(Fade())
@@ -219,6 +232,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.returnTransition = explodeFade
                 window.reenterTransition = explodeFade
             }
+
             "slide" -> {
                 window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
                 val start = TransitionSet().addTransition(Slide(Gravity.START)).addTransition(Fade())
@@ -228,6 +242,7 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
                 window.returnTransition = end
                 window.reenterTransition = start
             }
+
             else -> Unit
         }
 //        window.allowEnterTransitionOverlap = false
@@ -264,11 +279,13 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
             val options = findViewById<View>(item.itemId)?.let { ActivityOptions.makeSceneTransitionAnimation(this, it, "shared_element_container") }
             startActivity(Intent(this, SettingsActivity::class.java), options?.toBundle())
         }
+
         R.id.search -> true.also {
             val query = (supportFragmentManager.findFragmentById(R.id.container) as? SavedFragment.Queryable)?.query() ?: Q()
             val options = findViewById<View>(item.itemId)?.let { ActivityOptions.makeSceneTransitionAnimation(this, it, "shared_element_container") }
             startActivity(Intent(this, QueryActivity::class.java).putExtra("query", query), options?.toBundle())
         }
+
         else -> super.onOptionsItemSelected(item)
     }
 }
