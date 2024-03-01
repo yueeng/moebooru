@@ -437,11 +437,7 @@ data class Version(val ver: List<Int>) : Comparable<Version> {
     constructor(ver: String) : this(ver.trimStart('v', 'V').split('.').mapNotNull { it.toIntOrNull() })
 
     companion object {
-        fun from(ver: String?) = try {
-            ver?.let { Version(ver) }
-        } catch (_: Exception) {
-            null
-        }
+        fun from(ver: String?) = runCatching { ver?.let { Version(ver) } }.getOrNull()
     }
 }
 

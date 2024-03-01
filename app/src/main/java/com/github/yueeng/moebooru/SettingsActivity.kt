@@ -126,6 +126,7 @@ object MoeSettings {
     private const val KEY_HOST_IP_ADDRESS = "app.host_ip_address"
     private const val KEY_API_KEY = "app.api_key"
     private const val KEY_CHECK_NOTIFICATION = "app.check_notification"
+    private const val KEY_UPDATE_VERSION = "app.update_version"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -164,6 +165,7 @@ object MoeSettings {
     }
 
     val checkNotification = preferences.booleanLiveData(KEY_CHECK_NOTIFICATION, true)
+    val updateVersion = preferences.stringLiveData(KEY_UPDATE_VERSION, null)
 
     init {
         ProcessLifecycleOwner.get().launchWhenCreated {

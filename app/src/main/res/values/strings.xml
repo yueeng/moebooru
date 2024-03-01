@@ -24,6 +24,8 @@
     <string name="app_share">Share</string>
     <string name="app_similar">Similar images</string>
     <string name="app_update">Check Update</string>
+    <string name="app_update_error">Check update error.</string>
+    <string name="app_update_ignore">Ignore version</string>
     <string name="app_version">%1$s v%2$s.%3$s</string>
     <string name="app_channel_download">Download Notification</string>
     <string name="app_channel_description">Please open the application notification settings, otherwise you won\'t see the download task notifications.</string>

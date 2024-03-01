@@ -1022,11 +1022,16 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
                 false -> repository.latestRelease
             }
         }
-    }.getOrNull() ?: return@launchWhenCreated
+    }.getOrNull()
+    if (latest == null) {
+        if (compare) Toast.makeText(this@checkAppUpdate, R.string.app_update_error, Toast.LENGTH_SHORT).show()
+        return@launchWhenCreated
+    }
     val name = if (compare) {
-        val ver = runCatching { Version(BuildConfig.VERSION_NAME) }.getOrNull() ?: return@launchWhenCreated
+        val ver = Version.from(BuildConfig.VERSION_NAME) ?: return@launchWhenCreated
+        val saved = Version.from(MoeSettings.updateVersion.value)?.takeIf { it > ver } ?: ver
         val online = Version.from(latest.tagName) ?: return@launchWhenCreated
-        if (ver >= online) return@launchWhenCreated
+        if (saved >= online) return@launchWhenCreated
         "v$ver > v$online"
     } else latest.name
     val url = runCatching {
@@ -1038,7 +1043,7 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
         .setTitle(name)
         .setMessage(latest.body)
         .setPositiveButton(getString(R.string.app_download)) { _, _ -> openWeb(url) }
-        .setNegativeButton(R.string.app_cancel, null)
+        .setNegativeButton(R.string.app_update_ignore) { _, _ -> MoeSettings.updateVersion.setValueToPreferences(latest.tagName) }
         .apply {
             if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
                 checkAppUpdate(true)
