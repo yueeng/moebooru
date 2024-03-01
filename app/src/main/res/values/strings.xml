@@ -4,8 +4,8 @@
     <string name="app_cancel">Cancel</string>
     <string name="app_column">Column</string>
     <string name="app_complete">Complete</string>
-    <string name="app_download">%1$s download</string>
-    <string name="app_download_apk">download</string>
+    <string name="app_downloaded">%1$s download</string>
+    <string name="app_download">download</string>
     <string name="app_failed">Failed</string>
     <string name="app_favorite">Favorite</string>
     <string name="app_github">GitHub</string>
@@ -25,10 +25,11 @@
     <string name="app_similar">Similar images</string>
     <string name="app_update">Check Update</string>
     <string name="app_version">%1$s v%2$s.%3$s</string>
+    <string name="app_channel_download">Download Notification</string>
 
-    <string name="download_exists">The file already exists, do you want download again?</string>
+    <string name="download_exists">You have already downloaded it. Do you need to download it again?</string>
     <string name="download_ready">Ready</string>
-    <string name="download_running">The file already downloading, wait please.</string>
+    <string name="download_running">It\'s already in the download queue. Please wait.</string>
 
     <string name="popular_by_day">Popular by day</string>
     <string name="popular_by_month">Popular by month</string>

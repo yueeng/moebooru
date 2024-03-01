@@ -1,15 +1,12 @@
 package com.github.yueeng.moebooru
 
 import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -73,6 +70,7 @@ class CropActivity : AppCompatActivity() {
                 val dest = File(File(cacheDir, "shared").apply { mkdirs() }, name)
                 cropShare.launch(UCrop.of(source, Uri.fromFile(dest)))
             }
+
             OPTION_AVATAR -> {
                 val dest = File(cacheDir, UUID.randomUUID().toString())
                 val option = UCrop.Options().apply {
@@ -83,6 +81,7 @@ class CropActivity : AppCompatActivity() {
                     .withAspectRatio(1F, 1F).withOptions(option)
                 cropAvatar.launch(crop)
             }
+
             else -> finish()
         }
     }
@@ -96,12 +95,6 @@ class CropActivity : AppCompatActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManagerCompat.from(this).let { manager ->
-                val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_DEFAULT)
-                manager.createNotificationChannel(channel)
-            }
-        }
         val builder = NotificationCompat.Builder(this, moeHost)
             .setContentTitle(title)
             .setContentText(content)

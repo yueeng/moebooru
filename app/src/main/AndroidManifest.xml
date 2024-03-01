@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"
@@ -26,7 +27,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ListActivity"
+        <activity
+            android:name=".ListActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -35,13 +37,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="http"/>
-                <data android:scheme="https"/>
-                <data android:host="@string/app_host"/>
-                <data android:path="/post"/>
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="@string/app_host" />
+                <data android:path="/post" />
             </intent-filter>
         </activity>
-        <activity android:name=".PreviewActivity"
+        <activity
+            android:name=".PreviewActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -50,10 +53,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="http"/>
-                <data android:scheme="https"/>
-                <data android:host="@string/app_host"/>
-                <data android:pathPrefix="/post/show/"/>
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="@string/app_host" />
+                <data android:pathPrefix="/post/show/" />
             </intent-filter>
         </activity>
         <activity android:name=".QueryActivity" />
@@ -62,8 +65,8 @@
         <activity android:name=".PopularActivity" />
         <activity
             android:name=".SimilarActivity"
-            android:label="@string/app_similar"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/app_similar">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -88,6 +91,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
     <queries>
         <intent>

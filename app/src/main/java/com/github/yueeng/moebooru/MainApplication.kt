@@ -3,6 +3,8 @@ package com.github.yueeng.moebooru
 import android.app.Activity
 import android.app.ActivityOptions
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -30,6 +32,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.PermissionChecker
 import androidx.core.content.res.use
 import androidx.core.view.GravityCompat
@@ -76,6 +79,11 @@ class MainApplication : Application(), Thread.UncaughtExceptionHandler {
     override fun onCreate() {
         super.onCreate()
         AppCompatDelegate.setDefaultNightMode(MoeSettings.daynight.value ?: AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = NotificationManagerCompat.from(this)
+            val channel = NotificationChannel(moeHost, getString(R.string.app_channel_download), NotificationManager.IMPORTANCE_DEFAULT)
+            manager.createNotificationChannel(channel)
+        }
     }
 
     override fun uncaughtException(t: Thread, e: Throwable) {

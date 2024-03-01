@@ -11,6 +11,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.content.pm.ServiceInfo
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -115,6 +116,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+
 
 fun debug(call: () -> Unit) {
     if (BuildConfig.DEBUG) call()
@@ -553,29 +555,32 @@ object Save {
         val target by lazy { File(applicationContext.cacheDir, UUID.randomUUID().toString()) }
         val notification: NotificationCompat.Builder by lazy {
             NotificationCompat.Builder(context, moeHost)
-                .setContentTitle(context.getString(R.string.app_download, context.getString(R.string.app_name)))
+                .setContentTitle(context.getString(R.string.app_downloaded, context.getString(R.string.app_name)))
                 .setContentText(fileName)
                 .setSmallIcon(R.drawable.ic_stat_name)
                 .setOngoing(true)
         }
 
-        override suspend fun getForegroundInfo(): ForegroundInfo = ForegroundInfo(id, notification.build())
+        override suspend fun getForegroundInfo(): ForegroundInfo =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ForegroundInfo(id, notification.build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            else ForegroundInfo(id, notification.build())
 
         @SuppressLint("MissingPermission")
         @OptIn(FlowPreview::class)
         override suspend fun doWork(): Result = try {
-            notification.setContentTitle(applicationContext.getString(R.string.app_download, applicationContext.getString(R.string.app_name)))
+            notification.setContentTitle(applicationContext.getString(R.string.app_downloaded, applicationContext.getString(R.string.app_name)))
                 .setProgress(0, 0, true)
                 .setSmallIcon(R.drawable.ic_stat_name)
                 .setOngoing(true)
-            setForeground(ForegroundInfo(id, notification.build()))
+
+            setForeground(getForegroundInfo())
             coroutineScope {
                 val channel = Channel<Pair<Long, Long>>(Channel.CONFLATED)
                 launch {
                     channel.consumeAsFlow().sample(500).collectLatest {
                         notification.setProgress(it.second.toInt(), it.first.toInt(), false)
                             .setContentText("${it.first.sizeString()}/${it.second.sizeString()}")
-                        setForeground(ForegroundInfo(id, notification.build()))
+                        setForeground(getForegroundInfo())
                     }
                 }
                 launch {
@@ -718,12 +723,6 @@ object Save {
 
     fun AppCompatActivity.save(id: Int, url: String, so: SO, author: String? = null, anchor: View? = null) {
         fun download() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationManagerCompat.from(MainApplication.instance()).let { notify ->
-                    val channel = NotificationChannel(moeHost, moeHost, NotificationManager.IMPORTANCE_LOW)
-                    notify.createNotificationChannel(channel)
-                }
-            }
             val params = Data.Builder()
                 .putInt("id", id)
                 .putString("url", url)
@@ -750,7 +749,7 @@ object Save {
                         WorkInfo.State.SUCCEEDED -> {
                             anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
                                 .setAnchorView(anchor)
-                                .setAction(R.string.app_ok) { download() }
+                                .setAction(R.string.app_download) { download() }
                                 .show()
                             return@repeatOnLifecycle
                         }
@@ -1007,7 +1006,7 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
         MaterialAlertDialogBuilder(this@checkAppUpdate)
             .setTitle(name)
             .setMessage(latest.body)
-            .setPositiveButton(getString(R.string.app_download_apk)) { _, _ -> openWeb(url) }
+            .setPositiveButton(getString(R.string.app_download)) { _, _ -> openWeb(url) }
             .setNegativeButton(R.string.app_cancel, null)
             .apply {
                 if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
