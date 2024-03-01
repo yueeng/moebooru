@@ -32,6 +32,7 @@
 
     <string name="download_exists">已经下载过了，要重新下载吗？</string>
     <string name="download_ready">准备中</string>
+    <string name="download_started">开始下载，请等待。</string>
     <string name="download_running">已经在下载队列中，请等待。</string>
 
     <string name="popular_by_day">按天排行</string>

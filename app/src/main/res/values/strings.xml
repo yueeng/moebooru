@@ -32,6 +32,7 @@
 
     <string name="download_exists">You have already downloaded it. Do you need to download it again?</string>
     <string name="download_ready">Ready</string>
+    <string name="download_started">Downloading has started. Please wait.</string>
     <string name="download_running">It\'s already in the download queue. Please wait.</string>
 
     <string name="popular_by_day">Popular by day</string>

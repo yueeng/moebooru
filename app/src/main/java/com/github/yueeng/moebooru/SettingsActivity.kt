@@ -2,13 +2,17 @@
 
 package com.github.yueeng.moebooru
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
@@ -72,6 +76,33 @@ class SettingsFragment : PreferenceFragmentCompat() {
             it.summary = getString(R.string.app_version, getString(R.string.app_name), BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
             it.setOnPreferenceClickListener {
                 requireContext().startActivity(Intent(requireContext(), CrashActivity::class.java))
+                true
+            }
+        }
+        findPreference<Preference>("notification")?.let {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                it.isVisible = false
+                return@let
+            }
+            val manager = NotificationManagerCompat.from(requireContext())
+            val channel = manager.getNotificationChannel(moeHost)
+            if (manager.areNotificationsEnabled() && (channel?.importance != NotificationManager.IMPORTANCE_NONE)) {
+                it.isVisible = false
+                return@let
+            }
+            it.setOnPreferenceClickListener {
+                MoeSettings.checkNotification.setValueToPreferences(true)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return@setOnPreferenceClickListener true
+                if (!manager.areNotificationsEnabled()) {
+                    startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().packageName)
+                    })
+                } else if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
+                    startActivity(Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().packageName)
+                        putExtra(Settings.EXTRA_CHANNEL_ID, channel.id)
+                    })
+                }
                 true
             }
         }

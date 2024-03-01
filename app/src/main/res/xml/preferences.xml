@@ -18,6 +18,11 @@
             android:key="app.animation"
             android:title="@string/settings_animation"
             app:useSimpleSummaryProvider="true" />
+        <Preference
+            android:icon="@drawable/ic_notification"
+            android:key="notification"
+            android:summary="@string/app_channel_description"
+            android:title="@string/app_channel_download" />
     </PreferenceCategory>
     <PreferenceCategory>
         <SwitchPreference

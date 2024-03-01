@@ -724,7 +724,6 @@ object Save {
         suspend fun alert(intent: Intent): Boolean = suspendCancellableCoroutine { continuation ->
             MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.app_channel_download).setMessage(R.string.app_channel_description)
-                .setCancelable(true)
                 .setPositiveButton(R.string.app_settings) { _, _ ->
                     startActivity(intent)
                     continuation.resume(false)
@@ -738,16 +737,16 @@ object Save {
                 .show()
         }
 
+        val manager = NotificationManagerCompat.from(this)
+        val channel = manager.getNotificationChannel(moeHost)
         suspend fun checkNotification(): Boolean {
             if (MoeSettings.checkNotification.value == false) return true
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
-            val manager = NotificationManagerCompat.from(this)
             if (!manager.areNotificationsEnabled()) {
                 return alert(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                 })
             }
-            val channel = manager.getNotificationChannel(moeHost)
             if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
                 return alert(Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
@@ -758,6 +757,9 @@ object Save {
         }
 
         fun download() {
+            if (!manager.areNotificationsEnabled() || channel?.importance == NotificationManager.IMPORTANCE_NONE) {
+                Toast.makeText(this@save, getString(R.string.download_started), Toast.LENGTH_SHORT).show()
+            }
             val params = Data.Builder()
                 .putInt("id", id)
                 .putString("url", url)
@@ -783,7 +785,7 @@ object Save {
                         .show()
                 }
 
-                else -> if (checkNotification()) download()
+                else -> download()
             }
         }
         launchWhenCreated {
