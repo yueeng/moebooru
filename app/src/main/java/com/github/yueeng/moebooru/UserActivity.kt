@@ -15,13 +15,10 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -90,45 +87,34 @@ class UserMineFragment : UserFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View = super.onCreateView(inflater, container, savedInstanceState).also { view ->
         val binding = FragmentUserBinding.bind(view)
         prepareOptionsMenu(binding.toolbar.menu)
-
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-                OAuth.user.asFlow().collectLatest {
-                    prepareOptionsMenu(binding.toolbar.menu)
-                    model.user.postValue(it)
-                }
+        launchWhenCreated {
+            OAuth.user.asFlow().collectLatest {
+                prepareOptionsMenu(binding.toolbar.menu)
+                model.user.postValue(it)
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                OAuth.name.asFlow().collectLatest {
-                    model.name.postValue(it)
-                }
+        launchWhenCreated {
+            OAuth.name.asFlow().collectLatest {
+                model.name.postValue(it)
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                OAuth.avatar.asFlow().filter { model.avatar.value != it }.collectLatest {
-                    model.avatar.postValue(it)
-                }
+        launchWhenCreated {
+            OAuth.avatar.asFlow().filter { model.avatar.value != it }.collectLatest {
+                model.avatar.postValue(it)
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                model.avatar.asFlow().filter { OAuth.avatar.value != it }.collectLatest {
-                    OAuth.avatar.postValue(it)
-                }
+        launchWhenCreated {
+            model.avatar.asFlow().filter { OAuth.avatar.value != it }.collectLatest {
+                OAuth.avatar.postValue(it)
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                OAuth.timestamp.asFlow().drop(1).collectLatest {
-                    face(binding, model.user.value)
-                }
+        launchWhenCreated {
+            OAuth.timestamp.asFlow().drop(1).collectLatest {
+                face(binding, model.user.value)
             }
         }
     }
@@ -166,82 +152,64 @@ open class UserFragment : Fragment() {
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter
             binding.swipe.setOnRefreshListener {
-                lifecycleScope.launch {
-                    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) { query() }
+                launchWhenCreated { query() }
+            }
+            launchWhenCreated {
+                model.user.asFlow().filter { it == 0 }.collectLatest {
+                    model.data.postValue(emptyArray())
+                    model.avatar.postValue(0)
+                    model.background.postValue("")
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.user.asFlow().filter { it == 0 }.collectLatest {
-                        model.data.postValue(emptyArray())
-                        model.avatar.postValue(0)
-                        model.background.postValue("")
+            launchWhenCreated {
+                model.user.asFlow().distinctUntilChanged().collectLatest {
+                    face(binding, it)
+                }
+            }
+            launchWhenCreated {
+                model.name.asFlow().mapNotNull { it }.collectLatest { name ->
+                    binding.collapsing.title = name.toTitleCase()
+                    binding.toolbar.title = name.toTitleCase()
+                }
+            }
+            launchWhenCreated {
+                val user = model.user.asFlow().distinctUntilChanged()
+                val name = model.name.asFlow().distinctUntilChanged()
+                flowOf(user, name).flattenMerge(2).collectLatest {
+                    if (model.user.value == 0) return@collectLatest
+                    if (model.name.value == "") return@collectLatest
+                    if (model.data.value?.any() == true) return@collectLatest
+                    query()
+                }
+            }
+            launchWhenCreated {
+                model.avatar.asFlow().distinctUntilChanged().collectLatest { id ->
+                    if (id == 0) {
+                        binding.toolbar.navigationIcon = null
+                        return@collectLatest
                     }
+                    val bg = runCatching { Service.instance.post(1, Q().id(id), 1).firstOrNull()?.sample_url }.getOrNull() ?: return@collectLatest
+                    model.background.postValue(bg)
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.user.asFlow().distinctUntilChanged().collectLatest {
-                        face(binding, it)
+            launchWhenCreated {
+                model.background.asFlow().distinctUntilChanged().collectLatest { url ->
+                    if (url.isEmpty()) {
+                        binding.image1.setImageDrawable(null)
+                        return@collectLatest
                     }
+                    Glide.with(binding.image1)
+                        .load(url)
+                        .transform(AlphaBlackBitmapTransformation())
+                        .transition(DrawableTransitionOptions.withCrossFade())
+                        .into(binding.image1)
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.name.asFlow().mapNotNull { it }.collectLatest { name ->
-                        binding.collapsing.title = name.toTitleCase()
-                        binding.toolbar.title = name.toTitleCase()
-                    }
-                }
+            launchWhenCreated {
+                model.data.asFlow().collectLatest { adapter.submitList(it.toList()) }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    val user = model.user.asFlow().distinctUntilChanged()
-                    val name = model.name.asFlow().distinctUntilChanged()
-                    flowOf(user, name).flattenMerge(2).collectLatest {
-                        if (model.user.value == 0) return@collectLatest
-                        if (model.name.value == "") return@collectLatest
-                        if (model.data.value?.any() == true) return@collectLatest
-                        query()
-                    }
-                }
-            }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.avatar.asFlow().distinctUntilChanged().collectLatest { id ->
-                        if (id == 0) {
-                            binding.toolbar.navigationIcon = null
-                            return@collectLatest
-                        }
-                        val bg = runCatching { Service.instance.post(1, Q().id(id), 1).firstOrNull()?.sample_url }.getOrNull() ?: return@collectLatest
-                        model.background.postValue(bg)
-                    }
-                }
-            }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.background.asFlow().distinctUntilChanged().collectLatest { url ->
-                        if (url.isEmpty()) {
-                            binding.image1.setImageDrawable(null)
-                            return@collectLatest
-                        }
-                        Glide.with(binding.image1)
-                            .load(url)
-                            .transform(AlphaBlackBitmapTransformation())
-                            .transition(DrawableTransitionOptions.withCrossFade())
-                            .into(binding.image1)
-                    }
-                }
-            }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.data.asFlow().collectLatest { adapter.submitList(it.toList()) }
-                }
-            }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    busy.asFlow().collectLatest { binding.swipe.isRefreshing = it }
-                }
+            launchWhenCreated {
+                busy.asFlow().collectLatest { binding.swipe.isRefreshing = it }
             }
         }.root
 
@@ -446,10 +414,8 @@ class StarFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (model.data.value == null) {
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.data(post)?.let { model.data.postValue(it) }
-                }
+            launchWhenCreated {
+                model.data(post)?.let { model.data.postValue(it) }
             }
         }
     }
@@ -461,33 +427,27 @@ class StarFragment : Fragment() {
                 binding.rating.rating = it.toFloat()
                 requireActivity().title = getString(R.string.query_vote_star_yours, it)
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    adapter.changedFlow.collectLatest {
-                        adapter.currentList.mapIndexedNotNull { index, any -> (any as? Title)?.let { index } }
-                            .forEach { adapter.notifyItemChanged(it, "count") }
-                    }
+            launchWhenCreated {
+                adapter.changedFlow.collectLatest {
+                    adapter.currentList.mapIndexedNotNull { index, any -> (any as? Title)?.let { index } }
+                        .forEach { adapter.notifyItemChanged(it, "count") }
                 }
             }
             binding.rating.setOnRatingBarChangeListener { _, rating, fromUser ->
                 if (!fromUser) return@setOnRatingBarChangeListener
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.CREATED) {
-                        model.vote(post, rating.toInt())?.let {
-                            model.data.postValue(it)
-                            model.star.postValue(rating.toInt())
-                        }
+                launchWhenCreated {
+                    model.vote(post, rating.toInt())?.let {
+                        model.data.postValue(it)
+                        model.star.postValue(rating.toInt())
                     }
                 }
             }
             binding.button1.setOnClickListener {
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.CREATED) {
-                        model.vote(post, 0)?.let {
-                            model.data.postValue(it)
-                            binding.rating.rating = 0F
-                            model.star.postValue(0)
-                        }
+                launchWhenCreated {
+                    model.vote(post, 0)?.let {
+                        model.data.postValue(it)
+                        binding.rating.rating = 0F
+                        model.star.postValue(0)
                     }
                 }
             }
@@ -504,10 +464,8 @@ class StarFragment : Fragment() {
                 adapter.submitList(score.voted_by.v.flatMap { listOf(Title(it.key, it.value.size)) + it.value })
             }
             binding.swipe.setOnRefreshListener {
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.CREATED) {
-                        model.data(post)?.let { model.data.postValue(it) }
-                    }
+                launchWhenCreated {
+                    model.data(post)?.let { model.data.postValue(it) }
                 }
             }
             model.busy.observe(viewLifecycleOwner) {

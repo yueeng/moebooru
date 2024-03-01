@@ -9,12 +9,9 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.AbstractSavedStateViewModelFactory
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.LoadState
 import androidx.paging.Pager
@@ -34,7 +31,6 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import java.util.Date
 import kotlin.math.min
 
@@ -65,47 +61,38 @@ class SavedFragment : Fragment() {
                     R.id.edit -> true.also {
                         viewModel.edit.postValue(!(viewModel.edit.value ?: false))
                     }
+
                     else -> false
                 }
             }
-            lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    viewModel.edit.asFlow().collectLatest {
-                        binding.toolbar.menu.findItem(R.id.edit).setIcon(if (it) R.drawable.ic_done else R.drawable.ic_edit)
-                        pinAdapter.notifyItemRangeChanged(0, pinAdapter.itemCount)
-                        adapter.notifyItemRangeChanged(0, adapter.itemCount)
-                    }
+            launchWhenCreated {
+                viewModel.edit.asFlow().collectLatest {
+                    binding.toolbar.menu.findItem(R.id.edit).setIcon(if (it) R.drawable.ic_done else R.drawable.ic_edit)
+                    pinAdapter.notifyItemRangeChanged(0, pinAdapter.itemCount)
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount)
                 }
             }
             binding.swipe.setOnRefreshListener {
                 pinAdapter.refresh()
                 adapter.refresh()
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    pinAdapter.loadStateFlow.collectLatest {
-                        binding.swipe.isRefreshing = it.refresh is LoadState.Loading
-                    }
+            launchWhenCreated {
+                pinAdapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    adapter.loadStateFlow.collectLatest {
-                        binding.swipe.isRefreshing = it.refresh is LoadState.Loading
-                    }
+            launchWhenCreated {
+                adapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
                 }
             }
             (binding.recycler.layoutManager as? FlexboxLayoutManager)?.flexDirection = FlexDirection.ROW
             binding.recycler.adapter = ConcatAdapter(pinAdapter, adapter)
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    viewModel.pinned.collectLatest { pinAdapter.submitData(it) }
-                }
+            launchWhenCreated {
+                viewModel.pinned.collectLatest { pinAdapter.submitData(it) }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    viewModel.saved.collectLatest { adapter.submitData(it) }
-                }
+            launchWhenCreated {
+                viewModel.saved.collectLatest { adapter.submitData(it) }
             }
             ItemTouchHelper(object : ItemTouchHelper.Callback() {
                 override fun getMovementFlags(view: RecyclerView, holder: RecyclerView.ViewHolder): Int {
@@ -117,15 +104,13 @@ class SavedFragment : Fragment() {
 
                 override fun onMove(view: RecyclerView, holder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean =
                     (holder as? SavedHolder)?.tag?.takeIf { it.pin }?.let {
-                        lifecycleScope.launch {
-                            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                                Db.db.withTransaction {
-                                    pinAdapter.snapshot().toMutableList().apply {
-                                        removeAt(holder.bindingAdapterPosition)
-                                        add(min(size, target.bindingAdapterPosition), holder.tag)
-                                    }.filter { it?.id != 0L }.mapIndexed { index, tag -> DbTagOrder(tag!!.tag, index + 1) }.sortedBy { it.index }.forEach {
-                                        Db.tags.insertOrder(it)
-                                    }
+                        launchWhenCreated {
+                            Db.db.withTransaction {
+                                pinAdapter.snapshot().toMutableList().apply {
+                                    removeAt(holder.bindingAdapterPosition)
+                                    add(min(size, target.bindingAdapterPosition), holder.tag)
+                                }.filter { it?.id != 0L }.mapIndexed { index, tag -> DbTagOrder(tag!!.tag, index + 1) }.sortedBy { it.index }.forEach {
+                                    Db.tags.insertOrder(it)
                                 }
                             }
                         }
@@ -134,12 +119,10 @@ class SavedFragment : Fragment() {
 
                 override fun onSwiped(holder: RecyclerView.ViewHolder, direction: Int) {
                     (holder as? SavedHolder)?.tag?.takeIf { it.id != 0L }?.let {
-                        lifecycleScope.launch {
-                            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                                Db.db.withTransaction {
-                                    Db.tags.deleteTag(it)
-                                    Db.tags.deleteOrder(it.tag)
-                                }
+                        launchWhenCreated {
+                            Db.db.withTransaction {
+                                Db.tags.deleteTag(it)
+                                Db.tags.deleteOrder(it.tag)
                             }
                         }
                     }
@@ -173,14 +156,12 @@ class SavedFragment : Fragment() {
                 }
             }
             binding.button1.setOnClickListener {
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.CREATED) {
-                        tag.pin = !tag.pin
-                        tag.create = Date()
-                        Db.db.withTransaction {
-                            Db.tags.updateTag(tag)
-                            if (!tag.pin) Db.tags.deleteOrder(tag.tag)
-                        }
+                launchWhenCreated {
+                    tag.pin = !tag.pin
+                    tag.create = Date()
+                    Db.db.withTransaction {
+                        Db.tags.updateTag(tag)
+                        if (!tag.pin) Db.tags.deleteOrder(tag.tag)
                     }
                 }
             }

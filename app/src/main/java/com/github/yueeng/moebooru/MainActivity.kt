@@ -70,11 +70,9 @@ class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
                     binding.menu.getHeaderView(0).isVisible = current.second.keyword?.isNotEmpty() == true
                 }
             })
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    Db.tags.tagsWithIndex(true).collectLatest { tags ->
-                        adapter.submitList(tags.map { it.name to Q(it.tag) })
-                    }
+            launchWhenCreated {
+                Db.tags.tagsWithIndex(true).collectLatest { tags ->
+                    adapter.submitList(tags.map { it.name to Q(it.tag) })
                 }
             }
             binding.menu.setNavigationItemSelectedListener {
@@ -132,17 +130,15 @@ class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
         override fun createFragment(position: Int): Fragment = ImageFragment().apply {
             arguments = bundleOf("query" to data[position].second, "name" to data[position].first)
             if (position != 0) return@apply
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    adapter.loadStateFlow.collectLatest {
-                        if (it.refresh !is LoadState.Error) return@collectLatest
-                        if (adapter.itemCount != 0) return@collectLatest
-                        if (MoeSettings.host.value == true) return@collectLatest
-                        requireView().snack(R.string.settings_host_ip_on, Snackbar.LENGTH_LONG).setAction(R.string.app_ok) {
-                            MoeSettings.host.setValueToPreferences(true)
-                            adapter.refresh()
-                        }.show()
-                    }
+            launchWhenCreated {
+                adapter.loadStateFlow.collectLatest {
+                    if (it.refresh !is LoadState.Error) return@collectLatest
+                    if (adapter.itemCount != 0) return@collectLatest
+                    if (MoeSettings.host.value == true) return@collectLatest
+                    requireView().snack(R.string.settings_host_ip_on, Snackbar.LENGTH_LONG).setAction(R.string.app_ok) {
+                        MoeSettings.host.setValueToPreferences(true)
+                        adapter.refresh()
+                    }.show()
                 }
             }
         }
@@ -161,6 +157,7 @@ class MainFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
         R.id.column -> true.also {
             MoeSettings.column()
         }
+
         else -> false
     }
 
@@ -242,16 +239,12 @@ class ListFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val name = arguments?.getString("artist") ?: return
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                artist.postValue(Service.instance.artist(name).firstOrNull())
-            }
+        launchWhenCreated {
+            artist.postValue(Service.instance.artist(name).firstOrNull())
         }
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                artist.asFlow().filter { it?.urls?.any() == true }.collectLatest {
-                    requireActivity().invalidateOptionsMenu()
-                }
+        launchWhenCreated {
+            artist.asFlow().filter { it?.urls?.any() == true }.collectLatest {
+                requireActivity().invalidateOptionsMenu()
             }
         }
     }
@@ -280,9 +273,11 @@ class ListFragment : Fragment(), SavedFragment.Queryable, MenuProvider {
                 .setPositiveButton(R.string.app_ok, null)
                 .show()
         }
+
         R.id.column -> true.also {
             MoeSettings.column()
         }
+
         else -> false
     }
 
@@ -351,75 +346,57 @@ class ImageFragment : Fragment() {
             adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
             binding.recycler.adapter = adapter.withLoadStateHeaderAndFooter(HeaderAdapter(adapter), FooterAdapter(adapter))
             binding.swipe.setOnRefreshListener { adapter.refresh() }
-            lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    model.posts.collectLatest { adapter.submitData(it) }
+            launchWhenCreated {
+                model.posts.collectLatest { adapter.submitData(it) }
+            }
+            launchWhenCreated {
+                adapter.loadStateFlow.collectLatest {
+                    binding.swipe.isRefreshing = it.refresh is LoadState.Loading
+                    sum.postValue(adapter.itemCount)
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    adapter.loadStateFlow.collectLatest {
-                        binding.swipe.isRefreshing = it.refresh is LoadState.Loading
-                        sum.postValue(adapter.itemCount)
-                    }
+            launchWhenCreated {
+                val flow1 = model.index.asFlow().distinctUntilChanged()
+                val flow2 = model.min.asFlow().distinctUntilChanged()
+                val flow3 = model.max.asFlow().distinctUntilChanged()
+                flowOf(flow1, flow2, flow3).flattenMerge(3).collectLatest {
+                    val index = model.index.value ?: return@collectLatest
+                    val min = model.min.value ?: return@collectLatest
+                    val max = model.max.value ?: return@collectLatest
+                    binding.text1.text = getString(R.string.app_page_number, min(index + min, max), max)
+                    binding.layout1.isInvisible = max == 0 || MoeSettings.page.value!!
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    val flow1 = model.index.asFlow().distinctUntilChanged()
-                    val flow2 = model.min.asFlow().distinctUntilChanged()
-                    val flow3 = model.max.asFlow().distinctUntilChanged()
-                    flowOf(flow1, flow2, flow3).flattenMerge(3).collectLatest {
-                        val index = model.index.value ?: return@collectLatest
-                        val min = model.min.value ?: return@collectLatest
-                        val max = model.max.value ?: return@collectLatest
-                        binding.text1.text = getString(R.string.app_page_number, min(index + min, max), max)
-                        binding.layout1.isInvisible = max == 0 || MoeSettings.page.value!!
-                    }
+            launchWhenCreated {
+                sum.asFlow().distinctUntilChanged().collectLatest {
+                    binding.progress.max = it
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    sum.asFlow().distinctUntilChanged().collectLatest {
-                        binding.progress.max = it
-                    }
+            launchWhenCreated {
+                offset.asFlow().distinctUntilChanged().collectLatest {
+                    binding.progress.setProgressCompat(it)
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    offset.asFlow().distinctUntilChanged().collectLatest {
-                        binding.progress.setProgressCompat(it)
-                    }
+            launchWhenCreated {
+                MoeSettings.column.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    TransitionManager.beginDelayedTransition(binding.swipe)
+                    (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = it
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    MoeSettings.column.asFlow().drop(1).distinctUntilChanged().collectLatest {
-                        TransitionManager.beginDelayedTransition(binding.swipe)
-                        (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = it
-                    }
+            launchWhenCreated {
+                MoeSettings.info.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount, "info")
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    MoeSettings.info.asFlow().drop(1).distinctUntilChanged().collectLatest {
-                        adapter.notifyItemRangeChanged(0, adapter.itemCount, "info")
-                    }
+            launchWhenCreated {
+                MoeSettings.preview.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    adapter.notifyItemRangeChanged(0, adapter.itemCount, "preview")
                 }
             }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    MoeSettings.preview.asFlow().drop(1).distinctUntilChanged().collectLatest {
-                        adapter.notifyItemRangeChanged(0, adapter.itemCount, "preview")
-                    }
-                }
-            }
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    MoeSettings.page.asFlow().drop(1).distinctUntilChanged().collectLatest {
-                        val max = model.max.value ?: 0
-                        binding.layout1.isInvisible = max == 0 || it
-                    }
+            launchWhenCreated {
+                MoeSettings.page.asFlow().drop(1).distinctUntilChanged().collectLatest {
+                    val max = model.max.value ?: 0
+                    binding.layout1.isInvisible = max == 0 || it
                 }
             }
             (binding.recycler.layoutManager as? StaggeredGridLayoutManager)?.spanCount = MoeSettings.column.value!!
@@ -471,12 +448,7 @@ class ImageFragment : Fragment() {
                     }
                     this.adapter = adapter
                 }
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.CREATED) {
-                        adapter.submit(item)
-                    }
-                }
-
+                launchWhenCreated { adapter.submit(item) }
                 MaterialAlertDialogBuilder(context)
                     .setView(recycler)
                     .setPositiveButton(R.string.app_save, null)
@@ -565,10 +537,12 @@ class ImageFragment : Fragment() {
                     binding.errorMsg.isVisible = true
                     binding.errorMsg.text = loadState.error.message
                 }
+
                 is LoadState.NotLoading -> {
                     binding.errorMsg.isVisible = loadState.endOfPaginationReached
                     binding.errorMsg.text = if (loadState.endOfPaginationReached) "END" else null
                 }
+
                 else -> {
                     binding.errorMsg.isVisible = false
                     binding.errorMsg.text = null

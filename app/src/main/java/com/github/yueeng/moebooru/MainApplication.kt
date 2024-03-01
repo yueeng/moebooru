@@ -41,10 +41,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commitNow
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.asFlow
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.transition.platform.MaterialArcMotion
 import com.google.android.material.transition.platform.MaterialContainerTransform
@@ -55,7 +52,6 @@ import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.launch
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.reflect.Modifier
@@ -260,11 +256,9 @@ open class MoeActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId
     override fun onCreate(savedInstanceState: Bundle?) {
         ensureTransform()
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                MoeSettings.recreate.asFlow().drop(1).collectLatest {
-                    recreate()
-                }
+        launchWhenCreated {
+            MoeSettings.recreate.asFlow().drop(1).collectLatest {
+                recreate()
             }
         }
         this.addOnBackPressedCallback {

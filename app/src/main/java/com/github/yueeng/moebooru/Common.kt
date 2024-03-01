@@ -253,17 +253,15 @@ object ProgressBehavior {
 
     @OptIn(FlowPreview::class)
     fun progress(lifecycleOwner: LifecycleOwner, progressBar: ProgressBar) = MutableLiveData<String>().apply {
-        lifecycleOwner.lifecycleScope.launch {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-                asFlow().collectLatest { image ->
-                    progressBar.isVisible = false
-                    progressBar.progress = 0
-                    progressBar.setIndeterminateSafe(true)
-                    if (image.isNotEmpty()) on(image).sample(500).collectLatest {
-                        progressBar.isGone = it == 100
-                        progressBar.setIndeterminateSafe(it == -1)
-                        progressBar.setProgressCompat(it)
-                    }
+        lifecycleOwner.launchWhenCreated {
+            asFlow().collectLatest { image ->
+                progressBar.isVisible = false
+                progressBar.progress = 0
+                progressBar.setIndeterminateSafe(true)
+                if (image.isNotEmpty()) on(image).sample(500).collectLatest {
+                    progressBar.isGone = it == 100
+                    progressBar.setIndeterminateSafe(it == -1)
+                    progressBar.setProgressCompat(it)
                 }
             }
         }
@@ -772,31 +770,27 @@ object Save {
             }
         }
 
-        fun check() = lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                if (anchor == null) download() else when (check("save-${id}")) {
-                    WorkInfo.State.ENQUEUED,
-                    WorkInfo.State.BLOCKED,
-                    WorkInfo.State.RUNNING -> Toast.makeText(this@save, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
+        fun check() = launchWhenCreated {
+            if (anchor == null) download() else when (check("save-${id}")) {
+                WorkInfo.State.ENQUEUED,
+                WorkInfo.State.BLOCKED,
+                WorkInfo.State.RUNNING -> Toast.makeText(this@save, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
 
-                    WorkInfo.State.SUCCEEDED -> {
-                        anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
-                            .setAnchorView(anchor)
-                            .setAction(R.string.app_download) { download() }
-                            .show()
-                    }
-
-                    else -> if (checkNotification()) download()
+                WorkInfo.State.SUCCEEDED -> {
+                    anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
+                        .setAnchorView(anchor)
+                        .setAction(R.string.app_download) { download() }
+                        .show()
                 }
+
+                else -> if (checkNotification()) download()
             }
         }
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                if (!checkNotification()) return@repeatOnLifecycle
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
-                    checkPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE) {
-                        check()
-                    }
+        launchWhenCreated {
+            if (!checkNotification()) return@launchWhenCreated
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
+                checkPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+                    check()
                 }
             }
         }
@@ -1014,44 +1008,42 @@ fun View.showSupportedActivitiesMenu(tag: String) = PopupMenu(context, this).als
 fun <T : Any, VH : RecyclerView.ViewHolder> PagingDataAdapter<T, VH>.peekSafe(index: Int): T? =
     if (index in 0 until itemCount) peek(index) else null
 
-fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = lifecycleScope.launch {
-    repeatOnLifecycle(Lifecycle.State.CREATED) {
-        val latest = runCatching {
-            withContext(Dispatchers.IO) {
-                val gitHub: GitHub = GitHubBuilder.fromEnvironment()
-                    .withConnector(OkHttpGitHubConnector(okHttp))
-                    .build()
-                val repository = gitHub.getRepository("yueeng/moebooru")
-                when (pre) {
-                    true -> repository.listReleases().firstOrNull()
-                    false -> repository.latestRelease
-                }
+fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = launchWhenCreated {
+    val latest = runCatching {
+        withContext(Dispatchers.IO) {
+            val gitHub: GitHub = GitHubBuilder.fromEnvironment()
+                .withConnector(OkHttpGitHubConnector(okHttp))
+                .build()
+            val repository = gitHub.getRepository("yueeng/moebooru")
+            when (pre) {
+                true -> repository.listReleases().firstOrNull()
+                false -> repository.latestRelease
             }
-        }.getOrNull() ?: return@repeatOnLifecycle
-        val name = if (compare) {
-            val ver = runCatching { Version(BuildConfig.VERSION_NAME) }.getOrNull() ?: return@repeatOnLifecycle
-            val online = Version.from(latest.tagName) ?: return@repeatOnLifecycle
-            if (ver >= online) return@repeatOnLifecycle
-            "v$ver > v$online"
-        } else latest.name
-        val url = runCatching {
-            withContext(Dispatchers.IO) {
-                latest.listAssets().firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl
+        }
+    }.getOrNull() ?: return@launchWhenCreated
+    val name = if (compare) {
+        val ver = runCatching { Version(BuildConfig.VERSION_NAME) }.getOrNull() ?: return@launchWhenCreated
+        val online = Version.from(latest.tagName) ?: return@launchWhenCreated
+        if (ver >= online) return@launchWhenCreated
+        "v$ver > v$online"
+    } else latest.name
+    val url = runCatching {
+        withContext(Dispatchers.IO) {
+            latest.listAssets().firstOrNull { it.name == "app-${BuildConfig.FLAVOR}-release.apk" }?.browserDownloadUrl
+        }
+    }.getOrNull() ?: return@launchWhenCreated
+    MaterialAlertDialogBuilder(this@checkAppUpdate)
+        .setTitle(name)
+        .setMessage(latest.body)
+        .setPositiveButton(getString(R.string.app_download)) { _, _ -> openWeb(url) }
+        .setNegativeButton(R.string.app_cancel, null)
+        .apply {
+            if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
+                checkAppUpdate(true)
             }
-        }.getOrNull() ?: return@repeatOnLifecycle
-        MaterialAlertDialogBuilder(this@checkAppUpdate)
-            .setTitle(name)
-            .setMessage(latest.body)
-            .setPositiveButton(getString(R.string.app_download)) { _, _ -> openWeb(url) }
-            .setNegativeButton(R.string.app_cancel, null)
-            .apply {
-                if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
-                    checkAppUpdate(true)
-                }
-            }
-            .create()
-            .show()
-    }
+        }
+        .create()
+        .show()
 }
 
 fun <T : Dialog> T.show(call: T.() -> Unit): T = apply {
@@ -1099,4 +1091,8 @@ fun OnBackPressedDispatcher.bubbleOnBackPressed(callback: OnBackPressedCallback)
 fun ComponentActivity.addOnBackPressedCallback(owner: LifecycleOwner? = this, callback: OnBackPressedCallback.() -> Boolean): OnBackPressedCallback = onBackPressedDispatcher.addCallback(owner) {
     if (callback(this)) return@addCallback
     onBackPressedDispatcher.bubbleOnBackPressed(this)
+}
+
+fun LifecycleOwner.launchWhenCreated(block: suspend CoroutineScope.() -> Unit): Job = lifecycleScope.launch {
+    repeatOnLifecycle(Lifecycle.State.CREATED) { block() }
 }

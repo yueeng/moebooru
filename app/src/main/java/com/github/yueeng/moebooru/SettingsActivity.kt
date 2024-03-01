@@ -10,14 +10,11 @@ import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.asFlow
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -27,7 +24,6 @@ import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.launch
 
 
 class SettingsActivity : MoeActivity(R.layout.fragment_settings) {
@@ -45,20 +41,16 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
         findPreference<SeekBarPreference>("app.cache_size")?.let { seek ->
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    MoeSettings.cache.asFlow().collectLatest {
-                        seek.summary = (it * (1L shl 20)).sizeString()
-                    }
+            launchWhenCreated {
+                MoeSettings.cache.asFlow().collectLatest {
+                    seek.summary = (it * (1L shl 20)).sizeString()
                 }
             }
         }
         val address = findPreference<EditTextPreference>("app.host_ip_address")
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                MoeSettings.host.asFlow().collectLatest {
-                    address?.isVisible = it
-                }
+        launchWhenCreated {
+            MoeSettings.host.asFlow().collectLatest {
+                address?.isVisible = it
             }
         }
         address?.setOnBindEditTextListener {
@@ -143,19 +135,15 @@ object MoeSettings {
     val checkNotification = preferences.booleanLiveData(KEY_CHECK_NOTIFICATION, true)
 
     init {
-        ProcessLifecycleOwner.get().lifecycleScope.launch {
-            ProcessLifecycleOwner.get().repeatOnLifecycle(Lifecycle.State.CREATED) {
-                animation.asFlow().distinctUntilChanged().drop(1).collectLatest {
-                    recreate.postValue(Unit)
-                }
+        ProcessLifecycleOwner.get().launchWhenCreated {
+            animation.asFlow().distinctUntilChanged().drop(1).collectLatest {
+                recreate.postValue(Unit)
             }
         }
-        ProcessLifecycleOwner.get().lifecycleScope.launch {
-            ProcessLifecycleOwner.get().repeatOnLifecycle(Lifecycle.State.CREATED) {
-                daynight.asFlow().distinctUntilChanged().drop(1).collectLatest {
-                    AppCompatDelegate.setDefaultNightMode(it)
-                    recreate.postValue(Unit)
-                }
+        ProcessLifecycleOwner.get().launchWhenCreated {
+            daynight.asFlow().distinctUntilChanged().drop(1).collectLatest {
+                AppCompatDelegate.setDefaultNightMode(it)
+                recreate.postValue(Unit)
             }
         }
     }
