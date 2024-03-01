@@ -26,6 +26,9 @@
     <string name="app_update">Check Update</string>
     <string name="app_version">%1$s v%2$s.%3$s</string>
     <string name="app_channel_download">Download Notification</string>
+    <string name="app_channel_description">Please open the application notification settings, otherwise you won\'t see the download task notifications.</string>
+    <string name="app_channel_dismiss">Dismiss</string>
+    <string name="app_channel_continue">Continue</string>
 
     <string name="download_exists">You have already downloaded it. Do you need to download it again?</string>
     <string name="download_ready">Ready</string>

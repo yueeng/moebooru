@@ -20,6 +20,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextUtils.copySpansFrom
@@ -722,6 +723,42 @@ object Save {
     }
 
     fun AppCompatActivity.save(id: Int, url: String, so: SO, author: String? = null, anchor: View? = null) {
+        suspend fun alert(intent: Intent): Boolean = suspendCancellableCoroutine { continuation ->
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.app_channel_download).setMessage(R.string.app_channel_description)
+                .setCancelable(true)
+                .setPositiveButton(R.string.app_settings) { _, _ ->
+                    startActivity(intent)
+                    continuation.resume(false)
+                }
+                .setNegativeButton(R.string.app_channel_continue) { _, _ -> continuation.resume(true) }
+                .setNeutralButton(R.string.app_channel_dismiss) { _, _ ->
+                    MoeSettings.checkNotification.setValueToPreferences(false)
+                    continuation.resume(true)
+                }
+                .setOnCancelListener { continuation.resume(false) }
+                .show()
+        }
+
+        suspend fun checkNotification(): Boolean {
+            if (MoeSettings.checkNotification.value == false) return true
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true
+            val manager = NotificationManagerCompat.from(this)
+            if (!manager.areNotificationsEnabled()) {
+                return alert(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                })
+            }
+            val channel = manager.getNotificationChannel(moeHost)
+            if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
+                return alert(Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    putExtra(Settings.EXTRA_CHANNEL_ID, channel.id)
+                })
+            }
+            return true
+        }
+
         fun download() {
             val params = Data.Builder()
                 .putInt("id", id)
@@ -735,33 +772,32 @@ object Save {
             }
         }
 
-        fun check() {
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    if (anchor == null) download() else when (check("save-${id}")) {
-                        WorkInfo.State.ENQUEUED,
-                        WorkInfo.State.BLOCKED,
-                        WorkInfo.State.RUNNING -> {
-                            Toast.makeText(this@save, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
-                            return@repeatOnLifecycle
-                        }
+        fun check() = lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                if (anchor == null) download() else when (check("save-${id}")) {
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.BLOCKED,
+                    WorkInfo.State.RUNNING -> Toast.makeText(this@save, getString(R.string.download_running), Toast.LENGTH_SHORT).show()
 
-                        WorkInfo.State.SUCCEEDED -> {
-                            anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
-                                .setAnchorView(anchor)
-                                .setAction(R.string.app_download) { download() }
-                                .show()
-                            return@repeatOnLifecycle
-                        }
-
-                        else -> download()
+                    WorkInfo.State.SUCCEEDED -> {
+                        anchor.snack(getString(R.string.download_exists), Snackbar.LENGTH_LONG)
+                            .setAnchorView(anchor)
+                            .setAction(R.string.app_download) { download() }
+                            .show()
                     }
+
+                    else -> if (checkNotification()) download()
                 }
             }
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
-            checkPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE) {
-                check()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                if (!checkNotification()) return@repeatOnLifecycle
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) check() else {
+                    checkPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+                        check()
+                    }
+                }
             }
         }
     }

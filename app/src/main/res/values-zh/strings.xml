@@ -26,6 +26,9 @@
     <string name="app_update">检查更新</string>
     <string name="app_version">%1$s v%2$s.%3$s</string>
     <string name="app_channel_download">下载通知</string>
+    <string name="app_channel_description">请打开应用通知设置，否则将看不到下载任务提示。</string>
+    <string name="app_channel_dismiss">不再提示</string>
+    <string name="app_channel_continue">继续下载</string>
 
     <string name="download_exists">已经下载过了，要重新下载吗？</string>
     <string name="download_ready">准备中</string>

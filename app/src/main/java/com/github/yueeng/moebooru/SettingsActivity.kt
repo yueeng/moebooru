@@ -102,6 +102,7 @@ object MoeSettings {
     private const val KEY_HOST_IP = "app.host_ip"
     private const val KEY_HOST_IP_ADDRESS = "app.host_ip_address"
     private const val KEY_API_KEY = "app.api_key"
+    private const val KEY_CHECK_NOTIFICATION = "app.check_notification"
 
     val recreate = MutableLiveData(Unit)
     val animation = preferences.stringLiveData(KEY_ANIMATION, "default")
@@ -138,6 +139,8 @@ object MoeSettings {
     suspend fun apiKey(): String? = if (apiKey.value?.isNotEmpty() == true) apiKey.value!! else Service.apiKey()?.also {
         preferences.edit { putString(KEY_API_KEY, it) }
     }
+
+    val checkNotification = preferences.booleanLiveData(KEY_CHECK_NOTIFICATION, true)
 
     init {
         ProcessLifecycleOwner.get().lifecycleScope.launch {
