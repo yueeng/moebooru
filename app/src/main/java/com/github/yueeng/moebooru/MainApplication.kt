@@ -101,7 +101,7 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
         if (!seq.any()) supportActionBar?.title = "Info"
         val ex = StringWriter().use { stream ->
             PrintWriter(stream).use { writer ->
-                val gson = GsonBuilder().create();
+                val gson = GsonBuilder().create()
                 val info = listOf(BuildConfig::class, Build::class, Build.VERSION::class)
                 info.forEach { i ->
                     writer.println("===== ${i.simpleName} =====")

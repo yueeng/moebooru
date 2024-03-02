@@ -301,7 +301,7 @@ class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, p
         val posts = if (query?.only("id", "parent") == true) children(setOf(Q(query)), raw) else raw
         call?.invoke(key)
         val prev = if (posts.isNotEmpty()) (key - 1).takeIf { it > 0 } else null
-        val next = if (posts.size == params.loadSize) key + (params.loadSize / ImageViewModel.pageSize) else null
+        val next = if (posts.size == params.loadSize) key + (params.loadSize / ImageViewModel.PAGE_SIZE) else null
         LoadResult.Page(posts, prev, next)
     } catch (e: Exception) {
         LoadResult.Error(e)
@@ -312,14 +312,14 @@ class ImageDataSource(private val query: Q? = Q(), private val begin: Int = 1, p
 
 class ImageViewModel(handle: SavedStateHandle, defaultArgs: Bundle?) : ViewModel() {
     companion object {
-        const val pageSize = 20
+        const val PAGE_SIZE = 20
     }
 
     val index = handle.getLiveData<Int>("index")
     val min = handle.getLiveData("min", 1)
     val max = handle.getLiveData<Int>("max")
     val query = handle.getLiveData<Q?>("query", defaultArgs?.getParcelableCompat("query"))
-    val posts = Pager(PagingConfig(pageSize, initialLoadSize = pageSize * 2)) {
+    val posts = Pager(PagingConfig(PAGE_SIZE, initialLoadSize = PAGE_SIZE * 2)) {
         max.postValue(0)
         ImageDataSource(query.value, min.value ?: 1) {
             min.postValue(min(it, min.value!!))
@@ -404,7 +404,7 @@ class ImageFragment : Fragment() {
             binding.recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(view: RecyclerView, dx: Int, dy: Int) {
                     (view.layoutManager as? StaggeredGridLayoutManager)?.findFirstCompletelyVisibleItemPositions(null)?.minOrNull()?.let {
-                        model.index.postValue(it / ImageViewModel.pageSize)
+                        model.index.postValue(it / ImageViewModel.PAGE_SIZE)
                     }
                     (view.layoutManager as? StaggeredGridLayoutManager)?.findLastCompletelyVisibleItemPositions(null)?.maxOrNull()?.let {
                         offset.postValue(it)
@@ -421,7 +421,7 @@ class ImageFragment : Fragment() {
                                 model.min.value = it
                                 adapter.refresh()
                             } else {
-                                binding.recycler.scrollToPosition((it - model.min.value!!) * ImageViewModel.pageSize)
+                                binding.recycler.scrollToPosition((it - model.min.value!!) * ImageViewModel.PAGE_SIZE)
                             }
                         }
                     }.create().show()
