@@ -1,8 +1,8 @@
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id 'com.google.devtools.ksp'
-    id 'kotlin-parcelize'
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.jetbrainsKotlinAndroid)
+    alias(libs.plugins.googleDevtoolsKsp)
+    alias(libs.plugins.kotlinParcelize)
 }
 
 android {
@@ -91,50 +91,43 @@ android {
 }
 
 dependencies {
-    def glide_version = '4.16.0'
-    def okhttp_version = '4.12.0'
-    def retrofit_version = '2.9.0'
-    def room_version = '2.6.1'
-    def lifecycle_version = '2.7.0'
-    def kotlinx_coroutines_version = '1.8.0'
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinx_coroutines_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"
-    implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.preference:preference-ktx:1.2.1'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
-    implementation "androidx.lifecycle:lifecycle-process:$lifecycle_version"
-    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
-    implementation 'androidx.paging:paging-runtime-ktx:3.2.1'
-    implementation 'androidx.activity:activity-ktx:1.8.2'
-    implementation 'androidx.fragment:fragment-ktx:1.6.2'
-    implementation 'androidx.work:work-runtime-ktx:2.9.0'
-    implementation 'androidx.palette:palette-ktx:1.0.0'
-    implementation "androidx.room:room-runtime:$room_version"
-    ksp "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-ktx:$room_version"
-    implementation "androidx.room:room-paging:$room_version"
-    implementation 'com.google.android.material:material:1.11.0'
-    implementation 'com.google.android.flexbox:flexbox:3.0.0'
-    implementation 'com.google.code.gson:gson:2.10.1'
-    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
-    implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
-    implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
-    implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"
-    implementation "com.squareup.retrofit2:converter-scalars:$retrofit_version"
-    implementation "com.github.bumptech.glide:glide:$glide_version"
-    implementation "com.github.bumptech.glide:okhttp3-integration:$glide_version"
-    ksp "com.github.bumptech.glide:ksp:$glide_version"
-    implementation 'com.github.franmontiel:PersistentCookieJar:1.0.1'
-    implementation 'jp.wasabeef:glide-transformations:4.3.0'
-    implementation 'com.alexvasilkov:gesture-views:2.8.3'
-    implementation 'org.jsoup:jsoup:1.17.2'
-    implementation 'com.github.yueeng:uCrop:2020.09.28'
-    implementation 'org.kohsuke:github-api:1.315'
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-//    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.coroutines.android
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.preference.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.constraintlayout
+    implementation libs.androidx.lifecycle.livedata.ktx
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.lifecycle.process
+    implementation libs.androidx.swiperefreshlayout
+    implementation libs.androidx.paging.runtime.ktx
+    implementation libs.androidx.activity.ktx
+    implementation libs.androidx.fragment.ktx
+    implementation libs.androidx.work.runtime.ktx
+    implementation libs.androidx.palette.ktx
+    implementation libs.androidx.room.runtime
+    ksp libs.androidx.room.compiler
+    implementation libs.androidx.room.ktx
+    implementation libs.androidx.room.paging
+    implementation libs.androidx.material
+    implementation libs.androidx.flexbox
+    implementation libs.gson
+    implementation libs.okhttp
+    implementation libs.okhttp.logging.interceptor
+    implementation libs.retrofit
+    implementation libs.retrofit.converter.gson
+    implementation libs.retrofit.converter.scalars
+    implementation libs.glide
+    implementation libs.glide.okhttp3.integration
+    ksp libs.glide.ksp
+    implementation libs.glide.transformations
+    implementation libs.persistentCookieJar
+    implementation libs.gesture.views
+    implementation libs.jsoup
+    implementation libs.ucrop
+    implementation libs.github.api
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.test.ext.junit
+    androidTestImplementation libs.androidx.test.espresso
 }
