@@ -47,7 +47,7 @@ class MainActivity : MoeActivity(R.layout.activity_main) {
             val fragment = findFragmentById(R.id.container) as? MainFragment ?: MainFragment()
             beginTransaction().replace(R.id.container, fragment).commit()
         }
-        checkAppUpdate(compare = true)
+//        checkAppUpdate(compare = true)
     }
 }
 

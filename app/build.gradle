@@ -19,7 +19,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 7
-        versionName "1.0.7"
+        versionName "1.0.7.1"
         resConfigs 'zh'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
