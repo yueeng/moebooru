@@ -14,7 +14,7 @@
     <string name="app_artist">Artist</string>
     <string name="app_page_jump">Page number</string>
     <string name="app_page_number">%1$d/%2$d</string>
-    <string name="app_pre_release">pre-release</string>
+    <string name="app_pre_release">releases</string>
     <string name="app_process_text_error">find text menu error: %1$s.</string>
     <string name="app_resolution">%1$dx%2$d[%3$s]</string>
     <string name="app_retry">retry</string>

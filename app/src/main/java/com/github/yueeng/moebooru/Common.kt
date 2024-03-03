@@ -1009,22 +1009,37 @@ fun <T : Any, VH : RecyclerView.ViewHolder> PagingDataAdapter<T, VH>.peekSafe(in
     if (index in 0 until itemCount) peek(index) else null
 
 fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = false): Job = launchWhenCreated {
-    val latest = runCatching {
+    val selected = runCatching {
         withContext(Dispatchers.IO) {
             val gitHub: GitHub = GitHubBuilder.fromEnvironment()
                 .withConnector(OkHttpGitHubConnector(okHttp))
                 .build()
             val repository = gitHub.getRepository("yueeng/moebooru")
-            when (pre) {
-                true -> repository.listReleases().firstOrNull()
-                false -> repository.latestRelease
+            if (!pre) return@withContext repository.latestRelease
+            val releases = repository.listReleases().toList()
+            if (!releases.any()) return@withContext null
+            withContext(Dispatchers.Main) {
+                suspendCancellableCoroutine {
+                    MaterialAlertDialogBuilder(this@checkAppUpdate)
+                        .setTitle(R.string.app_pre_release)
+                        .setSingleChoiceItems(releases.map { it.name }.toTypedArray(), 0, null)
+                        .setPositiveButton(R.string.app_ok) { d, _ ->
+                            val index = (d as AlertDialog).listView.checkedItemPosition
+                            it.resume(releases.elementAtOrNull(index))
+                        }.setNegativeButton(R.string.app_cancel) { _, _ ->
+                            it.resume(null)
+                        }.setOnCancelListener { _ ->
+                            it.resume(null)
+                        }.create().show()
+                }
             }
         }
-    }.getOrNull()
-    if (latest == null) {
-        if (compare) Toast.makeText(this@checkAppUpdate, R.string.app_update_error, Toast.LENGTH_SHORT).show()
+    }
+    if (selected.isFailure) {
+        if (!compare) Toast.makeText(this@checkAppUpdate, R.string.app_update_error, Toast.LENGTH_SHORT).show()
         return@launchWhenCreated
     }
+    val latest = selected.getOrNull() ?: return@launchWhenCreated
     val name = if (compare) {
         val ver = Version.from(BuildConfig.VERSION_NAME) ?: return@launchWhenCreated
         val saved = Version.from(MoeSettings.updateVersion.value)?.takeIf { it > ver } ?: ver
