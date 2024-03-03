@@ -1056,8 +1056,9 @@ fun AppCompatActivity.checkAppUpdate(pre: Boolean = false, compare: Boolean = fa
         .setTitle(name)
         .setMessage(latest.body)
         .setPositiveButton(getString(R.string.app_download)) { _, _ -> openWeb(url) }
-        .setNegativeButton(R.string.app_update_ignore) { _, _ -> MoeSettings.updateVersion.setValueToPreferences(latest.tagName) }
         .apply {
+            if (compare) setNegativeButton(R.string.app_update_ignore) { _, _ -> MoeSettings.updateVersion.setValueToPreferences(latest.tagName) }
+            else setNegativeButton(R.string.app_cancel, null)
             if (!pre) setNeutralButton(getString(R.string.app_pre_release)) { _, _ ->
                 checkAppUpdate(true)
             }
