@@ -96,7 +96,7 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setSupportActionBar(findViewById(R.id.toolbar))
-        val e = intent.getSerializableExtraCompat("e") as? Throwable
+        val e = runCatching { intent.getSerializableExtraCompat("e") as? Throwable }.getOrNull()
         val seq = generateSequence(e) { it.cause }
         if (!seq.any()) supportActionBar?.title = "Info"
         val ex = StringWriter().use { stream ->
