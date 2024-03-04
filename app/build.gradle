@@ -18,7 +18,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 34
         versionCode 9
-        versionName "1.0.9"
+        versionName "1.0.9.1"
         resourceConfigurations += ['zh']
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
