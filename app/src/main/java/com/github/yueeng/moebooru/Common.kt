@@ -47,7 +47,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
+import androidx.core.os.BundleCompat
 import androidx.core.view.children
 import androidx.core.view.isGone
 import androidx.core.view.isInvisible
@@ -1088,19 +1090,15 @@ object PendingIntentCompat {
     val FLAG_IMMUTABLE get() = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else PendingIntent.FLAG_UPDATE_CURRENT)
 }
 
-inline fun <reified T> Intent.getParcelableExtraCompat(key: String): T? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableExtra(key, T::class.java)
-    else -> @Suppress("DEPRECATION") getParcelableExtra(key) as? T?
-}
+inline fun <reified T> Bundle.getParcelableCompat(key: String): T? =
+    BundleCompat.getParcelable(this, key, T::class.java)
+
+inline fun <reified T> Intent.getParcelableExtraCompat(key: String): T? =
+    IntentCompat.getParcelableExtra(this, key, T::class.java)
 
 inline fun <reified T : Serializable> Intent.getSerializableExtraCompat(key: String): T? = when {
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getSerializableExtra(key, T::class.java)
     else -> @Suppress("DEPRECATION") getSerializableExtra(key) as? T?
-}
-
-inline fun <reified T> Bundle.getParcelableCompat(key: String): T? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelable(key, T::class.java)
-    else -> @Suppress("DEPRECATION") getParcelable(key) as? T?
 }
 
 fun OnBackPressedDispatcher.bubbleOnBackPressed(callback: OnBackPressedCallback) {
