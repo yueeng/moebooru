@@ -106,6 +106,7 @@ class CrashActivity : AppCompatActivity(R.layout.activity_crash) {
                 info.forEach { i ->
                     writer.println("===== ${i.simpleName} =====")
                     i.java.declaredFields.filter { Modifier.isStatic(it.modifiers) }.forEach {
+                        runCatching { it.isAccessible = true }
                         val value = runCatching { it.get(null) }.getOrElse { t -> t.message }
                         writer.println("${it.name}: ${gson.toJson(value)}")
                     }
