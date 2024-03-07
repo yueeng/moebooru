@@ -723,36 +723,27 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable, IQ {
 
     constructor(source: Q?) : this(source?.map)
     constructor(source: String?) : this(source?.takeIf { it.isNotEmpty() }?.split(' ', '+')
-        ?.map { Uri.decode(it) }
+        ?.asSequence()?.map { Uri.decode(it) }
         ?.map { it.split(':', limit = 2) }
-        ?.let { list -> listOf(listOf(list.filter { it.size == 1 }.flatten().joinToString(" "))) + (list.filter { it.size > 1 }) }
         ?.filter { it.any { i -> i.isNotEmpty() } }
-        ?.associate { list ->
-            when (list.size) {
-                1 -> "keyword" to list.first()
-                2 -> when (list.first()) {
-                    "order" -> list.first() to list.last().let { v -> Order.entries.single { it.value == v } }
-                    "rating" -> list.first() to list.last().let { v -> Rating.entries.single { it.value == v } }
-                    "-rating" -> list.first() to "-${list.last()}".let { v -> Rating.entries.single { it.value == v } }
-                    "id", "width", "height", "score" -> list.first() to list.last().let { v ->
-                        Value.from(v) { it.toIntOrNull() ?: 0 }
-                    }
-
-                    "mpixels" -> list.first() to list.last().let { v ->
-                        Value.from(v) { it.toFloatOrNull() ?: 0 }
-                    }
-
-                    "date" -> list.first() to list.last().let { v ->
-                        Value.from(v) { ValueDate(it.toIntOrNull(), formatter.tryParse(it)) }
-                    }
-
-                    "vote" -> list.first() to list.last().let { v ->
-                        Value.from(v) { it.toIntOrNull() ?: 0 }
-                    }
-
-                    else -> list.first() to list.last()
-                }
-
+        ?.groupBy {
+            if (it.size == 2) when (it.first()) {
+                "-rating" -> it.first()
+                in cheats.keys -> it.first()
+                else -> "keyword"
+            } else "keyword"
+        }
+        ?.map { it.key to it.value.map { s -> s.joinToString(":") }.filter { s -> s.isNotEmpty() }.joinToString(" ") }
+        ?.associate { kv ->
+            when (kv.first) {
+                "order" -> kv.first to kv.second.let { v -> Order.entries.single { it.value == v } }
+                "rating" -> kv.first to kv.second.let { v -> Rating.entries.single { it.value == v } }
+                "-rating" -> kv.first to "-${kv.second}".let { v -> Rating.entries.single { it.value == v } }
+                "id", "width", "height", "score" -> kv.first to kv.second.let { v -> Value.from(v) { it.toIntOrNull() ?: 0 } }
+                "mpixels" -> kv.first to kv.second.let { v -> Value.from(v) { it.toFloatOrNull() ?: 0 } }
+                "date" -> kv.first to kv.second.let { v -> Value.from(v) { ValueDate(it.toIntOrNull(), formatter.tryParse(it)) } }
+                "vote" -> kv.first to kv.second.let { v -> Value.from(v) { it.toIntOrNull() ?: 0 } }
+                in cheats.keys -> kv.first to kv.second
                 else -> throw IllegalArgumentException()
             }
         }
