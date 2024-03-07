@@ -733,7 +733,12 @@ class Q(m: Map<String, Any>? = mapOf()) : Parcelable, IQ {
                 else -> "keyword"
             } else "keyword"
         }
-        ?.map { it.key to it.value.map { s -> s.joinToString(":") }.filter { s -> s.isNotEmpty() }.joinToString(" ") }
+        ?.map { kv ->
+            kv.key to when (kv.key) {
+                "keyword" -> kv.value.map { it.joinToString(":") }.filter { it.isNotEmpty() }.joinToString(" ")
+                else -> kv.value.first().last()
+            }
+        }
         ?.associate { kv ->
             when (kv.first) {
                 "order" -> kv.first to kv.second.let { v -> Order.entries.single { it.value == v } }
