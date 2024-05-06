@@ -25,6 +25,7 @@
 }
 -keep class com.github.yueeng.moebooru.BuildConfig{*;}
 -keep class org.kohsuke.github.GH*{*;}
+-keep class com.yalantis.ucrop.util.RectUtils{*;}
 
 -dontwarn org.conscrypt.Conscrypt$Version
 -dontwarn org.conscrypt.Conscrypt
