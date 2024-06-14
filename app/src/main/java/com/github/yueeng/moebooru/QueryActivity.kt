@@ -521,6 +521,7 @@ class QueryFragment : Fragment() {
             }
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: QueryHolder, position: Int) {
             val item = currentList[position]
             holder.binding.text1.text = item.first
