@@ -113,8 +113,12 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
             }
             binding.pager.offscreenPageLimit = 1
             binding.pager.adapter = adapter
+            var first = true
             binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) = previewModel.index.postValue(position)
+                override fun onPageSelected(position: Int) {
+                    if (first) return
+                    previewModel.index.postValue(position)
+                }
             })
             launchWhenCreated {
                 adapter.loadStateFlow.distinctUntilChangedBy { it.refresh }
@@ -130,6 +134,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                         if (index >= 0) binding.pager.post {
                             binding.pager.setCurrentItem(index, false)
                         }
+                        first = false
                     }
             }
             launchWhenCreated {
