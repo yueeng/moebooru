@@ -29,7 +29,7 @@ uCrop = "2020.09.28"
 github_api = "1.322"
 junit = "4.13.2"
 androidx_test_ext_junit = "1.2.0"
-androidx_test_espresso = "3.6.0"
+androidx_test_espresso = "3.6.1"
 
 [libraries]
 kotlinx_coroutines_core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx_coroutines" }
