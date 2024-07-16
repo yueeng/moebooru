@@ -86,13 +86,13 @@ class PreviewActivity : MoeActivity(R.layout.activity_container) {
     }
 }
 
-class PreviewViewModel(handle: SavedStateHandle, args: Bundle?) : ViewModel() {
-    val index = handle.getLiveData("index", args?.getInt("index", -1) ?: -1)
+class PreviewViewModel(handle: SavedStateHandle) : ViewModel() {
+    val index = handle.getLiveData("index", -1)
 }
 
-class PreviewViewModelFactory(owner: SavedStateRegistryOwner, private val defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+class PreviewViewModelFactory(owner: SavedStateRegistryOwner, defaultArgs: Bundle?) : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PreviewViewModel(handle, defaultArgs) as T
+    override fun <T : ViewModel> create(key: String, modelClass: Class<T>, handle: SavedStateHandle): T = PreviewViewModel(handle) as T
 }
 
 class PreviewFragment : Fragment(), SavedFragment.Queryable {
@@ -138,7 +138,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                     }
             }
             launchWhenCreated {
-                previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
+                previewModel.index.asFlow().distinctUntilChanged().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
                     ProgressBehavior.on(item.sample_url).onCompletion {
                         binding.progress1.isInvisible = true
                         binding.progress1.progress = 0
@@ -202,7 +202,7 @@ class PreviewFragment : Fragment(), SavedFragment.Queryable {
                 }
             }
             launchWhenCreated {
-                previewModel.index.asFlow().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
+                previewModel.index.asFlow().distinctUntilChanged().mapNotNull { adapter.peekSafe(it) }.collectLatest { item ->
                     Glide.with(binding.button7).load(OAuth.face(item.creator_id))
                         .placeholder(R.mipmap.ic_launcher)
                         .transition(DrawableTransitionOptions.withCrossFade())

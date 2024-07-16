@@ -58,7 +58,7 @@ android {
             applicationIdSuffix '.yande'
             resValue 'string', 'app_name', 'Yande'
             resValue 'string', 'app_host', 'yande.re'
-            resValue 'string', 'app_ip', '198.98.58.238'
+            resValue 'string', 'app_ip', '107.189.2.17'
             resValue 'string', 'app_create_time', '2006-8-13'
             manifestPlaceholders.host = "yande.re"
         }
