@@ -142,7 +142,7 @@ val okCookie = object : PersistentCookieJar(okCookieCache, okPersistor) {
 }
 val okDns = object : Dns {
     override fun lookup(hostname: String): List<InetAddress> = when {
-        MoeSettings.host.value == true && hostname.endsWith(moeHost) -> runCatching { listOf(InetAddress.getByName(MoeSettings.ip.value)) }.getOrNull()
+        MoeSettings.host.value == true && hostname.endsWith(moeHost) -> runCatching { listOf(InetAddress.getByName(MoeSettings.ip.value.takeIf { !it.isNullOrBlank() } ?: MainApplication.instance().getString(R.string.app_ip))) }.getOrNull()
         else -> null
     } ?: Dns.SYSTEM.lookup(hostname)
 }
@@ -841,7 +841,7 @@ class AlphaBlackBitmapTransformation(val alpha: Int = 0x7F, val color: Int = Col
 
     override fun transform(pool: BitmapPool, src: Bitmap, outWidth: Int, outHeight: Int): Bitmap {
         val rect = Rect(0, 0, src.width, src.height)
-        val dest = Bitmap.createBitmap(rect.width(), rect.height(), src.config)
+        val dest = Bitmap.createBitmap(rect.width(), rect.height(), src.config!!)
         val canvas = Canvas(dest)
         canvas.save()
         canvas.drawColor(color)

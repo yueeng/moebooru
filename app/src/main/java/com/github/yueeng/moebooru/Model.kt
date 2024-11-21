@@ -27,6 +27,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializer
+import com.google.gson.Strictness
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.parcelize.Parcelize
@@ -465,7 +466,7 @@ class Service(private val service: MoebooruService) : MoebooruService by service
                 0
             }
         }
-        private val gson = GsonBuilder().registerTypeAdapter(Int::class.java, intJsonDeserializer).setLenient().create()
+        private val gson = GsonBuilder().registerTypeAdapter(Int::class.java, intJsonDeserializer).setStrictness(Strictness.LENIENT).create()
         private val retrofit: Retrofit = Retrofit.Builder()
             .addConverterFactory(ScalarsConverterFactory.create())
             .addConverterFactory(GsonConverterFactory.create(gson))
