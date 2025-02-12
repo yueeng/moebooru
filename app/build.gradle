@@ -10,7 +10,7 @@ android {
         new Properties().tap { load(stream) }
     }
     compileSdk = 35
-    buildToolsVersion = '35.0.0'
+    buildToolsVersion = '35.0.1'
 
     namespace 'com.github.yueeng.moebooru'
     defaultConfig {
