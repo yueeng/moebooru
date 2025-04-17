@@ -1,6 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <!-- colorPrimary is used for the default action bar background -->
@@ -20,21 +20,5 @@
         <item name="android:textViewStyle">@style/RobotoTextViewStyle</item>
         <item name="floatingActionButtonStyle">@style/AppThemeFloatingActionButtonStyle</item>
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
-
-    <style name="AppThemeOverlayAppbarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Primary">
-        <item name="materialThemeOverlay">@style/ThemeOverlay.MaterialComponents.Dark.ActionBar</item>
-    </style>
-
-    <style name="RobotoTextViewStyle" parent="android:Widget.TextView">
-        <item name="android:fontFamily">sans-serif-light</item>
-    </style>
-
-    <style name="AppThemeFloatingActionButtonStyle" parent="Widget.MaterialComponents.FloatingActionButton">
-        <item name="tint">@android:color/white</item>
-    </style>
-    <style name="circleStyle">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
     </style>
 </resources>

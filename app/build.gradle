@@ -9,7 +9,7 @@ android {
     def config = new File("local.properties").withInputStream { stream ->
         new Properties().tap { load(stream) }
     }
-    compileSdk = 35
+    compileSdk 35
     buildToolsVersion = '35.0.1'
 
     namespace 'com.github.yueeng.moebooru'

@@ -109,7 +109,7 @@ abstract class Db : RoomDatabase() {
     companion object {
         private fun create(context: Context): Db = Room.databaseBuilder(context, Db::class.java, "database.db")
             .createFromAsset("database.db")
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(false)
             .build()
 
         val db: Db by lazy { create(MainApplication.instance()) }
