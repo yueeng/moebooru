@@ -19,7 +19,6 @@
         <item name="textInputStyle">@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox</item>
         <item name="android:textViewStyle">@style/RobotoTextViewStyle</item>
         <item name="floatingActionButtonStyle">@style/AppThemeFloatingActionButtonStyle</item>
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <style name="AppThemeOverlayAppbarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Primary">
