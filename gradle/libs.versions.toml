@@ -1,6 +1,6 @@
 [versions]
 agp = "8.9.2"
-kotlin = "2.1.20"
+kotlin = "2.1.21"
 ksp = "2.1.20-2.0.0"
 glide = "4.16.0"
 okhttp = "4.12.0"
