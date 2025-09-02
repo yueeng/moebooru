@@ -2,7 +2,7 @@
 agp = "8.11.0"
 kotlin = "2.2.0"
 ksp = "2.2.0-2.0.2"
-glide = "4.16.0"
+glide = "5.0.4"
 okhttp = "5.1.0"
 retrofit = "3.0.0"
 kotlinx_coroutines = "1.10.2"
